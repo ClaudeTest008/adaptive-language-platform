@@ -1,0 +1,24 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+
+# Environment / secrets
+.env
+.env.*
+*.local
+
+# Node
+node_modules/
+
+# Flutter / Dart (app/flutter)
+app/flutter/.dart_tool/
+app/flutter/build/
+app/flutter/.flutter-plugins*
+app/flutter/*.iml
+
+# Logs
+*.log

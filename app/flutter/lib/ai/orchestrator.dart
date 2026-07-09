@@ -18,7 +18,8 @@ class AiOrchestrator
         AiExplanationGenerator,
         AiQuestionGenerator,
         AiMetadataGenerator,
-        AiContentReviewer {
+        AiContentReviewer,
+        AiDocumentExtractor {
   const AiOrchestrator(this.model);
 
   final AiChatModel model;
@@ -36,6 +37,7 @@ class AiOrchestrator
       questionGenerator: o,
       metadataGenerator: o,
       contentReviewer: o,
+      documentExtractor: o,
     );
   }
 
@@ -109,6 +111,38 @@ class AiOrchestrator
           status: ContentStatus.draft,
           author: 'ai:${model.providerName}',
         ),
+    ];
+  }
+
+  /// Extracts question candidates from document text (ADR-0011). Output
+  /// rows use the import-pipeline column contract, so extracted content
+  /// flows through the exact same validation + review + approval path as
+  /// any bulk import — grounding excerpt included for side-by-side review.
+  @override
+  Future<List<Map<String, String>>> extractQuestions(
+    String documentText,
+  ) async {
+    final raw = await _ask(
+      'Extract multiple-choice exam questions strictly grounded in the '
+      'provided source text — never invent facts absent from it. '
+      'Respond with a JSON array. Each item: {"question": string, '
+      '"answerA": string, "answerB": string, "answerC": string, '
+      '"answerD": string, "correct": "A"|"B"|"C"|"D", '
+      '"explanation": string, "sourceExcerpt": the exact source '
+      'sentence the question is grounded in}. JSON only.',
+      documentText,
+    );
+    final parsed = jsonDecode(raw);
+    if (parsed is! List) {
+      throw const FormatException('AI extraction output was not a JSON array.');
+    }
+    return [
+      for (final item in parsed)
+        if (item is Map)
+          {
+            for (final e in item.entries)
+              e.key.toString(): e.value?.toString() ?? '',
+          },
     ];
   }
 

@@ -1,6 +1,6 @@
 # Project Status
 
-**Phase:** Epic 16 (Production Readiness) core complete; 1.0 RC awaits only the Firebase human runbook
+**Phase:** Epic 17 (Content Intelligence) core complete; 1.0 RC awaits only the Firebase human runbook
 **Last updated:** 2026-07-09
 
 ## Completed
@@ -19,6 +19,8 @@
 - Epic 15 core — Content Studio V2 (ADR-0009): 5-state workflow, append-only versioning + rollback, bulk publish/archive/tag, import job history + duplicate analytics, content analytics, expanded AI interfaces (OCR/review/metadata), LearnerModel codec, Firestore swap guide. Verified: analyze clean, 52 tests green, versioning/rollback/bulk/import-history driven in browser.
 
 - Epic 16 core — production readiness (ADR-0010): security rules migrated to status-enum workflow + learner-model/version/import-job coverage, unit-tested via Firestore emulator in CI (new `firestore-rules` job); AI orchestration (`lib/ai/`: AiChatModel seam, AiOrchestrator with 6 capabilities, FakeChatModel, conversation context) — 59 tests total; Content Studio V3 slice (topic/difficulty filters, bulk restore, version diff vs current); threat model, RC checklists, search design, perf/a11y audits.
+
+- Epic 17 core — Content Intelligence (ADR-0011): chunked large-import engine with resume/rollback (10k-row test), deterministic quality engine, TXT/HTML document ingestion (chapters, topics, question opportunities), AI document extraction via pipeline contract, review queue + Review tab (bulk approve/reject, worst-first). Verified: analyze clean, 72 tests, browser end-to-end (40-row import → review queue → reject low-quality → approve 39 → approved:39/published:24).
 
 ## In Progress
 

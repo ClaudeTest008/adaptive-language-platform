@@ -21,6 +21,7 @@ Work executes in this exact order. One epic at a time. Do not repeat completed e
 | 14 | Firebase Production Integration | ⏳ Blocked on human setup; all contracts + swap guide ready (docs/deployment/01+02) |
 | 15 | Content Studio V2 | 🟡 Core complete (ADR-0009); Excel/images/scheduling with Epic 14 |
 | 16 | Production Readiness | 🟡 Core complete (ADR-0010): rules tested in CI, AI orchestration, V3 slice, RC checklists |
+| 17 | Content Intelligence Platform | 🟡 Core complete (ADR-0011): large imports, quality engine, document ingestion, review queue |
 
 ## Epic 0 — Repository Foundation ✅
 
@@ -105,6 +106,12 @@ Deferred to Epic 14 implementation or later (reasons in ADR-0009): Excel import,
 Delivered (ADR-0010): Firestore rules updated to the status-enum workflow with learnerModel/questionVersions/importJobs coverage and unit-tested against the emulator in CI; AI orchestration layer (`lib/ai/`) — single `AiChatModel` provider seam, six capabilities implemented vendor-blind, deterministic `FakeChatModel`, structural admin-approval gate; Content Studio V3 slice (topic/difficulty filters, bulk restore, version comparison); threat model, release/deploy/migration/smoke/rollback/DR/monitoring checklists, search platform design, performance & accessibility audits.
 
 Remaining before 1.0 RC ships: Firebase runbook (human) → Firestore swap → App Check/Remote Config/Analytics/Crashlytics wiring → smoke checklist against real project; AI provider adapters (need API keys); items in ADR-0010 deferred list.
+
+## Epic 17 — Content Intelligence Platform 🟡 (core delivered)
+
+Delivered (ADR-0011): chunked large-import engine (10k+ rows, progress stream, resume-after-failure checkpoint, rollback, partial success — UI never blocks); deterministic content quality engine (clarity/ambiguity/distractors/explanation/near-duplicate scoring with named issues); document ingestion for TXT/HTML (extraction, chapter/topic detection, question-opportunity flagging); AI document extraction orchestrated through the import-pipeline contract with grounding excerpts; review queue (`QuestionCandidate`, worst-quality-first) with Review tab, per-item and bulk approve/reject; provenance (source, excerpt, `ai:<provider>` attribution); import job history extended.
+
+Deferred (blockers in ADR-0011): Cloud Functions worker fleet + upload queue (Firebase), PDF/DOCX/OCR/Excel parsers (binary deps + Storage), institution libraries, per-stage resource metrics, search-index stage.
 
 ## Version 2+ (not V1 — architecture-ready only)
 

@@ -14,3 +14,4 @@ One file per decision: `NNNN-title.md`. Statuses: Proposed, Accepted, Superseded
 | [0008](0008-adaptive-learning-engine.md) | Adaptive learning engine as pure-Dart module; AI interfaces; Firebase swap deferred | Accepted |
 | [0009](0009-content-studio-v2-versioning.md) | Content Studio V2: 5-state workflow, append-only versioning, bulk ops, import analytics | Accepted |
 | [0010](0010-production-readiness.md) | Rules tested in CI via emulator; AI orchestration over single provider seam; V3 slice | Accepted |
+| [0011](0011-content-intelligence-platform.md) | Content Intelligence: review-queue ingestion, chunked large imports, quality engine, document processing | Accepted |

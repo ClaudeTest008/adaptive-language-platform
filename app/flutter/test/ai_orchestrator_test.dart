@@ -102,9 +102,9 @@ void main() {
       expect(services.questionGenerator, isNotNull);
       expect(services.metadataGenerator, isNotNull);
       expect(services.contentReviewer, isNotNull);
-      // Not orchestrated yet (need transport/binary handling):
+      expect(services.documentExtractor, isNotNull);
+      // Not orchestrated yet (needs binary transport):
       expect(services.ocr, isNull);
-      expect(services.documentExtractor, isNull);
     });
   });
 }

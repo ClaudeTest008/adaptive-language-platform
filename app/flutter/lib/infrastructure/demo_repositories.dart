@@ -181,6 +181,26 @@ class DemoContentRepository implements ContentRepository, AdminRepository {
   Future<List<ImportJob>> getImportJobs() async =>
       List.of(_importJobs.reversed);
 
+  final Map<String, QuestionCandidate> _candidates = {};
+
+  @override
+  Future<void> saveCandidates(List<QuestionCandidate> candidates) async {
+    for (final c in candidates) {
+      _candidates[c.id] = c;
+    }
+  }
+
+  @override
+  Future<List<QuestionCandidate>> getCandidates() async =>
+      List.of(_candidates.values);
+
+  @override
+  Future<void> removeCandidates(List<String> candidateIds) async {
+    for (final id in candidateIds) {
+      _candidates.remove(id);
+    }
+  }
+
   @override
   Future<void> archiveQuestion(String questionId) async {
     final q = _questions[questionId];

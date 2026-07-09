@@ -57,6 +57,13 @@ abstract class AdminRepository {
   Future<void> recordImportJob(ImportJob job);
   Future<List<ImportJob>> getImportJobs();
 
+  // Question candidates (Content Intelligence Platform, ADR-0011).
+  // Candidates sit outside the content library until a human approves
+  // them; approval upserts a Question and removes the candidate.
+  Future<void> saveCandidates(List<QuestionCandidate> candidates);
+  Future<List<QuestionCandidate>> getCandidates();
+  Future<void> removeCandidates(List<String> candidateIds);
+
   /// Validated batch import (pipeline output only).
   Future<void> importQuestions(List<Question> questions);
 

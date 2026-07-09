@@ -162,6 +162,42 @@ class ImportJob {
   final String? author;
 }
 
+/// Deterministic quality assessment of one question (Content Quality
+/// Engine, ADR-0011). AI review can supplement; this never requires it.
+class QualityReport {
+  const QualityReport({required this.score, required this.issues});
+
+  /// 0..1 — higher is better.
+  final double score;
+  final List<String> issues;
+}
+
+/// Where a question candidate came from — content provenance.
+enum CandidateSource { import, document, ai }
+
+/// A question awaiting human review before it becomes real content
+/// (ADR-0011). Candidates are never learner-visible.
+class QuestionCandidate {
+  const QuestionCandidate({
+    required this.id,
+    required this.question,
+    required this.source,
+    required this.quality,
+    this.sourceExcerpt,
+    this.createdAt,
+  });
+
+  final String id;
+  final Question question;
+  final CandidateSource source;
+  final QualityReport quality;
+
+  /// Originating text (document sentence, import row) for side-by-side
+  /// review.
+  final String? sourceExcerpt;
+  final DateTime? createdAt;
+}
+
 enum AttemptType { practice, mock, review }
 
 class AttemptAnswer {

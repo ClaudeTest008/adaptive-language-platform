@@ -79,6 +79,10 @@ lib/
 
 Pure-Dart module `lib/adaptive/` — no Flutter, no Firebase. Learner model (per-concept mastery, spaced-repetition schedule), knowledge graph derived from content, confidence model, adaptive question selector, readiness/pass-probability, study plans, learning DNA. Replaceable seams: `ReviewScheduler` (SM-2/FSRS later), `QuestionSelector`, `LearnerModelRepository`. AI capabilities are provider-independent interfaces in `lib/domain/ai_services.dart`; no provider bound in V1.
 
+## Content Intelligence (ADR-0011)
+
+All ingestion (bulk imports, documents, AI generation) produces `QuestionCandidate`s in a human review queue — never library questions directly. Application-layer engines: chunked large import (resume/rollback), deterministic quality scoring, TXT/HTML document ingestion. At 100k+ scale the same stage contracts move into Cloud Functions workers.
+
 ## Future Expansion Hooks
 
 - Exam category, country, topic are database entities (not enums) — new exam types are data, not code.

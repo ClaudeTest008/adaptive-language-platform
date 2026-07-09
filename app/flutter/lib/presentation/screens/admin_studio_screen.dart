@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/import_pipeline.dart';
+import '../../application/large_import.dart';
 import '../../domain/models.dart';
 import '../../domain/repositories.dart';
 import '../providers.dart';
@@ -15,7 +16,7 @@ class AdminStudioScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Content Studio'),
@@ -24,11 +25,17 @@ class AdminStudioScreen extends StatelessWidget {
               Tab(icon: Icon(Icons.dashboard), text: 'Overview'),
               Tab(icon: Icon(Icons.quiz), text: 'Questions'),
               Tab(icon: Icon(Icons.upload_file), text: 'Import'),
+              Tab(icon: Icon(Icons.fact_check), text: 'Review'),
             ],
           ),
         ),
         body: const TabBarView(
-          children: [_OverviewTab(), _QuestionsTab(), _ImportTab()],
+          children: [
+            _OverviewTab(),
+            _QuestionsTab(),
+            _ImportTab(),
+            _ReviewTab(),
+          ],
         ),
       ),
     );
@@ -909,6 +916,47 @@ class _ImportTabState extends ConsumerState<_ImportTab> {
   ImportFormat _format = ImportFormat.csv;
   ImportReport? _report;
   bool _importing = false;
+  LargeImportProgress? _largeProgress;
+
+  /// Chunked path: candidates land in the review queue instead of the
+  /// content library (large imports never bypass human review).
+  Future<void> _runLargeImport() async {
+    final exam = ref.read(examProvider).value;
+    final topics = ref.read(topicsProvider).value ?? const <Topic>[];
+    if (exam == null) return;
+    final repo = ref.read(adminRepositoryProvider);
+    final existing = await repo.getAllQuestions();
+    setState(() => _importing = true);
+    await for (final progress in runLargeImport(
+      content: _content.text,
+      format: _format,
+      examId: exam.id,
+      topics: topics,
+      existing: existing,
+      repo: repo,
+      author: ref.read(authStateProvider).value?.email,
+    )) {
+      if (!mounted) return;
+      setState(() => _largeProgress = progress);
+    }
+    ref.read(contentVersionProvider.notifier).state++;
+    if (mounted) {
+      final p = _largeProgress;
+      setState(() {
+        _importing = false;
+        _report = null;
+        _content.clear();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${p?.saved ?? 0} candidates sent to the Review tab '
+            '(${p?.rejected ?? 0} rejected, ${p?.duplicates ?? 0} duplicates).',
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -1108,8 +1156,21 @@ class _ImportTabState extends ConsumerState<_ImportTab> {
                       : () => _approveAndImport(publish: false),
                   child: const Text('Import as drafts'),
                 ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.rate_review),
+                  onPressed: _importing ? null : _runLargeImport,
+                  label: const Text('Send to review queue'),
+                ),
               ],
             ),
+            if (_largeProgress != null && !_largeProgress!.done) ...[
+              const SizedBox(height: 8),
+              LinearProgressIndicator(value: _largeProgress!.fraction),
+              Text(
+                '${_largeProgress!.processed} / ${_largeProgress!.total} processed',
+              ),
+            ],
           ] else
             Text(
               report.questions.isEmpty
@@ -1119,6 +1180,164 @@ class _ImportTabState extends ConsumerState<_ImportTab> {
             ),
         ],
         const _ImportJobHistory(),
+      ],
+    );
+  }
+}
+
+// ------------------------------------------------------------------ review
+
+/// Human review queue (ADR-0011): candidates from large imports, document
+/// ingestion and AI generation. Approve creates an `approved` question
+/// (publish is a separate, deliberate step); reject discards.
+class _ReviewTab extends ConsumerWidget {
+  const _ReviewTab();
+
+  Future<void> _approve(
+    WidgetRef ref,
+    List<QuestionCandidate> candidates,
+  ) async {
+    final repo = ref.read(adminRepositoryProvider);
+    for (final c in candidates) {
+      await repo.upsertQuestion(
+        c.question.copyWith(status: ContentStatus.approved),
+      );
+    }
+    await repo.removeCandidates([for (final c in candidates) c.id]);
+    ref.read(contentVersionProvider.notifier).state++;
+  }
+
+  Future<void> _reject(
+    WidgetRef ref,
+    List<QuestionCandidate> candidates,
+  ) async {
+    await ref.read(adminRepositoryProvider).removeCandidates([
+      for (final c in candidates) c.id,
+    ]);
+    ref.read(contentVersionProvider.notifier).state++;
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final candidates =
+        ref.watch(candidatesProvider).value ?? const <QuestionCandidate>[];
+    if (candidates.isEmpty) {
+      return const Center(
+        child: Text(
+          'Review queue is empty.\n'
+          'Large imports and AI-generated content land here first.',
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+    final sorted = List.of(candidates)
+      ..sort((a, b) => a.quality.score.compareTo(b.quality.score));
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Text(
+                '${sorted.length} awaiting review '
+                '(lowest quality first)',
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: () => _approve(ref, sorted),
+                child: Text('Approve all (${sorted.length})'),
+              ),
+              TextButton(
+                onPressed: () => _reject(ref, sorted),
+                child: const Text('Reject all'),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            itemCount: sorted.length,
+            itemBuilder: (context, i) {
+              final c = sorted[i];
+              final pct = (c.quality.score * 100).round();
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ExpansionTile(
+                  leading: CircleAvatar(
+                    radius: 16,
+                    backgroundColor: c.quality.score >= 0.7
+                        ? Colors.green.withValues(alpha: 0.2)
+                        : Theme.of(context).colorScheme.errorContainer,
+                    child: Text('$pct', style: const TextStyle(fontSize: 11)),
+                  ),
+                  title: Text(
+                    c.question.text,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
+                    '${c.source.name} · ${c.question.difficulty.name}'
+                    '${c.question.author != null ? " · ${c.question.author}" : ""}',
+                  ),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (var a = 0; a < c.question.answers.length; a++)
+                            Text(
+                              '${a == c.question.correctIndex ? "✓" : "•"} '
+                              '${c.question.answers[a]}',
+                              style: a == c.question.correctIndex
+                                  ? const TextStyle(fontWeight: FontWeight.bold)
+                                  : null,
+                            ),
+                          const SizedBox(height: 4),
+                          Text('Explanation: ${c.question.explanation}'),
+                          if (c.sourceExcerpt != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'Source: "${c.sourceExcerpt}"',
+                              style: const TextStyle(
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
+                          if (c.quality.issues.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Quality issues:',
+                              style: Theme.of(context).textTheme.labelLarge,
+                            ),
+                            for (final issue in c.quality.issues)
+                              Text('• $issue'),
+                          ],
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              FilledButton(
+                                onPressed: () => _approve(ref, [c]),
+                                child: const Text('Approve'),
+                              ),
+                              const SizedBox(width: 8),
+                              OutlinedButton(
+                                onPressed: () => _reject(ref, [c]),
+                                child: const Text('Reject'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
       ],
     );
   }

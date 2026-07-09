@@ -24,3 +24,4 @@
 - [x] Epic 13 — Adaptive learning engine (model, graph, scheduler, confidence, selector, readiness, plans, DNA, AI interfaces); 41 tests total; browser-verified (2026-07-09).
 - [x] Epic 15 core — Content Studio V2: workflow states, versioning + rollback, bulk ops, import analytics, learner-model codec, swap guide; 52 tests total (2026-07-09).
 - [x] Epic 16 core — rules emulator tests in CI, AI orchestration layer, V3 filters/restore/compare, threat model + RC checklists; 59 tests total (2026-07-09).
+- [x] Epic 17 core — large-import engine (chunk/resume/rollback), quality engine, document ingestion, AI extraction, review queue UI; 72 tests total (2026-07-09).

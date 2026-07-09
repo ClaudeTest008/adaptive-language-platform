@@ -24,6 +24,13 @@ Import analytics: `{startedAt, format, rowsTotal, imported, rejected, duplicateC
 ### `/contentPacks/{packId}` (admin-written)
 Marketplace/licensing groundwork: pack metadata + Storage path of the pack JSON.
 
+### Content Intelligence collections (ADR-0011)
+
+- `/documents/{docId}` (admin): source documents — `{title, format, storagePath, uploadedBy, uploadedAt, version}`; content bytes in Storage.
+- `/extractionJobs/{jobId}` (worker-written): document processing state — `{docId, stage: uploaded|extracted|generated|validated, chapters, opportunities, failures, retries, startedAt, finishedAt}`.
+- `/questionCandidates/{candId}` (admin/worker): serialized `QuestionCandidate` — `{question: {...}, source: import|document|ai, sourceExcerpt, quality: {score, issues[]}, createdAt}`. Admin read/write; never learner-visible (no learner read rule at all).
+- Provenance: candidates and questions carry `author` (`ai:<provider>` for generated content) and `sourceExcerpt`; approval history is reconstructable from question versions.
+
 ### `/auditLogs/{logId}` (Admin SDK-written)
 Content Studio audit trail: `{action, questionId?, actorUid, at, detail}`. Written server-side (function wrapper) so clients cannot forge entries; V2 slice records equivalent data in question versions + import jobs.
 

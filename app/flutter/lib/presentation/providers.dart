@@ -76,6 +76,12 @@ final importJobsProvider = FutureProvider((ref) {
   return ref.watch(adminRepositoryProvider).getImportJobs();
 });
 
+/// Content Studio: review queue — question candidates awaiting approval.
+final candidatesProvider = FutureProvider((ref) {
+  ref.watch(contentVersionProvider);
+  return ref.watch(adminRepositoryProvider).getCandidates();
+});
+
 /// Bumped after any study write so dashboard/bookmark/review views refresh.
 final studyVersionProvider = StateProvider<int>((ref) => 0);
 

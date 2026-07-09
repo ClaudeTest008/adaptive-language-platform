@@ -2,14 +2,15 @@
 
 ## Active
 
-- None.
+- Epic 2: system architecture documents and ADRs.
 
 ## Backlog
 
-- Define Phase 1 milestones and append to `ROADMAP.md`.
-- Write product definition in `docs/product/`.
-- Draft initial architecture in `ARCHITECTURE.md` and `docs/architecture/`.
+- Epic 3: Firestore schema, security rules, indexes, migration strategy (`docs/database/`).
+- Epic 4: Firebase project setup, auth, functions scaffold.
+- Epic 5: Flutter app scaffold (navigation, DI, theme, localization, shared components).
 
 ## Done
 
-- [x] 0.1 Create repository with directory structure and foundation documents (2026-07-07).
+- [x] Epic 0 — Repository foundation (2026-07-07).
+- [x] Epic 1 — Product definition docs in `docs/product/`; CONTRIBUTING.md (2026-07-08).

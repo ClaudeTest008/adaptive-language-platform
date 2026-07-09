@@ -1,11 +1,12 @@
 # Project Status
 
-**Phase:** 0 — Repository Foundation
-**Last updated:** 2026-07-07
+**Phase:** Epic 2 — System Architecture (next)
+**Last updated:** 2026-07-08
 
 ## Completed
 
-- Milestone 0.1 — GitHub repository created with full directory structure and foundation documents.
+- Epic 0 — Repository foundation: structure, docs, GitHub repo, CI directories.
+- Epic 1 — Product definition: business requirements, product requirements (FR/NFR), personas and journeys, learning philosophy, success metrics, risk assessment (`docs/product/`). CONTRIBUTING.md added.
 
 ## In Progress
 
@@ -13,9 +14,9 @@
 
 ## Next
 
-- Define Phase 1 milestones in `ROADMAP.md`.
+- Epic 2 — System architecture: `ARCHITECTURE.md` full version, `docs/architecture/`, `docs/security/`, ADRs in `docs/decisions/`.
 
 ## Known Limitations
 
-- All directories except root are empty placeholders (`.gitkeep`).
-- `ARCHITECTURE.md` and `docs/` content are stubs pending Phase 1 decisions.
+- No application code yet (starts Epic 4/5).
+- `app/`, `backend/`, `cloud_functions/`, `tests/` are placeholders.

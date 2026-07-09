@@ -7,4 +7,5 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- 2026-07-08: Epic 1 — product definition: business requirements, product requirements (FR/NFR), personas and user journeys, learning philosophy, success metrics, risk assessment (`docs/product/`); `CONTRIBUTING.md`; roadmap expanded to Epics 0–12.
 - 2026-07-07: Phase 0, Milestone 0.1 — repository created with full directory structure and foundation documents.

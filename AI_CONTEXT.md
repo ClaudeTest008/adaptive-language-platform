@@ -23,9 +23,10 @@ Adaptive exam preparation platform:
 
 ## Current State
 
-- Phase: 0 — Repository Foundation
-- Milestone 0.1 (repository creation and structure) complete.
+- Epics 0 (repository foundation) and 1 (product definition) complete.
+- Next: Epic 2 — system architecture.
 - No application code yet.
+- V1 scope: driver's license exam only; Flutter + Firebase; Clean Architecture. Full requirements in `docs/product/`.
 
 ## Key Conventions
 

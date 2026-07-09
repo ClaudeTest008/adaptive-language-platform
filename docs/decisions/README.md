@@ -8,3 +8,4 @@ One file per decision: `NNNN-title.md`. Statuses: Proposed, Accepted, Superseded
 | [0002](0002-riverpod-state-di-gorouter.md) | Riverpod for state + DI, go_router | Accepted |
 | [0003](0003-admin-panel-same-codebase.md) | Admin panel in same Flutter codebase | Accepted |
 | [0004](0004-offline-firestore-persistence.md) | Offline via Firestore persistence only | Accepted |
+| [0005](0005-denormalized-questions-client-scoring.md) | Denormalized questions, client-side scoring | Accepted |

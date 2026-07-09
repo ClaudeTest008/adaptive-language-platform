@@ -7,8 +7,8 @@ Work executes in this exact order. One epic at a time. Do not repeat completed e
 | 0 | Repository Foundation | ✅ Complete |
 | 1 | Product Definition | ✅ Complete |
 | 2 | System Architecture | ✅ Complete |
-| 3 | Database Design | 🔄 Next |
-| 4 | Backend Foundation | Pending |
+| 3 | Database Design | ✅ Complete |
+| 4 | Backend Foundation | 🔄 Next |
 | 5 | Flutter Foundation | Pending |
 | 6 | Question Engine | Pending |
 | 7 | Practice Mode | Pending |
@@ -36,9 +36,9 @@ Delivered in `docs/product/`:
 
 Delivered: full `ARCHITECTURE.md`; `docs/architecture/` (application, Flutter, Firebase, offline/errors/logging); `docs/security/01-security-architecture.md`; ADRs 0001–0004 in `docs/decisions/`.
 
-## Epic 3 — Database Design
+## Epic 3 — Database Design ✅
 
-Firestore schema, relationships, indexes, security rules, validation, migration strategy. Deliverables in `docs/database/`.
+Delivered: `docs/database/` (schema + access patterns, security rules and validation strategy, indexes and migration strategy); deployable `backend/firestore.rules`, `backend/storage.rules`, `backend/firestore.indexes.json`; ADR-0005 (denormalized questions, client-side scoring).
 
 ## Epic 4 — Backend Foundation
 

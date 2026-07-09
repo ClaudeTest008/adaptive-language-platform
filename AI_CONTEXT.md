@@ -23,10 +23,10 @@ Adaptive exam preparation platform:
 
 ## Current State
 
-- Epics 0–2 complete (foundation, product definition, system architecture).
-- Next: Epic 3 — database design (`docs/database/`).
+- Epics 0–3 complete (foundation, product definition, system architecture, database design).
+- Next: Epic 4 — backend foundation. First step requires a human: `firebase login` + project creation, then deploy `backend/firestore.rules` / `storage.rules` / `firestore.indexes.json`, scaffold Cloud Functions (`setUserRole`, `onUserCreate`, `deleteUserData`, `aggregateQuestionStats`), write rules emulator tests.
 - No application code yet.
-- V1 scope: driver's license exam only; Flutter + Firebase; Clean Architecture (feature-first), Riverpod (state + DI), go_router. Admin panel = role-gated routes in same app. Requirements in `docs/product/`; architecture in `docs/architecture/`; ADRs 0001–0004 in `docs/decisions/`.
+- V1 scope: driver's license exam only; Flutter + Firebase; Clean Architecture (feature-first), Riverpod (state + DI), go_router. Admin panel = role-gated routes in same app. Requirements in `docs/product/`; architecture in `docs/architecture/`; schema in `docs/database/`; ADRs 0001–0005 in `docs/decisions/`.
 
 ## Key Conventions
 

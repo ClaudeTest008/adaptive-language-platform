@@ -1,0 +1,155 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- helpers ----------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+    function isPublished() {
+      return resource.data.published == true;
+    }
+    function localizedString(value) {
+      // map of language code -> non-empty string, must contain 'en' in V1
+      return value is map && value.keys().hasAll(['en']) && value['en'] is string && value['en'].size() > 0;
+    }
+
+    // ---------- content: categories ----------
+    match /categories/{categoryId} {
+      allow read: if isAdmin() || (isSignedIn() && isPublished());
+      allow write: if isAdmin()
+        && localizedString(request.resource.data.name)
+        && request.resource.data.published is bool;
+    }
+
+    // ---------- content: countries ----------
+    match /countries/{countryId} {
+      allow read: if isAdmin() || (isSignedIn() && isPublished());
+      allow write: if isAdmin()
+        && localizedString(request.resource.data.name)
+        && request.resource.data.published is bool;
+    }
+
+    // ---------- content: exams and topics ----------
+    match /exams/{examId} {
+      allow read: if isAdmin() || (isSignedIn() && isPublished());
+      allow write: if isAdmin()
+        && localizedString(request.resource.data.name)
+        && request.resource.data.categoryId is string
+        && request.resource.data.countryId is string
+        && request.resource.data.questionCount is int
+        && request.resource.data.questionCount > 0
+        && request.resource.data.passThreshold is int
+        && request.resource.data.passThreshold > 0
+        && request.resource.data.passThreshold <= request.resource.data.questionCount
+        && request.resource.data.timeLimitMinutes is int
+        && request.resource.data.timeLimitMinutes > 0
+        && request.resource.data.published is bool;
+
+      match /topics/{topicId} {
+        allow read: if isSignedIn();
+        allow write: if isAdmin()
+          && localizedString(request.resource.data.name)
+          && request.resource.data.order is int;
+      }
+    }
+
+    // ---------- content: questions ----------
+    match /questions/{questionId} {
+      allow read: if isAdmin() || (isSignedIn() && isPublished());
+      allow write: if isAdmin()
+        && request.resource.data.examId is string
+        && request.resource.data.topicId is string
+        && localizedString(request.resource.data.text)
+        && localizedString(request.resource.data.explanation)
+        && request.resource.data.answers is list
+        && request.resource.data.answers.size() >= 2
+        && request.resource.data.answers.size() <= 6
+        && request.resource.data.correctIndex is int
+        && request.resource.data.correctIndex >= 0
+        && request.resource.data.correctIndex < request.resource.data.answers.size()
+        && request.resource.data.published is bool;
+    }
+
+    // ---------- aggregated question stats (function-written) ----------
+    match /questionStats/{questionId} {
+      allow read: if isAdmin();
+      allow write: if false; // Admin SDK only
+    }
+
+    // ---------- migration progress (scripts, Admin SDK) ----------
+    match /migrations/{migrationId} {
+      allow read, write: if false;
+    }
+
+    // ---------- user data ----------
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      // create handled by onUserCreate function (Admin SDK); owner may update
+      // profile fields but never the 'disabled' flag; admin may toggle 'disabled'.
+      allow create: if false;
+      allow update: if (
+          isOwner(uid)
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['disabled', 'createdAt'])
+          && request.resource.data.displayName is string
+          && request.resource.data.displayName.size() <= 100
+        ) || (
+          isAdmin()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['disabled'])
+        );
+      allow delete: if false; // via deleteUserData function only
+
+      match /bookmarks/{questionId} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.examId is string;
+        allow update: if false;
+      }
+
+      match /incorrect/{questionId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.examId is string
+          && request.resource.data.topicId is string
+          && request.resource.data.timesWrong is int
+          && request.resource.data.timesWrong > 0;
+      }
+
+      match /attempts/{attemptId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.type in ['practice', 'mock', 'review']
+          && request.resource.data.examId is string
+          && request.resource.data.score is int
+          && request.resource.data.total is int
+          && request.resource.data.score >= 0
+          && request.resource.data.score <= request.resource.data.total
+          && request.resource.data.answers is list;
+        allow update, delete: if false; // history is immutable
+      }
+
+      match /topicStats/{topicId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.examId is string
+          && request.resource.data.answered is int
+          && request.resource.data.correct is int
+          && request.resource.data.correct >= 0
+          && request.resource.data.correct <= request.resource.data.answered;
+        allow delete: if false;
+      }
+    }
+
+    // ---------- default deny ----------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

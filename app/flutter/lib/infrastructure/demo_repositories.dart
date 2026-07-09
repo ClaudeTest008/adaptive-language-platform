@@ -94,6 +94,11 @@ class DemoContentRepository implements ContentRepository, AdminRepository {
     for (final q in demoQuestions) q.id: q,
   };
 
+  /// Immutable prior versions per question, oldest first. Mirrors the
+  /// Firestore `questionVersions/{id}/versions` subcollection.
+  final Map<String, List<Question>> _versions = {};
+  final List<ImportJob> _importJobs = [];
+
   // ---- ContentRepository (learner) ----
 
   @override
@@ -121,6 +126,9 @@ class DemoContentRepository implements ContentRepository, AdminRepository {
   @override
   Future<void> upsertQuestion(Question question) async {
     final existing = _questions[question.id];
+    if (existing != null) {
+      _versions.putIfAbsent(question.id, () => []).add(existing);
+    }
     _questions[question.id] = question.copyWith(
       version: existing == null ? question.version : existing.version + 1,
       updatedAt: DateTime.now(),
@@ -128,13 +136,56 @@ class DemoContentRepository implements ContentRepository, AdminRepository {
   }
 
   @override
+  Future<List<Question>> getVersionHistory(String questionId) async =>
+      List.of((_versions[questionId] ?? const []).reversed);
+
+  @override
+  Future<void> rollbackQuestion(String questionId, int version) async {
+    final target = (_versions[questionId] ?? const [])
+        .where((q) => q.version == version)
+        .firstOrNull;
+    if (target == null) {
+      throw StateError('Version $version not found for $questionId.');
+    }
+    // Restore as a NEW version — history is never rewritten.
+    await upsertQuestion(target);
+  }
+
+  @override
+  Future<void> bulkSetStatus(
+    List<String> questionIds,
+    ContentStatus status,
+  ) async {
+    for (final id in questionIds) {
+      final q = _questions[id];
+      if (q != null && q.status != status) {
+        await upsertQuestion(q.copyWith(status: status));
+      }
+    }
+  }
+
+  @override
+  Future<void> bulkAddTag(List<String> questionIds, String tag) async {
+    for (final id in questionIds) {
+      final q = _questions[id];
+      if (q != null && !q.tags.contains(tag)) {
+        await upsertQuestion(q.copyWith(tags: [...q.tags, tag]));
+      }
+    }
+  }
+
+  @override
+  Future<void> recordImportJob(ImportJob job) async => _importJobs.add(job);
+
+  @override
+  Future<List<ImportJob>> getImportJobs() async =>
+      List.of(_importJobs.reversed);
+
+  @override
   Future<void> archiveQuestion(String questionId) async {
     final q = _questions[questionId];
     if (q != null) {
-      _questions[questionId] = q.copyWith(
-        status: ContentStatus.archived,
-        updatedAt: DateTime.now(),
-      );
+      await upsertQuestion(q.copyWith(status: ContentStatus.archived));
     }
   }
 

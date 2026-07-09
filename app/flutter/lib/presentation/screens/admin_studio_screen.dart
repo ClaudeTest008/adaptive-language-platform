@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../application/import_pipeline.dart';
 import '../../domain/models.dart';
+import '../../domain/repositories.dart';
 import '../providers.dart';
 
 /// Content Studio V1 slice (ADR-0007): overview + exam settings, question
@@ -53,11 +54,41 @@ class _OverviewTab extends ConsumerWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            _CountChip('Published', byStatus(ContentStatus.published)),
-            _CountChip('Drafts', byStatus(ContentStatus.draft)),
-            _CountChip('Archived', byStatus(ContentStatus.archived)),
+            for (final s in ContentStatus.values)
+              _CountChip(s.name, byStatus(s)),
             _CountChip('Topics', topics.length),
           ],
+        ),
+        const Divider(height: 32),
+        Text(
+          'Topic coverage (published)',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        for (final t in topics)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Text(
+              '${t.name}: '
+              '${all.where((q) => q.topicId == t.id && q.status == ContentStatus.published).length} questions',
+            ),
+          ),
+        Builder(
+          builder: (context) {
+            final authors = <String, int>{};
+            for (final q in all) {
+              if (q.author != null) {
+                authors[q.author!] = (authors[q.author!] ?? 0) + 1;
+              }
+            }
+            if (authors.isEmpty) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Authors: ${authors.entries.map((e) => "${e.key} (${e.value})").join(", ")}',
+              ),
+            );
+          },
         ),
         const Divider(height: 32),
         Text('Exam settings', style: Theme.of(context).textTheme.titleMedium),
@@ -287,6 +318,52 @@ class _QuestionsTab extends ConsumerStatefulWidget {
 class _QuestionsTabState extends ConsumerState<_QuestionsTab> {
   String _query = '';
   ContentStatus? _statusFilter;
+  final _selected = <String>{};
+
+  Future<void> _bulk(
+    Future<void> Function(AdminRepository repo, List<String> ids) action,
+    String doneMessage,
+  ) async {
+    final ids = _selected.toList();
+    await action(ref.read(adminRepositoryProvider), ids);
+    ref.read(contentVersionProvider.notifier).state++;
+    setState(_selected.clear);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$doneMessage (${ids.length} questions).')),
+      );
+    }
+  }
+
+  Future<void> _bulkTag() async {
+    final controller = TextEditingController();
+    final tag = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add tag to selected questions'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Tag',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Add tag'),
+          ),
+        ],
+      ),
+    );
+    if (tag == null || tag.isEmpty) return;
+    await _bulk((repo, ids) => repo.bulkAddTag(ids, tag), 'Tagged "$tag"');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -337,6 +414,38 @@ class _QuestionsTabState extends ConsumerState<_QuestionsTab> {
             ],
           ),
         ),
+        if (_selected.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                Text('${_selected.length} selected'),
+                const SizedBox(width: 12),
+                TextButton(
+                  onPressed: () => _bulk(
+                    (repo, ids) =>
+                        repo.bulkSetStatus(ids, ContentStatus.published),
+                    'Published',
+                  ),
+                  child: const Text('Publish'),
+                ),
+                TextButton(
+                  onPressed: () => _bulk(
+                    (repo, ids) =>
+                        repo.bulkSetStatus(ids, ContentStatus.archived),
+                    'Archived',
+                  ),
+                  child: const Text('Archive'),
+                ),
+                TextButton(onPressed: _bulkTag, child: const Text('Tag…')),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => setState(_selected.clear),
+                  child: const Text('Clear'),
+                ),
+              ],
+            ),
+          ),
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -346,6 +455,14 @@ class _QuestionsTabState extends ConsumerState<_QuestionsTab> {
               return Card(
                 margin: const EdgeInsets.only(bottom: 6),
                 child: ListTile(
+                  leading: Checkbox(
+                    value: _selected.contains(question.id),
+                    onChanged: (v) => setState(() {
+                      v == true
+                          ? _selected.add(question.id)
+                          : _selected.remove(question.id);
+                    }),
+                  ),
                   title: Text(
                     question.text,
                     maxLines: 2,
@@ -360,6 +477,13 @@ class _QuestionsTabState extends ConsumerState<_QuestionsTab> {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      if (question.version > 1)
+                        IconButton(
+                          icon: const Icon(Icons.history),
+                          tooltip: 'Version history',
+                          onPressed: () =>
+                              _showVersionHistory(context, ref, question),
+                        ),
                       IconButton(
                         icon: const Icon(Icons.edit),
                         tooltip: 'Edit',
@@ -395,6 +519,81 @@ class _QuestionsTabState extends ConsumerState<_QuestionsTab> {
       ],
     );
   }
+}
+
+Future<void> _showVersionHistory(
+  BuildContext context,
+  WidgetRef ref,
+  Question question,
+) async {
+  final history = await ref
+      .read(adminRepositoryProvider)
+      .getVersionHistory(question.id);
+  if (!context.mounted) return;
+  await showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('Version history — v${question.version} current'),
+      content: SizedBox(
+        width: 520,
+        child: history.isEmpty
+            ? const Text('No previous versions.')
+            : ListView.builder(
+                shrinkWrap: true,
+                itemCount: history.length,
+                itemBuilder: (context, i) {
+                  final v = history[i];
+                  return ListTile(
+                    dense: true,
+                    leading: CircleAvatar(
+                      radius: 14,
+                      child: Text(
+                        'v${v.version}',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                    ),
+                    title: Text(
+                      v.text,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      '${v.status.name}'
+                      '${v.author != null ? " · ${v.author}" : ""}'
+                      '${v.updatedAt != null ? " · ${v.updatedAt!.toString().substring(0, 16)}" : ""}',
+                    ),
+                    trailing: TextButton(
+                      child: const Text('Rollback'),
+                      onPressed: () async {
+                        await ref
+                            .read(adminRepositoryProvider)
+                            .rollbackQuestion(question.id, v.version);
+                        ref.read(contentVersionProvider.notifier).state++;
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Rolled back to v${v.version} content '
+                                '(as a new version).',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  );
+                },
+              ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
+    ),
+  );
 }
 
 /// Visual question editor (dialog). Non-technical: plain form fields.
@@ -663,13 +862,33 @@ class _ImportTabState extends ConsumerState<_ImportTab> {
     final report = _report;
     if (report == null || !report.canImport) return;
     setState(() => _importing = true);
+    final stopwatch = Stopwatch()..start();
     final questions = publish
         ? [
             for (final q in report.questions)
               q.copyWith(status: ContentStatus.published),
           ]
         : report.questions;
-    await ref.read(adminRepositoryProvider).importQuestions(questions);
+    final repo = ref.read(adminRepositoryProvider);
+    await repo.importQuestions(questions);
+    stopwatch.stop();
+    final rejectedRows = {
+      for (final issue in report.errors)
+        if (issue.row > 0) issue.row,
+    }.length;
+    await repo.recordImportJob(
+      ImportJob(
+        id: 'job-${report.hashCode.toRadixString(16)}-${questions.length}',
+        startedAt: DateTime.now(),
+        format: _format.name,
+        rowsTotal: questions.length + rejectedRows,
+        imported: questions.length,
+        rejected: rejectedRows,
+        duplicates: report.duplicateCount,
+        durationMs: stopwatch.elapsedMilliseconds,
+        author: ref.read(authStateProvider).value?.email,
+      ),
+    );
     ref.read(contentVersionProvider.notifier).state++;
     setState(() {
       _importing = false;
@@ -823,6 +1042,42 @@ class _ImportTabState extends ConsumerState<_ImportTab> {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
         ],
+        const _ImportJobHistory(),
+      ],
+    );
+  }
+}
+
+class _ImportJobHistory extends ConsumerWidget {
+  const _ImportJobHistory();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final jobs = ref.watch(importJobsProvider).value ?? const <ImportJob>[];
+    if (jobs.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(height: 32),
+        Text('Import history', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        for (final job in jobs.take(10))
+          Card(
+            margin: const EdgeInsets.only(bottom: 4),
+            child: ListTile(
+              dense: true,
+              leading: const Icon(Icons.receipt_long),
+              title: Text(
+                '${job.format.toUpperCase()} — ${job.imported} imported, '
+                '${job.rejected} rejected, ${job.duplicates} duplicates',
+              ),
+              subtitle: Text(
+                '${job.startedAt.toString().substring(0, 16)} · '
+                '${job.durationMs} ms'
+                '${job.author != null ? " · ${job.author}" : ""}',
+              ),
+            ),
+          ),
       ],
     );
   }

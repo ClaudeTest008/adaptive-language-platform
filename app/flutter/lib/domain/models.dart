@@ -58,7 +58,10 @@ class Topic {
 
 enum Difficulty { easy, medium, hard }
 
-enum ContentStatus { draft, published, archived }
+/// Content workflow: draft → review → approved → published → archived.
+/// Learners only ever see published. Additive extension of the original
+/// three states (ADR-0009); persisted by name, so ordering is free.
+enum ContentStatus { draft, review, approved, published, archived }
 
 class Question {
   const Question({
@@ -132,6 +135,31 @@ class Question {
     author: author ?? this.author,
     updatedAt: updatedAt ?? this.updatedAt,
   );
+}
+
+/// One bulk-import run — Content Studio import analytics (ADR-0009).
+class ImportJob {
+  const ImportJob({
+    required this.id,
+    required this.startedAt,
+    required this.format,
+    required this.rowsTotal,
+    required this.imported,
+    required this.rejected,
+    required this.duplicates,
+    required this.durationMs,
+    this.author,
+  });
+
+  final String id;
+  final DateTime startedAt;
+  final String format; // csv | json | pack
+  final int rowsTotal;
+  final int imported;
+  final int rejected;
+  final int duplicates;
+  final int durationMs;
+  final String? author;
 }
 
 enum AttemptType { practice, mock, review }

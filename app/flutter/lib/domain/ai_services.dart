@@ -66,6 +66,57 @@ abstract class AiDuplicateDetector implements AiService {
   );
 }
 
+abstract class AiOcr implements AiService {
+  /// Extracts text from image bytes (scanned PDFs, photographed handbooks);
+  /// output feeds [AiDocumentExtractor] and then the import pipeline.
+  Future<String> recognizeText(List<int> imageBytes);
+}
+
+/// Structured review of one question's quality.
+class AiContentReview {
+  const AiContentReview({
+    required this.qualityScore,
+    required this.issues,
+    required this.suggestions,
+  });
+
+  /// 0..1 — admin analytics surface this next to accuracy metrics.
+  final double qualityScore;
+  final List<String> issues;
+  final List<String> suggestions;
+}
+
+abstract class AiContentReviewer implements AiService {
+  Future<AiContentReview> review(Question question);
+}
+
+/// Suggested metadata for a question; every field optional — admins
+/// accept or discard per field in Content Studio before anything persists.
+class AiSuggestedMetadata {
+  const AiSuggestedMetadata({
+    this.topicId,
+    this.subtopic,
+    this.learningObjective,
+    this.difficulty,
+    this.tags = const [],
+  });
+
+  final String? topicId;
+  final String? subtopic;
+  final String? learningObjective;
+  final Difficulty? difficulty;
+  final List<String> tags;
+}
+
+abstract class AiMetadataGenerator implements AiService {
+  /// Topic classification, learning-objective detection, difficulty
+  /// estimation and tagging in one pass over the question content.
+  Future<AiSuggestedMetadata> suggestMetadata(
+    Question question,
+    List<Topic> topics,
+  );
+}
+
 /// Registry resolved via DI; every capability is optional.
 class AiServices {
   const AiServices({
@@ -77,6 +128,9 @@ class AiServices {
     this.translator,
     this.difficultyEstimator,
     this.duplicateDetector,
+    this.ocr,
+    this.contentReviewer,
+    this.metadataGenerator,
   });
 
   /// No providers configured — the V1 state.
@@ -90,4 +144,7 @@ class AiServices {
   final AiTranslator? translator;
   final AiDifficultyEstimator? difficultyEstimator;
   final AiDuplicateDetector? duplicateDetector;
+  final AiOcr? ocr;
+  final AiContentReviewer? contentReviewer;
+  final AiMetadataGenerator? metadataGenerator;
 }

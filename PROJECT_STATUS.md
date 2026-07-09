@@ -1,6 +1,6 @@
 # Project Status
 
-**Phase:** Epic 13 (Adaptive Learning Engine) complete; Epic 14 (Firebase) blocked on human setup
+**Phase:** Epic 15 (Content Studio V2) core complete; Epic 14 (Firebase) blocked on human setup, swap fully documented
 **Last updated:** 2026-07-09
 
 ## Completed
@@ -15,6 +15,8 @@
 - Epic 10 V1 slice — Content Studio at `/admin` (ADR-0007): overview/stats, exam settings editor, question management (search, status filter, editor, archive, version bump), bulk import pipeline (CSV/JSON with validation report, duplicate detection, topic mapping, approval step), content-pack export/import. Question model extended (difficulty, tags, status, version, author, subtopic, learning objective, references). Verified: analyze clean, 21 tests green, full import flow driven in browser (validation errors block, clean rows import, learner sees published content).
 
 - Epic 13 — Adaptive learning engine (ADR-0008): pure-Dart module `lib/adaptive/` (learner model, knowledge graph with lapse propagation, replaceable spaced-repetition scheduler, confidence model, adaptive selector, readiness/pass probability, study plans, learning DNA); AI service interfaces (`lib/domain/ai_services.dart`, no providers yet); wired into practice/mock flows; dashboard readiness card + adaptive session entry. Verified: analyze clean, 41 tests green, engine driven live in browser (readiness 0%→36%, plan reprioritized to weak topics after wrong answers). Schema extension: `docs/database/04-adaptive-schema.md`.
+
+- Epic 15 core — Content Studio V2 (ADR-0009): 5-state workflow, append-only versioning + rollback, bulk publish/archive/tag, import job history + duplicate analytics, content analytics, expanded AI interfaces (OCR/review/metadata), LearnerModel codec, Firestore swap guide. Verified: analyze clean, 52 tests green, versioning/rollback/bulk/import-history driven in browser.
 
 ## In Progress
 

@@ -70,6 +70,12 @@ final allQuestionsProvider = FutureProvider((ref) {
   return ref.watch(adminRepositoryProvider).getAllQuestions();
 });
 
+/// Content Studio: import job history (newest first).
+final importJobsProvider = FutureProvider((ref) {
+  ref.watch(contentVersionProvider);
+  return ref.watch(adminRepositoryProvider).getImportJobs();
+});
+
 /// Bumped after any study write so dashboard/bookmark/review views refresh.
 final studyVersionProvider = StateProvider<int>((ref) => 0);
 

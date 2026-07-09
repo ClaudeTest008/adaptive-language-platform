@@ -18,7 +18,8 @@ Work executes in this exact order. One epic at a time. Do not repeat completed e
 | 11 | Testing | 🟡 Partial (41 tests incl. adaptive engine; widget/integration pending) |
 | 12 | Deployment | 🟡 Partial (CI workflow added; builds/deploy pending Firebase) |
 | 13 | Adaptive Learning Engine | ✅ V1 complete (ADR-0008) |
-| 14 | Firebase Production Integration | ⏳ Blocked on human Firebase setup (runbook: docs/deployment/01) |
+| 14 | Firebase Production Integration | ⏳ Blocked on human setup; all contracts + swap guide ready (docs/deployment/01+02) |
+| 15 | Content Studio V2 | 🟡 Core complete (ADR-0009); Excel/images/scheduling with Epic 14 |
 
 ## Epic 0 — Repository Foundation ✅
 
@@ -91,6 +92,12 @@ Deferred: learner model Firestore persistence (with Epic 14), per-question exam 
 ## Epic 14 — Firebase Production Integration ⏳
 
 Blocked on human steps (`docs/deployment/01-firebase-setup.md`): create projects, deploy rules/indexes/functions. Then: firebase packages + `flutterfire configure`, Firestore implementations of `AuthRepository`/`ContentRepository`/`StudyRepository`/`AdminRepository`/`LearnerModelRepository` behind unchanged interfaces (swap = provider bindings in `lib/presentation/providers.dart`), Analytics/Crashlytics wiring, App Check, Remote Config, rules emulator tests.
+
+## Epic 15 — Content Studio V2 🟡 (core delivered)
+
+Delivered (ADR-0009): 5-state workflow (draft/review/approved/published/archived, learners see published only), append-only question version history with rollback-as-new-version, bulk operations (publish/archive/tag) through the versioned path, import job history + duplicate analytics, topic-coverage and author analytics, expanded AI interfaces (OCR, content review, metadata generation), LearnerModel JSON codec (Firestore contract, round-trip tested), Firestore swap guide (`docs/deployment/02-firestore-swap-guide.md`).
+
+Deferred to Epic 14 implementation or later (reasons in ADR-0009): Excel import, file upload, image pipeline, scheduled publishing, role-separated review workflow, question usage/accuracy analytics, marketplace/white-label packs.
 
 ## Version 2+ (not V1 — architecture-ready only)
 

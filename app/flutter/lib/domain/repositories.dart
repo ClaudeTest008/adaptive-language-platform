@@ -41,6 +41,22 @@ abstract class AdminRepository {
   Future<void> upsertTopic(Topic topic);
   Future<void> updateExam(Exam exam);
 
+  /// Every prior version of a question, newest first (current excluded).
+  /// Versions are immutable — questions are never overwritten (ADR-0009).
+  Future<List<Question>> getVersionHistory(String questionId);
+
+  /// Restores [version]'s content as a NEW version (history preserved).
+  Future<void> rollbackQuestion(String questionId, int version);
+
+  // Bulk operations (Content Studio V2). Each item goes through the same
+  // versioned upsert as a single edit.
+  Future<void> bulkSetStatus(List<String> questionIds, ContentStatus status);
+  Future<void> bulkAddTag(List<String> questionIds, String tag);
+
+  // Import analytics.
+  Future<void> recordImportJob(ImportJob job);
+  Future<List<ImportJob>> getImportJobs();
+
   /// Validated batch import (pipeline output only).
   Future<void> importQuestions(List<Question> questions);
 

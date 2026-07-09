@@ -14,12 +14,16 @@ class ImportIssue {
     required this.row,
     required this.message,
     this.blocking = true,
+    this.isDuplicate = false,
   });
 
   /// 1-based data row (0 = file-level issue).
   final int row;
   final String message;
   final bool blocking;
+
+  /// Duplicate-detection issue (import analytics counts these).
+  final bool isDuplicate;
 
   @override
   String toString() => '${blocking ? "ERROR" : "WARN "} row $row: $message';
@@ -34,6 +38,7 @@ class ImportReport {
 
   List<ImportIssue> get errors => issues.where((i) => i.blocking).toList();
   List<ImportIssue> get warnings => issues.where((i) => !i.blocking).toList();
+  int get duplicateCount => issues.where((i) => i.isDuplicate).length;
   bool get canImport => errors.isEmpty && questions.isNotEmpty;
 }
 
@@ -94,6 +99,8 @@ ImportReport runImportPipeline({
     rowNum++;
     final rowIssues = <ImportIssue>[];
     void err(String m) => rowIssues.add(ImportIssue(row: rowNum, message: m));
+    void dup(String m) =>
+        rowIssues.add(ImportIssue(row: rowNum, message: m, isDuplicate: true));
     void warn(String m) =>
         rowIssues.add(ImportIssue(row: rowNum, message: m, blocking: false));
 
@@ -154,9 +161,9 @@ ImportReport runImportPipeline({
     if (text.isNotEmpty) {
       final n = norm(text);
       if (existingTexts.contains(n)) {
-        err('Duplicate of an existing question.');
+        dup('Duplicate of an existing question.');
       } else if (!seenInBatch.add(n)) {
-        err('Duplicate within this import.');
+        dup('Duplicate within this import.');
       }
     }
 

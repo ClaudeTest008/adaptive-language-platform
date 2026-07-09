@@ -12,3 +12,4 @@ One file per decision: `NNNN-title.md`. Statuses: Proposed, Accepted, Superseded
 | [0006](0006-demo-mode-first.md) | App ships against in-memory demo repositories first | Accepted |
 | [0007](0007-content-studio-v1-slice.md) | Content Studio V1 slice, client-side import pipeline | Accepted |
 | [0008](0008-adaptive-learning-engine.md) | Adaptive learning engine as pure-Dart module; AI interfaces; Firebase swap deferred | Accepted |
+| [0009](0009-content-studio-v2-versioning.md) | Content Studio V2: 5-state workflow, append-only versioning, bulk ops, import analytics | Accepted |

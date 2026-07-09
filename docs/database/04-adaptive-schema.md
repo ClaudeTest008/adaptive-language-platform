@@ -24,6 +24,13 @@ Import analytics: `{startedAt, format, rowsTotal, imported, rejected, duplicateC
 ### `/contentPacks/{packId}` (admin-written)
 Marketplace/licensing groundwork: pack metadata + Storage path of the pack JSON.
 
+### `/auditLogs/{logId}` (Admin SDK-written)
+Content Studio audit trail: `{action, questionId?, actorUid, at, detail}`. Written server-side (function wrapper) so clients cannot forge entries; V2 slice records equivalent data in question versions + import jobs.
+
+## Content Workflow Delta (ADR-0009)
+
+`ContentStatus` is now `draft | review | approved | published | archived`. **Questions rule change:** learner read gate becomes `resource.data.status == 'published'` (replaces the `published` bool from the Epic 3 draft rules); admin writes validate `status in ['draft','review','approved','published','archived']`. Version snapshots: `questionVersions/{questionId}/versions/{version}` written in the same batch as every question upsert; version documents are immutable (`allow update, delete: if false`).
+
 ## Rules Deltas (strategy)
 
 - `learnerModel/**`: owner read/write, shape-validated (numeric ranges, no field creep); admins no access (learner privacy).

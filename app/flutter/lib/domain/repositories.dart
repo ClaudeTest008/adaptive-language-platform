@@ -21,7 +21,32 @@ abstract class AuthRepository {
 abstract class ContentRepository {
   Future<Exam> getExam();
   Future<List<Topic>> getTopics();
+
+  /// Published questions only (learner-facing).
   Future<List<Question>> getQuestions({String? topicId});
+}
+
+/// Content Studio operations (ADR-0007). Production implementation is
+/// admin-gated by custom claims + Firestore rules.
+abstract class AdminRepository {
+  /// All questions regardless of status.
+  Future<List<Question>> getAllQuestions();
+
+  /// Insert or update. Updates bump [Question.version] and stamp
+  /// [Question.updatedAt]; published content is never deleted, only
+  /// archived via status.
+  Future<void> upsertQuestion(Question question);
+
+  Future<void> archiveQuestion(String questionId);
+  Future<void> upsertTopic(Topic topic);
+  Future<void> updateExam(Exam exam);
+
+  /// Validated batch import (pipeline output only).
+  Future<void> importQuestions(List<Question> questions);
+
+  /// Portable content pack (exam + topics + questions) as JSON.
+  Future<String> exportContentPack();
+  Future<int> importContentPack(String json);
 }
 
 abstract class StudyRepository {

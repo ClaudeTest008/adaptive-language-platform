@@ -19,8 +19,16 @@ import '../infrastructure/demo_repositories.dart';
 final authRepositoryProvider = Provider<AuthRepository>(
   (ref) => DemoAuthRepository(),
 );
-final contentRepositoryProvider = Provider<ContentRepository>(
+
+/// Single store serves both learner content and Content Studio admin ops.
+final _contentStoreProvider = Provider<DemoContentRepository>(
   (ref) => DemoContentRepository(),
+);
+final contentRepositoryProvider = Provider<ContentRepository>(
+  (ref) => ref.watch(_contentStoreProvider),
+);
+final adminRepositoryProvider = Provider<AdminRepository>(
+  (ref) => ref.watch(_contentStoreProvider),
 );
 final studyRepositoryProvider = Provider<StudyRepository>(
   (ref) => DemoStudyRepository(),
@@ -34,15 +42,27 @@ final authStateProvider = StreamProvider<UserProfile?>(
 
 final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.system);
 
-final examProvider = FutureProvider(
-  (ref) => ref.watch(contentRepositoryProvider).getExam(),
-);
-final topicsProvider = FutureProvider(
-  (ref) => ref.watch(contentRepositoryProvider).getTopics(),
-);
-final questionsProvider = FutureProvider(
-  (ref) => ref.watch(contentRepositoryProvider).getQuestions(),
-);
+/// Bumped after any Content Studio write so learner + admin views refresh.
+final contentVersionProvider = StateProvider<int>((ref) => 0);
+
+final examProvider = FutureProvider((ref) {
+  ref.watch(contentVersionProvider);
+  return ref.watch(contentRepositoryProvider).getExam();
+});
+final topicsProvider = FutureProvider((ref) {
+  ref.watch(contentVersionProvider);
+  return ref.watch(contentRepositoryProvider).getTopics();
+});
+final questionsProvider = FutureProvider((ref) {
+  ref.watch(contentVersionProvider);
+  return ref.watch(contentRepositoryProvider).getQuestions();
+});
+
+/// Content Studio: all questions regardless of status.
+final allQuestionsProvider = FutureProvider((ref) {
+  ref.watch(contentVersionProvider);
+  return ref.watch(adminRepositoryProvider).getAllQuestions();
+});
 
 /// Bumped after any study write so dashboard/bookmark/review views refresh.
 final studyVersionProvider = StateProvider<int>((ref) => 0);

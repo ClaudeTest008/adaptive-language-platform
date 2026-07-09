@@ -26,7 +26,8 @@ Adaptive exam preparation platform:
 - Epics 0–3 complete; Epic 4 code complete (deploy pending human steps in `docs/deployment/01-firebase-setup.md`); Epics 5–9 complete in demo mode (ADR-0006).
 - App: `app/flutter/` — Flutter 3.44.5 (SDK at `C:\Users\Admin\flutter`), Riverpod 3 (note: `StateProvider` needs `flutter_riverpod/legacy.dart` import; `AsyncValue.valueOrNull` is now `.value`), go_router 16. Repository interfaces in `lib/domain/repositories.dart`; demo implementations in `lib/infrastructure/`; swap point = three providers in `lib/presentation/providers.dart`.
 - Backend code: `cloud_functions/src/index.ts` (4 functions), rules/indexes in `backend/`, deploy config `firebase.json`. CI: `.github/workflows/ci.yml`.
-- Next: Epic 10 admin panel; then Firestore repository implementations after Firebase deploy.
+- Epic 10 V1 slice done: Content Studio at `/admin` (ADR-0007) — question CRUD + import pipeline (`lib/application/import_pipeline.dart`), content packs (`lib/infrastructure/content_pack.dart`), mutable content store serves ContentRepository + AdminRepository. Full spec: `docs/product/07-content-studio-requirements.md`.
+- Next: Firebase deploy (human runbook), then Firestore repositories; Content Studio spec remainder per docs/product/07.
 - V1 scope: driver's license exam only; Flutter + Firebase; Clean Architecture (feature-first), Riverpod (state + DI), go_router. Admin panel = role-gated routes in same app. Requirements in `docs/product/`; architecture in `docs/architecture/`; schema in `docs/database/`; ADRs 0001–0005 in `docs/decisions/`.
 
 ## Key Conventions

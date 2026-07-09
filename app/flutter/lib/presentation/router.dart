@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'providers.dart';
+import 'screens/admin_studio_screen.dart';
 import 'screens/bookmarks_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/login_screen.dart';
@@ -16,10 +17,16 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     redirect: (context, state) {
-      final signedIn = authState.value != null;
+      final user = authState.value;
+      final signedIn = user != null;
       final onLogin = state.matchedLocation == '/login';
       if (!signedIn && !onLogin) return '/login';
       if (signedIn && onLogin) return '/';
+      // UI gate only; production enforcement is custom claims + rules.
+      if (state.matchedLocation.startsWith('/admin') &&
+          !(user?.isAdmin ?? false)) {
+        return '/';
+      }
       return null;
     },
     routes: [
@@ -37,6 +44,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/bookmarks', builder: (_, _) => const BookmarksScreen()),
       GoRoute(path: '/search', builder: (_, _) => const SearchScreen()),
       GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
+      GoRoute(path: '/admin', builder: (_, _) => const AdminStudioScreen()),
     ],
   );
 });

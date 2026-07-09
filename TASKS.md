@@ -2,8 +2,8 @@
 
 ## Active
 
-- Epic 10: admin panel (`/admin/*` routes, exam/question CRUD against repository interfaces).
 - Epic 4 deploy (HUMAN): follow `docs/deployment/01-firebase-setup.md` — firebase login, create projects, deploy rules/indexes/functions, bootstrap admin.
+- Content Studio spec remainder: Excel/upload/image import, version history + rollback, new-exam wizard, user management, import analytics (`docs/product/07`).
 
 ## Backlog
 
@@ -19,3 +19,4 @@
 - [x] Epic 3 — Database design docs, deployable rules/indexes files, ADR-0005 (2026-07-08).
 - [x] Epic 4 code — Cloud Functions (4 functions, tsc-verified), firebase.json, set-admin script, setup runbook (2026-07-08).
 - [x] Epics 5–9 — full learner app in demo mode, analyze clean, 11 tests, browser-verified; CI workflow (2026-07-09).
+- [x] Epic 10 V1 slice — Content Studio: question CRUD, exam settings, CSV/JSON import pipeline, content packs; 21 tests (2026-07-09).

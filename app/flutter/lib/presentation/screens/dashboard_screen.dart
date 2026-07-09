@@ -59,6 +59,13 @@ class DashboardScreen extends ConsumerWidget {
               subtitle: 'Questions you saved',
               onTap: () => context.push('/bookmarks'),
             ),
+            if (user?.isAdmin ?? false)
+              _ActionCard(
+                icon: Icons.admin_panel_settings,
+                title: 'Content Studio',
+                subtitle: 'Manage exams, questions, bulk import',
+                onTap: () => context.push('/admin'),
+              ),
             const SizedBox(height: 16),
             _RecentAttempts(attempts: attempts),
           ],

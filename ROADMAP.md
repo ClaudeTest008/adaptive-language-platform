@@ -14,7 +14,7 @@ Work executes in this exact order. One epic at a time. Do not repeat completed e
 | 7 | Practice Mode | ✅ Complete |
 | 8 | Mock Exams | ✅ Complete |
 | 9 | Progress Dashboard | ✅ Complete |
-| 10 | Admin Panel | 🔄 Next |
+| 10 | Admin Panel / Content Studio | 🟡 V1 slice complete (ADR-0007); full spec in docs/product/07 |
 | 11 | Testing | 🟡 Partial (11 unit/controller tests; widget/integration pending) |
 | 12 | Deployment | 🟡 Partial (CI workflow added; builds/deploy pending Firebase) |
 
@@ -66,9 +66,11 @@ Randomization, timer, scoring, pass/fail, results storage.
 
 Statistics, weak topics, study history, achievements (basic).
 
-## Epic 10 — Admin Panel
+## Epic 10 — Admin Panel / Content Studio 🟡
 
-Exam management, question management, image upload, user management, analytics.
+Full requirements: `docs/product/07-content-studio-requirements.md`. V1 slice delivered (ADR-0007): Content Studio at `/admin` — overview with content stats, exam settings editor, question management (search, status filter, visual editor, archive-not-delete, version bump on edit), bulk import pipeline (CSV/JSON: parse → schema → validation → duplicate detection → topic mapping → report → approval → import as drafts or published), content-pack JSON export/import.
+
+Remaining for full spec: Excel/upload/image import, full version history + rollback + scheduled publishing, new-exam wizard, regions/subtopics/objectives UI, user management, import analytics, search index, marketplace packs, AI assists.
 
 ## Epic 11 — Testing
 

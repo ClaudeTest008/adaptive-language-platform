@@ -14,8 +14,9 @@ class MockExamScreen extends ConsumerWidget {
     final controller = ref.read(mockExamControllerProvider.notifier);
 
     if (state == null) return _StartView(onStart: controller.start);
-    if (state.finished)
+    if (state.finished) {
       return _ResultView(state: state, controller: controller);
+    }
     return _SessionView(state: state, controller: controller);
   }
 }

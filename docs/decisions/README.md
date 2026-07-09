@@ -11,3 +11,4 @@ One file per decision: `NNNN-title.md`. Statuses: Proposed, Accepted, Superseded
 | [0005](0005-denormalized-questions-client-scoring.md) | Denormalized questions, client-side scoring | Accepted |
 | [0006](0006-demo-mode-first.md) | App ships against in-memory demo repositories first | Accepted |
 | [0007](0007-content-studio-v1-slice.md) | Content Studio V1 slice, client-side import pipeline | Accepted |
+| [0008](0008-adaptive-learning-engine.md) | Adaptive learning engine as pure-Dart module; AI interfaces; Firebase swap deferred | Accepted |

@@ -2,7 +2,8 @@
 
 ## Active
 
-- Epic 4 deploy (HUMAN): follow `docs/deployment/01-firebase-setup.md` — firebase login, create projects, deploy rules/indexes/functions, bootstrap admin.
+- Epic 14 prerequisite (HUMAN): follow `docs/deployment/01-firebase-setup.md` — firebase login, create projects, deploy rules/indexes/functions, bootstrap admin.
+- After Firebase setup: Firestore repository implementations (Auth/Content/Study/Admin/LearnerModel) + `flutterfire configure`; rules deltas from `docs/database/04-adaptive-schema.md`.
 - Content Studio spec remainder: Excel/upload/image import, version history + rollback, new-exam wizard, user management, import analytics (`docs/product/07`).
 
 ## Backlog
@@ -20,3 +21,4 @@
 - [x] Epic 4 code — Cloud Functions (4 functions, tsc-verified), firebase.json, set-admin script, setup runbook (2026-07-08).
 - [x] Epics 5–9 — full learner app in demo mode, analyze clean, 11 tests, browser-verified; CI workflow (2026-07-09).
 - [x] Epic 10 V1 slice — Content Studio: question CRUD, exam settings, CSV/JSON import pipeline, content packs; 21 tests (2026-07-09).
+- [x] Epic 13 — Adaptive learning engine (model, graph, scheduler, confidence, selector, readiness, plans, DNA, AI interfaces); 41 tests total; browser-verified (2026-07-09).

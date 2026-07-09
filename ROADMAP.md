@@ -15,8 +15,10 @@ Work executes in this exact order. One epic at a time. Do not repeat completed e
 | 8 | Mock Exams | ✅ Complete |
 | 9 | Progress Dashboard | ✅ Complete |
 | 10 | Admin Panel / Content Studio | 🟡 V1 slice complete (ADR-0007); full spec in docs/product/07 |
-| 11 | Testing | 🟡 Partial (11 unit/controller tests; widget/integration pending) |
+| 11 | Testing | 🟡 Partial (41 tests incl. adaptive engine; widget/integration pending) |
 | 12 | Deployment | 🟡 Partial (CI workflow added; builds/deploy pending Firebase) |
+| 13 | Adaptive Learning Engine | ✅ V1 complete (ADR-0008) |
+| 14 | Firebase Production Integration | ⏳ Blocked on human Firebase setup (runbook: docs/deployment/01) |
 
 ## Epic 0 — Repository Foundation ✅
 
@@ -79,6 +81,16 @@ Unit tests, widget tests, integration tests, performance checks, testing documen
 ## Epic 12 — Deployment
 
 CI/CD (GitHub Actions: format, analyze, test, build), production builds, Firebase deployment, documentation, release candidate.
+
+## Epic 13 — Adaptive Learning Engine ✅ (V1)
+
+Delivered (ADR-0008): pure-Dart engine in `app/flutter/lib/adaptive/` — learner model (per-concept mastery, streaks, lapses, response times), knowledge graph derived from content with lapse propagation, spaced repetition behind a replaceable `ReviewScheduler` (SM-2/FSRS-ready), confidence model, adaptive question selector (due > weak > unseen > consolidation), exam readiness + pass probability, personalized study plan, learning DNA traits. AI platform foundations as provider-independent interfaces (`lib/domain/ai_services.dart`). Wired into practice + mock exams; dashboard readiness card; "Adaptive session" practice entry. Schema extension documented in `docs/database/04-adaptive-schema.md`.
+
+Deferred: learner model Firestore persistence (with Epic 14), per-question exam timing, SM-2/FSRS scheduler, admin analytics dashboards, AI implementations.
+
+## Epic 14 — Firebase Production Integration ⏳
+
+Blocked on human steps (`docs/deployment/01-firebase-setup.md`): create projects, deploy rules/indexes/functions. Then: firebase packages + `flutterfire configure`, Firestore implementations of `AuthRepository`/`ContentRepository`/`StudyRepository`/`AdminRepository`/`LearnerModelRepository` behind unchanged interfaces (swap = provider bindings in `lib/presentation/providers.dart`), Analytics/Crashlytics wiring, App Check, Remote Config, rules emulator tests.
 
 ## Version 2+ (not V1 — architecture-ready only)
 

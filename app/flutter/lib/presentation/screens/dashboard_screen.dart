@@ -39,6 +39,8 @@ class DashboardScreen extends ConsumerWidget {
           children: [
             _StatsRow(stats: stats, attempts: attempts),
             const SizedBox(height: 16),
+            const _ReadinessCard(),
+            const SizedBox(height: 16),
             _WeakTopics(stats: stats, topics: topics),
             const SizedBox(height: 16),
             _ActionCard(
@@ -68,6 +70,77 @@ class DashboardScreen extends ConsumerWidget {
               ),
             const SizedBox(height: 16),
             _RecentAttempts(attempts: attempts),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Adaptive engine summary: readiness, pass probability, today's plan.
+class _ReadinessCard extends ConsumerWidget {
+  const _ReadinessCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final readiness = ref.watch(readinessProvider).value;
+    final plan = ref.watch(studyPlanProvider).value;
+    final topics = ref.watch(topicsProvider).value ?? const <Topic>[];
+    if (readiness == null || plan == null) return const SizedBox.shrink();
+
+    String pct(double v) => '${(v * 100).round()}%';
+    String topicName(String id) =>
+        topics.where((t) => t.id == id).firstOrNull?.name ?? id;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.auto_awesome,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Exam readiness',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(value: readiness.readiness, minHeight: 8),
+            const SizedBox(height: 8),
+            Text(
+              '${pct(readiness.readiness)} ready · '
+              '${pct(readiness.passProbability)} pass probability · '
+              '${pct(readiness.knowledgeCoverage)} coverage',
+            ),
+            if (plan.items.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                "Today's plan (~${plan.estimatedMinutes} min"
+                '${plan.dueReviewCount > 0 ? ", ${plan.dueReviewCount} reviews due" : ""})',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              for (final item in plan.items.take(3))
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    '• ${topicName(item.conceptId)} — ${item.reason} '
+                    '(${item.suggestedQuestions} questions)',
+                  ),
+                ),
+              if (plan.recommendMockExam)
+                const Padding(
+                  padding: EdgeInsets.only(top: 4),
+                  child: Text('• You look ready — take a mock exam'),
+                ),
+            ],
           ],
         ),
       ),

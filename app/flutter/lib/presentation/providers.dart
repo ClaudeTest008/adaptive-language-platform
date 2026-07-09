@@ -9,7 +9,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
+import '../adaptive/engine.dart';
+import '../adaptive/graph.dart';
+import '../adaptive/model.dart' as adaptive;
+import '../adaptive/repository.dart';
+import '../adaptive/selector.dart';
 import '../application/exam_logic.dart';
+import '../domain/ai_services.dart';
 import '../domain/models.dart';
 import '../domain/repositories.dart';
 import '../infrastructure/demo_repositories.dart';
@@ -84,6 +90,80 @@ final incorrectIdsProvider = FutureProvider((ref) {
   return ref.watch(studyRepositoryProvider).getIncorrectQuestionIds();
 });
 
+// ---------- adaptive learning engine (ADR-0008) ----------
+
+/// No AI providers configured in V1; interfaces only.
+final aiServicesProvider = Provider<AiServices>((ref) => AiServices.none);
+
+final learnerModelRepositoryProvider = Provider<LearnerModelRepository>(
+  (ref) => InMemoryLearnerModelRepository(),
+);
+
+final knowledgeGraphProvider = FutureProvider<KnowledgeGraph>((ref) async {
+  ref.watch(contentVersionProvider);
+  final content = ref.watch(contentRepositoryProvider);
+  return buildKnowledgeGraph(
+    await content.getTopics(),
+    await content.getQuestions(),
+  );
+});
+
+final learnerEngineProvider = Provider<LearnerEngine>((ref) {
+  final graph =
+      ref.watch(knowledgeGraphProvider).value ?? const KnowledgeGraph({});
+  return LearnerEngine(graph: graph);
+});
+
+/// Holds the learner model; every answer event flows through here.
+class LearnerModelController extends Notifier<adaptive.LearnerModel> {
+  @override
+  adaptive.LearnerModel build() {
+    ref.read(learnerModelRepositoryProvider).load().then((m) => state = m);
+    return const adaptive.LearnerModel();
+  }
+
+  Future<void> recordAnswer(adaptive.AnswerEvent event) async {
+    state = ref.read(learnerEngineProvider).applyAnswer(state, event);
+    await ref.read(learnerModelRepositoryProvider).save(state);
+  }
+
+  Future<void> recordMockExam(double scoreFraction) async {
+    state = ref
+        .read(learnerEngineProvider)
+        .recordMockExam(state, scoreFraction);
+    await ref.read(learnerModelRepositoryProvider).save(state);
+  }
+}
+
+final learnerModelProvider =
+    NotifierProvider<LearnerModelController, adaptive.LearnerModel>(
+      LearnerModelController.new,
+    );
+
+final readinessProvider = FutureProvider<adaptive.ReadinessReport>((ref) async {
+  final model = ref.watch(learnerModelProvider);
+  final engine = ref.watch(learnerEngineProvider);
+  final topics = await ref.watch(topicsProvider.future);
+  final exam = await ref.watch(examProvider.future);
+  return engine.readiness(
+    model,
+    allTopicIds: [for (final t in topics) t.id],
+    passRatio: exam.passThreshold / exam.questionCount,
+    now: DateTime.now(),
+  );
+});
+
+final studyPlanProvider = FutureProvider<adaptive.StudyPlan>((ref) async {
+  final model = ref.watch(learnerModelProvider);
+  final engine = ref.watch(learnerEngineProvider);
+  final topics = await ref.watch(topicsProvider.future);
+  return engine.studyPlan(
+    model,
+    allTopicIds: [for (final t in topics) t.id],
+    now: DateTime.now(),
+  );
+});
+
 // ---------- practice session ----------
 
 class PracticeState {
@@ -92,6 +172,7 @@ class PracticeState {
     required this.index,
     required this.correctCount,
     required this.startedAt,
+    required this.questionShownAt,
     this.selectedIndex,
     this.finished = false,
   });
@@ -100,6 +181,10 @@ class PracticeState {
   final int index;
   final int correctCount;
   final DateTime startedAt;
+
+  /// When the current question appeared — response-time input for the
+  /// adaptive engine.
+  final DateTime questionShownAt;
 
   /// Non-null once the current question is answered (feedback shown).
   final int? selectedIndex;
@@ -114,11 +199,13 @@ class PracticeState {
     int? selectedIndex,
     bool clearSelection = false,
     bool? finished,
+    DateTime? questionShownAt,
   }) => PracticeState(
     questions: questions,
     index: index ?? this.index,
     correctCount: correctCount ?? this.correctCount,
     startedAt: startedAt,
+    questionShownAt: questionShownAt ?? this.questionShownAt,
     selectedIndex: clearSelection
         ? null
         : (selectedIndex ?? this.selectedIndex),
@@ -131,17 +218,20 @@ class PracticeController extends Notifier<PracticeState?> {
   PracticeState? build() => null;
 
   void start(List<Question> questions) {
+    final now = DateTime.now();
     state = PracticeState(
       questions: questions,
       index: 0,
       correctCount: 0,
-      startedAt: DateTime.now(),
+      startedAt: now,
+      questionShownAt: now,
     );
   }
 
   Future<void> answer(int selectedIndex) async {
     final s = state;
     if (s == null || s.answered) return;
+    final now = DateTime.now();
     final correct = s.current.isCorrect(selectedIndex);
     state = s.copyWith(
       selectedIndex: selectedIndex,
@@ -157,6 +247,17 @@ class PracticeController extends Notifier<PracticeState?> {
             correct: correct,
           ),
         );
+    await ref
+        .read(learnerModelProvider.notifier)
+        .recordAnswer(
+          answerEventFor(
+            s.current,
+            correct: correct,
+            responseSeconds:
+                now.difference(s.questionShownAt).inMilliseconds / 1000,
+            answeredAt: now,
+          ),
+        );
     ref.read(studyVersionProvider.notifier).state++;
   }
 
@@ -166,7 +267,11 @@ class PracticeController extends Notifier<PracticeState?> {
     final s = state;
     if (s == null || !s.answered) return;
     if (s.index + 1 < s.questions.length) {
-      state = s.copyWith(index: s.index + 1, clearSelection: true);
+      state = s.copyWith(
+        index: s.index + 1,
+        clearSelection: true,
+        questionShownAt: DateTime.now(),
+      );
       return;
     }
     final exam = await ref.read(contentRepositoryProvider).getExam();
@@ -276,6 +381,12 @@ class MockExamController extends Notifier<MockExamState?> {
     final result = scoreMockExam(s.questions, s.selections, exam.passThreshold);
 
     final study = ref.read(studyRepositoryProvider);
+    final learner = ref.read(learnerModelProvider.notifier);
+    final now = DateTime.now();
+    // Per-question timing is not captured in exam mode; approximate with
+    // the session average so the engine still learns from exam answers.
+    final avgSeconds =
+        now.difference(s.startedAt).inSeconds / s.questions.length;
     final answers = <AttemptAnswer>[];
     for (final q in s.questions) {
       final selected = s.selections[q.id];
@@ -287,7 +398,18 @@ class MockExamController extends Notifier<MockExamState?> {
       );
       answers.add(answer);
       await study.recordAnswer(answer);
+      await learner.recordAnswer(
+        answerEventFor(
+          q,
+          correct: answer.correct,
+          responseSeconds: avgSeconds,
+          answeredAt: now,
+        ),
+      );
     }
+    await learner.recordMockExam(
+      result.total == 0 ? 0 : result.score / result.total,
+    );
     await study.saveAttempt(
       Attempt(
         id: 'm${DateTime.now().microsecondsSinceEpoch}',

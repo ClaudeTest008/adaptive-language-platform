@@ -1,6 +1,6 @@
 # Project Status
 
-**Phase:** Epic 10 V1 slice (Content Studio) complete in demo mode
+**Phase:** Epic 13 (Adaptive Learning Engine) complete; Epic 14 (Firebase) blocked on human setup
 **Last updated:** 2026-07-09
 
 ## Completed
@@ -14,15 +14,17 @@
 - CI workflow `.github/workflows/ci.yml` (format, analyze, test, web build + functions build).
 - Epic 10 V1 slice — Content Studio at `/admin` (ADR-0007): overview/stats, exam settings editor, question management (search, status filter, editor, archive, version bump), bulk import pipeline (CSV/JSON with validation report, duplicate detection, topic mapping, approval step), content-pack export/import. Question model extended (difficulty, tags, status, version, author, subtopic, learning objective, references). Verified: analyze clean, 21 tests green, full import flow driven in browser (validation errors block, clean rows import, learner sees published content).
 
+- Epic 13 — Adaptive learning engine (ADR-0008): pure-Dart module `lib/adaptive/` (learner model, knowledge graph with lapse propagation, replaceable spaced-repetition scheduler, confidence model, adaptive selector, readiness/pass probability, study plans, learning DNA); AI service interfaces (`lib/domain/ai_services.dart`, no providers yet); wired into practice/mock flows; dashboard readiness card + adaptive session entry. Verified: analyze clean, 41 tests green, engine driven live in browser (readiness 0%→36%, plan reprioritized to weak topics after wrong answers). Schema extension: `docs/database/04-adaptive-schema.md`.
+
 ## In Progress
 
 - Epic 4 (deploy) — BLOCKED on human: `firebase login`, project creation, deploy. Runbook: `docs/deployment/01-firebase-setup.md`.
 
 ## Next
 
-- Firestore repository implementations replacing demo ones (after Epic 4 deploy); add firebase packages + `flutterfire configure`.
-- Content Studio full spec remainder (`docs/product/07`): Excel/upload/image import, version history + rollback, new-exam wizard, user management, import analytics.
-- Deferred debt (ADR-0006/0007): localization scaffolding, widget/integration tests.
+- Epic 14 — Firebase production integration: after human runbook (`docs/deployment/01-firebase-setup.md`), implement Firestore repositories (incl. `LearnerModelRepository`) behind unchanged interfaces; swap = provider bindings only.
+- Content Studio full spec remainder (`docs/product/07`); admin analytics dashboards.
+- Deferred debt (ADR-0006/0007/0008): localization, widget/integration tests, per-question exam timing, SM-2/FSRS scheduler.
 
 ## Local Dev
 

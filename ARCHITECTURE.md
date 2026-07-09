@@ -75,6 +75,10 @@ lib/
 - **Security:** Firestore rules least-privilege; admin via custom claims. See `docs/security/`.
 - **Localization:** Flutter `intl`/ARB scaffolding from day one; V1 ships English.
 
+## Adaptive Learning Engine (ADR-0008)
+
+Pure-Dart module `lib/adaptive/` — no Flutter, no Firebase. Learner model (per-concept mastery, spaced-repetition schedule), knowledge graph derived from content, confidence model, adaptive question selector, readiness/pass-probability, study plans, learning DNA. Replaceable seams: `ReviewScheduler` (SM-2/FSRS later), `QuestionSelector`, `LearnerModelRepository`. AI capabilities are provider-independent interfaces in `lib/domain/ai_services.dart`; no provider bound in V1.
+
 ## Future Expansion Hooks
 
 - Exam category, country, topic are database entities (not enums) — new exam types are data, not code.

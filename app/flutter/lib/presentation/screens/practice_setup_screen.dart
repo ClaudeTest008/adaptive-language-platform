@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../adaptive/selector.dart';
 import '../providers.dart';
 import '../widgets.dart';
 
@@ -37,6 +38,22 @@ class PracticeSetupScreen extends ConsumerWidget {
     if (context.mounted) context.push('/practice/session');
   }
 
+  Future<void> _startAdaptive(BuildContext context, WidgetRef ref) async {
+    final pool = await ref.read(contentRepositoryProvider).getQuestions();
+    if (pool.isEmpty) return;
+    final selector = AdaptiveQuestionSelector(
+      engine: ref.read(learnerEngineProvider),
+    );
+    final questions = selector.select(
+      pool: pool,
+      model: ref.read(learnerModelProvider),
+      count: 10,
+      now: DateTime.now(),
+    );
+    ref.read(practiceControllerProvider.notifier).start(questions);
+    if (context.mounted) context.push('/practice/session');
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final topics = ref.watch(topicsProvider);
@@ -51,6 +68,17 @@ class PracticeSetupScreen extends ConsumerWidget {
           data: (list) => ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              Card(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                child: ListTile(
+                  leading: const Icon(Icons.auto_awesome),
+                  title: const Text('Adaptive session (recommended)'),
+                  subtitle: const Text(
+                    'Due reviews and weak concepts first, chosen for you',
+                  ),
+                  onTap: () => _startAdaptive(context, ref),
+                ),
+              ),
               Card(
                 child: ListTile(
                   leading: const Icon(Icons.all_inclusive),

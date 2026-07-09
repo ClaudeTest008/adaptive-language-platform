@@ -7,6 +7,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- 2026-07-09: Epic 13 — adaptive learning engine (`lib/adaptive/`): learner model with per-concept mastery/streaks/lapses/response times, knowledge graph with lapse propagation, spaced repetition behind replaceable `ReviewScheduler`, confidence model, adaptive question selector, exam readiness + pass probability, personalized study plans, learning DNA; provider-independent AI service interfaces; dashboard readiness card; adaptive practice sessions; Firestore schema extension doc; ADR-0008.
 - 2026-07-09: Epic 10 V1 slice — Content Studio (`/admin`): overview, exam settings editor, question management with visual editor and archive/versioning, CSV/JSON bulk import pipeline with validation report and approval, content-pack export/import; question metadata (difficulty, tags, status, version, author); Content Studio requirements doc; ADR-0007.
 - 2026-07-09: Epics 5–9 — Flutter learner app (`app/flutter/`): auth, dashboard (stats, weak topics, history), practice mode (feedback, explanations, bookmarks, review-incorrect), timed mock exams with per-question review, search, settings; in-memory demo repositories (ADR-0006); 11 tests; CI workflow.
 - 2026-07-08: Epic 4 (code) — Cloud Functions TypeScript project: `onUserCreate`, `setUserRole`, `deleteUserData`, `aggregateQuestionStats`; `firebase.json`; collection-group index override for attempts; `scripts/set-admin.js`; Firebase setup runbook in `docs/deployment/`.

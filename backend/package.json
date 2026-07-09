@@ -1,0 +1,12 @@
+{
+  "name": "adaptive-exam-platform-rules-tests",
+  "private": true,
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project demo-rules-test --config ../firebase.json \"node --test test/\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.0",
+    "firebase": "^11.0.0",
+    "firebase-tools": "^13.0.0"
+  }
+}

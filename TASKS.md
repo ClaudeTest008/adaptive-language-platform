@@ -23,3 +23,4 @@
 - [x] Epic 10 V1 slice — Content Studio: question CRUD, exam settings, CSV/JSON import pipeline, content packs; 21 tests (2026-07-09).
 - [x] Epic 13 — Adaptive learning engine (model, graph, scheduler, confidence, selector, readiness, plans, DNA, AI interfaces); 41 tests total; browser-verified (2026-07-09).
 - [x] Epic 15 core — Content Studio V2: workflow states, versioning + rollback, bulk ops, import analytics, learner-model codec, swap guide; 52 tests total (2026-07-09).
+- [x] Epic 16 core — rules emulator tests in CI, AI orchestration layer, V3 filters/restore/compare, threat model + RC checklists; 59 tests total (2026-07-09).

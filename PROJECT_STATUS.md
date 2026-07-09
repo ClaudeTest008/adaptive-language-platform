@@ -1,6 +1,6 @@
 # Project Status
 
-**Phase:** Epic 15 (Content Studio V2) core complete; Epic 14 (Firebase) blocked on human setup, swap fully documented
+**Phase:** Epic 16 (Production Readiness) core complete; 1.0 RC awaits only the Firebase human runbook
 **Last updated:** 2026-07-09
 
 ## Completed
@@ -17,6 +17,8 @@
 - Epic 13 — Adaptive learning engine (ADR-0008): pure-Dart module `lib/adaptive/` (learner model, knowledge graph with lapse propagation, replaceable spaced-repetition scheduler, confidence model, adaptive selector, readiness/pass probability, study plans, learning DNA); AI service interfaces (`lib/domain/ai_services.dart`, no providers yet); wired into practice/mock flows; dashboard readiness card + adaptive session entry. Verified: analyze clean, 41 tests green, engine driven live in browser (readiness 0%→36%, plan reprioritized to weak topics after wrong answers). Schema extension: `docs/database/04-adaptive-schema.md`.
 
 - Epic 15 core — Content Studio V2 (ADR-0009): 5-state workflow, append-only versioning + rollback, bulk publish/archive/tag, import job history + duplicate analytics, content analytics, expanded AI interfaces (OCR/review/metadata), LearnerModel codec, Firestore swap guide. Verified: analyze clean, 52 tests green, versioning/rollback/bulk/import-history driven in browser.
+
+- Epic 16 core — production readiness (ADR-0010): security rules migrated to status-enum workflow + learner-model/version/import-job coverage, unit-tested via Firestore emulator in CI (new `firestore-rules` job); AI orchestration (`lib/ai/`: AiChatModel seam, AiOrchestrator with 6 capabilities, FakeChatModel, conversation context) — 59 tests total; Content Studio V3 slice (topic/difficulty filters, bulk restore, version diff vs current); threat model, RC checklists, search design, perf/a11y audits.
 
 ## In Progress
 

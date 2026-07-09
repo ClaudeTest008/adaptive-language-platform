@@ -318,6 +318,8 @@ class _QuestionsTab extends ConsumerStatefulWidget {
 class _QuestionsTabState extends ConsumerState<_QuestionsTab> {
   String _query = '';
   ContentStatus? _statusFilter;
+  String? _topicFilter;
+  Difficulty? _difficultyFilter;
   final _selected = <String>{};
 
   Future<void> _bulk(
@@ -374,6 +376,13 @@ class _QuestionsTabState extends ConsumerState<_QuestionsTab> {
       if (_statusFilter != null && question.status != _statusFilter) {
         return false;
       }
+      if (_topicFilter != null && question.topicId != _topicFilter) {
+        return false;
+      }
+      if (_difficultyFilter != null &&
+          question.difficulty != _difficultyFilter) {
+        return false;
+      }
       if (q.isEmpty) return true;
       return question.text.toLowerCase().contains(q) ||
           question.explanation.toLowerCase().contains(q) ||
@@ -411,6 +420,28 @@ class _QuestionsTabState extends ConsumerState<_QuestionsTab> {
                 ],
                 onChanged: (v) => setState(() => _statusFilter = v),
               ),
+              const SizedBox(width: 8),
+              DropdownButton<String?>(
+                value: _topicFilter,
+                hint: const Text('Topic'),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('All')),
+                  for (final t in topics)
+                    DropdownMenuItem(value: t.id, child: Text(t.name)),
+                ],
+                onChanged: (v) => setState(() => _topicFilter = v),
+              ),
+              const SizedBox(width: 8),
+              DropdownButton<Difficulty?>(
+                value: _difficultyFilter,
+                hint: const Text('Difficulty'),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('All')),
+                  for (final d in Difficulty.values)
+                    DropdownMenuItem(value: d, child: Text(d.name)),
+                ],
+                onChanged: (v) => setState(() => _difficultyFilter = v),
+              ),
             ],
           ),
         ),
@@ -436,6 +467,13 @@ class _QuestionsTabState extends ConsumerState<_QuestionsTab> {
                     'Archived',
                   ),
                   child: const Text('Archive'),
+                ),
+                TextButton(
+                  onPressed: () => _bulk(
+                    (repo, ids) => repo.bulkSetStatus(ids, ContentStatus.draft),
+                    'Restored to draft',
+                  ),
+                  child: const Text('Restore'),
                 ),
                 TextButton(onPressed: _bulkTag, child: const Text('Tag…')),
                 const Spacer(),
@@ -543,7 +581,21 @@ Future<void> _showVersionHistory(
                 itemCount: history.length,
                 itemBuilder: (context, i) {
                   final v = history[i];
-                  return ListTile(
+                  String? changed(String label, String old, String current) =>
+                      old == current ? null : '$label: "$old" → "$current"';
+                  final diffs = [
+                    changed('Text', v.text, question.text),
+                    changed('Explanation', v.explanation, question.explanation),
+                    changed(
+                      'Correct',
+                      v.answers[v.correctIndex],
+                      question.answers[question.correctIndex],
+                    ),
+                    changed('Status', v.status.name, question.status.name),
+                    changed('Topic', v.topicId, question.topicId),
+                    changed('Tags', v.tags.join(','), question.tags.join(',')),
+                  ].whereType<String>().toList();
+                  return ExpansionTile(
                     dense: true,
                     leading: CircleAvatar(
                       radius: 14,
@@ -582,6 +634,30 @@ Future<void> _showVersionHistory(
                         }
                       },
                     ),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: diffs.isEmpty
+                              ? [const Text('Identical to current version.')]
+                              : [
+                                  Text(
+                                    'Differences vs current '
+                                    'v${question.version}:',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.labelLarge,
+                                  ),
+                                  for (final d in diffs)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 2),
+                                      child: Text('• $d'),
+                                    ),
+                                ],
+                        ),
+                      ),
+                    ],
                   );
                 },
               ),

@@ -62,8 +62,14 @@ service cloud.firestore {
     }
 
     // ---------- content: questions ----------
+    // Workflow gate (ADR-0009): learners read published only; the status
+    // enum replaces the earlier 'published' bool.
+    function validStatus(value) {
+      return value in ['draft', 'review', 'approved', 'published', 'archived'];
+    }
     match /questions/{questionId} {
-      allow read: if isAdmin() || (isSignedIn() && isPublished());
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.status == 'published');
       allow write: if isAdmin()
         && request.resource.data.examId is string
         && request.resource.data.topicId is string
@@ -75,7 +81,26 @@ service cloud.firestore {
         && request.resource.data.correctIndex is int
         && request.resource.data.correctIndex >= 0
         && request.resource.data.correctIndex < request.resource.data.answers.size()
-        && request.resource.data.published is bool;
+        && validStatus(request.resource.data.status)
+        && request.resource.data.version is int
+        && request.resource.data.version >= 1;
+    }
+
+    // ---------- question version history (append-only, ADR-0009) ----------
+    match /questionVersions/{questionId}/versions/{version} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false; // versions are immutable
+    }
+
+    // ---------- import jobs (Content Studio analytics) ----------
+    match /importJobs/{jobId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.imported is int
+        && request.resource.data.rejected is int
+        && request.resource.data.duplicates is int;
+      allow update, delete: if false;
     }
 
     // ---------- aggregated question stats (function-written) ----------
@@ -133,6 +158,19 @@ service cloud.firestore {
           && request.resource.data.score <= request.resource.data.total
           && request.resource.data.answers is list;
         allow update, delete: if false; // history is immutable
+      }
+
+      // Adaptive learner model (ADR-0008/0009). Learner privacy: owner
+      // only — admins have no access.
+      match /learnerModel/{examId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.totalAnswered is int
+          && request.resource.data.totalAnswered >= 0
+          && request.resource.data.totalCorrect is int
+          && request.resource.data.totalCorrect >= 0
+          && request.resource.data.totalCorrect
+              <= request.resource.data.totalAnswered;
       }
 
       match /topicStats/{topicId} {

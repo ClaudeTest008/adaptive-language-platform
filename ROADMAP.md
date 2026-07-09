@@ -20,6 +20,7 @@ Work executes in this exact order. One epic at a time. Do not repeat completed e
 | 13 | Adaptive Learning Engine | ✅ V1 complete (ADR-0008) |
 | 14 | Firebase Production Integration | ⏳ Blocked on human setup; all contracts + swap guide ready (docs/deployment/01+02) |
 | 15 | Content Studio V2 | 🟡 Core complete (ADR-0009); Excel/images/scheduling with Epic 14 |
+| 16 | Production Readiness | 🟡 Core complete (ADR-0010): rules tested in CI, AI orchestration, V3 slice, RC checklists |
 
 ## Epic 0 — Repository Foundation ✅
 
@@ -98,6 +99,12 @@ Blocked on human steps (`docs/deployment/01-firebase-setup.md`): create projects
 Delivered (ADR-0009): 5-state workflow (draft/review/approved/published/archived, learners see published only), append-only question version history with rollback-as-new-version, bulk operations (publish/archive/tag) through the versioned path, import job history + duplicate analytics, topic-coverage and author analytics, expanded AI interfaces (OCR, content review, metadata generation), LearnerModel JSON codec (Firestore contract, round-trip tested), Firestore swap guide (`docs/deployment/02-firestore-swap-guide.md`).
 
 Deferred to Epic 14 implementation or later (reasons in ADR-0009): Excel import, file upload, image pipeline, scheduled publishing, role-separated review workflow, question usage/accuracy analytics, marketplace/white-label packs.
+
+## Epic 16 — Production Readiness 🟡 (core delivered)
+
+Delivered (ADR-0010): Firestore rules updated to the status-enum workflow with learnerModel/questionVersions/importJobs coverage and unit-tested against the emulator in CI; AI orchestration layer (`lib/ai/`) — single `AiChatModel` provider seam, six capabilities implemented vendor-blind, deterministic `FakeChatModel`, structural admin-approval gate; Content Studio V3 slice (topic/difficulty filters, bulk restore, version comparison); threat model, release/deploy/migration/smoke/rollback/DR/monitoring checklists, search platform design, performance & accessibility audits.
+
+Remaining before 1.0 RC ships: Firebase runbook (human) → Firestore swap → App Check/Remote Config/Analytics/Crashlytics wiring → smoke checklist against real project; AI provider adapters (need API keys); items in ADR-0010 deferred list.
 
 ## Version 2+ (not V1 — architecture-ready only)
 

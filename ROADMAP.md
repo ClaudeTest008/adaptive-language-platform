@@ -8,8 +8,8 @@ Work executes in this exact order. One epic at a time. Do not repeat completed e
 | 1 | Product Definition | ✅ Complete |
 | 2 | System Architecture | ✅ Complete |
 | 3 | Database Design | ✅ Complete |
-| 4 | Backend Foundation | 🔄 Next |
-| 5 | Flutter Foundation | Pending |
+| 4 | Backend Foundation | 🟡 Code complete; deploy blocked on human Firebase login |
+| 5 | Flutter Foundation | 🔄 Next (needs Flutter SDK) |
 | 6 | Question Engine | Pending |
 | 7 | Practice Mode | Pending |
 | 8 | Mock Exams | Pending |
@@ -40,9 +40,11 @@ Delivered: full `ARCHITECTURE.md`; `docs/architecture/` (application, Flutter, F
 
 Delivered: `docs/database/` (schema + access patterns, security rules and validation strategy, indexes and migration strategy); deployable `backend/firestore.rules`, `backend/storage.rules`, `backend/firestore.indexes.json`; ADR-0005 (denormalized questions, client-side scoring).
 
-## Epic 4 — Backend Foundation
+## Epic 4 — Backend Foundation 🟡
 
-Firebase project setup, Authentication, Cloud Functions scaffold, authorization (custom claims), Firestore provisioning, Storage.
+Code complete: `cloud_functions/` TypeScript project (`onUserCreate`, `setUserRole`, `deleteUserData`, `aggregateQuestionStats`), compiles clean; `firebase.json` deploy config; `scripts/set-admin.js` admin bootstrap; `docs/deployment/01-firebase-setup.md`.
+
+Remaining (human, interactive): `firebase login`, create dev/prod projects, enable services, deploy rules/indexes/functions, bootstrap first admin — exact steps in `docs/deployment/01-firebase-setup.md`.
 
 ## Epic 5 — Flutter Foundation
 

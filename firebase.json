@@ -1,0 +1,20 @@
+{
+  "firestore": {
+    "rules": "backend/firestore.rules",
+    "indexes": "backend/firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "backend/storage.rules"
+  },
+  "functions": {
+    "source": "cloud_functions",
+    "predeploy": ["npm --prefix cloud_functions run build"]
+  },
+  "emulators": {
+    "auth": { "port": 9099 },
+    "firestore": { "port": 8080 },
+    "functions": { "port": 5001 },
+    "storage": { "port": 9199 },
+    "ui": { "enabled": true }
+  }
+}

@@ -13,6 +13,13 @@ Thumbs.db
 
 # Node
 node_modules/
+cloud_functions/lib/
+
+# Firebase
+.firebase/
+.firebaserc
+firebase-debug.log
+*-service-account*.json
 
 # Flutter / Dart (app/flutter)
 app/flutter/.dart_tool/

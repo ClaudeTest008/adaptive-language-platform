@@ -1,12 +1,13 @@
 # Project Status
 
-**Phase:** Epic 2 — System Architecture (next)
+**Phase:** Epic 3 — Database Design (next)
 **Last updated:** 2026-07-08
 
 ## Completed
 
 - Epic 0 — Repository foundation: structure, docs, GitHub repo, CI directories.
-- Epic 1 — Product definition: business requirements, product requirements (FR/NFR), personas and journeys, learning philosophy, success metrics, risk assessment (`docs/product/`). CONTRIBUTING.md added.
+- Epic 1 — Product definition: `docs/product/` (requirements, personas, learning philosophy, metrics, risks); CONTRIBUTING.md.
+- Epic 2 — System architecture: `ARCHITECTURE.md`; `docs/architecture/` (application, Flutter, Firebase, offline/errors/logging); `docs/security/`; ADRs 0001–0004 (stack, Riverpod+go_router, admin panel same codebase, offline strategy).
 
 ## In Progress
 
@@ -14,7 +15,7 @@
 
 ## Next
 
-- Epic 2 — System architecture: `ARCHITECTURE.md` full version, `docs/architecture/`, `docs/security/`, ADRs in `docs/decisions/`.
+- Epic 3 — Database design: Firestore schema, relationships, indexes, security rules, validation, migration strategy in `docs/database/`.
 
 ## Known Limitations
 

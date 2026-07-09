@@ -1,0 +1,10 @@
+# Architecture Decision Records
+
+One file per decision: `NNNN-title.md`. Statuses: Proposed, Accepted, Superseded (link successor).
+
+| ADR | Title | Status |
+|-----|-------|--------|
+| [0001](0001-flutter-firebase-stack.md) | Flutter + Firebase stack | Accepted |
+| [0002](0002-riverpod-state-di-gorouter.md) | Riverpod for state + DI, go_router | Accepted |
+| [0003](0003-admin-panel-same-codebase.md) | Admin panel in same Flutter codebase | Accepted |
+| [0004](0004-offline-firestore-persistence.md) | Offline via Firestore persistence only | Accepted |

@@ -23,10 +23,10 @@ Adaptive exam preparation platform:
 
 ## Current State
 
-- Epics 0 (repository foundation) and 1 (product definition) complete.
-- Next: Epic 2 — system architecture.
+- Epics 0–2 complete (foundation, product definition, system architecture).
+- Next: Epic 3 — database design (`docs/database/`).
 - No application code yet.
-- V1 scope: driver's license exam only; Flutter + Firebase; Clean Architecture. Full requirements in `docs/product/`.
+- V1 scope: driver's license exam only; Flutter + Firebase; Clean Architecture (feature-first), Riverpod (state + DI), go_router. Admin panel = role-gated routes in same app. Requirements in `docs/product/`; architecture in `docs/architecture/`; ADRs 0001–0004 in `docs/decisions/`.
 
 ## Key Conventions
 

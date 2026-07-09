@@ -6,8 +6,8 @@ Work executes in this exact order. One epic at a time. Do not repeat completed e
 |------|-------|--------|
 | 0 | Repository Foundation | ✅ Complete |
 | 1 | Product Definition | ✅ Complete |
-| 2 | System Architecture | 🔄 Next |
-| 3 | Database Design | Pending |
+| 2 | System Architecture | ✅ Complete |
+| 3 | Database Design | 🔄 Next |
 | 4 | Backend Foundation | Pending |
 | 5 | Flutter Foundation | Pending |
 | 6 | Question Engine | Pending |
@@ -32,9 +32,9 @@ Delivered in `docs/product/`:
 - Success metrics (`05-success-metrics.md`)
 - Risk assessment (`06-risk-assessment.md`)
 
-## Epic 2 — System Architecture
+## Epic 2 — System Architecture ✅
 
-Application architecture, Flutter architecture, Firebase architecture, security architecture, offline strategy, error handling, logging, analytics, ADRs. Deliverables in `docs/architecture/`, `docs/security/`, `docs/decisions/`, and `ARCHITECTURE.md`.
+Delivered: full `ARCHITECTURE.md`; `docs/architecture/` (application, Flutter, Firebase, offline/errors/logging); `docs/security/01-security-architecture.md`; ADRs 0001–0004 in `docs/decisions/`.
 
 ## Epic 3 — Database Design
 

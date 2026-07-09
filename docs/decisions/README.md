@@ -9,3 +9,4 @@ One file per decision: `NNNN-title.md`. Statuses: Proposed, Accepted, Superseded
 | [0003](0003-admin-panel-same-codebase.md) | Admin panel in same Flutter codebase | Accepted |
 | [0004](0004-offline-firestore-persistence.md) | Offline via Firestore persistence only | Accepted |
 | [0005](0005-denormalized-questions-client-scoring.md) | Denormalized questions, client-side scoring | Accepted |
+| [0006](0006-demo-mode-first.md) | App ships against in-memory demo repositories first | Accepted |

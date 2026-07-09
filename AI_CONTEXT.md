@@ -23,9 +23,10 @@ Adaptive exam preparation platform:
 
 ## Current State
 
-- Epics 0–3 complete; Epic 4 code complete (functions compile-verified), deploy pending human steps in `docs/deployment/01-firebase-setup.md`.
-- Next: Epic 5 — Flutter foundation. BLOCKED: Flutter SDK not installed on dev machine. After install: scaffold per `docs/architecture/02-flutter-architecture.md`, then `flutterfire configure`.
-- Backend code: `cloud_functions/src/index.ts` (4 functions), rules/indexes in `backend/`, deploy config `firebase.json`.
+- Epics 0–3 complete; Epic 4 code complete (deploy pending human steps in `docs/deployment/01-firebase-setup.md`); Epics 5–9 complete in demo mode (ADR-0006).
+- App: `app/flutter/` — Flutter 3.44.5 (SDK at `C:\Users\Admin\flutter`), Riverpod 3 (note: `StateProvider` needs `flutter_riverpod/legacy.dart` import; `AsyncValue.valueOrNull` is now `.value`), go_router 16. Repository interfaces in `lib/domain/repositories.dart`; demo implementations in `lib/infrastructure/`; swap point = three providers in `lib/presentation/providers.dart`.
+- Backend code: `cloud_functions/src/index.ts` (4 functions), rules/indexes in `backend/`, deploy config `firebase.json`. CI: `.github/workflows/ci.yml`.
+- Next: Epic 10 admin panel; then Firestore repository implementations after Firebase deploy.
 - V1 scope: driver's license exam only; Flutter + Firebase; Clean Architecture (feature-first), Riverpod (state + DI), go_router. Admin panel = role-gated routes in same app. Requirements in `docs/product/`; architecture in `docs/architecture/`; schema in `docs/database/`; ADRs 0001–0005 in `docs/decisions/`.
 
 ## Key Conventions

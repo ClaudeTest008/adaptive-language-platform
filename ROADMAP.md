@@ -9,14 +9,14 @@ Work executes in this exact order. One epic at a time. Do not repeat completed e
 | 2 | System Architecture | ✅ Complete |
 | 3 | Database Design | ✅ Complete |
 | 4 | Backend Foundation | 🟡 Code complete; deploy blocked on human Firebase login |
-| 5 | Flutter Foundation | 🔄 Next (needs Flutter SDK) |
-| 6 | Question Engine | Pending |
-| 7 | Practice Mode | Pending |
-| 8 | Mock Exams | Pending |
-| 9 | Progress Dashboard | Pending |
-| 10 | Admin Panel | Pending |
-| 11 | Testing | Pending |
-| 12 | Deployment | Pending |
+| 5 | Flutter Foundation | ✅ Complete (demo mode, ADR-0006) |
+| 6 | Question Engine | ✅ Complete (demo mode) |
+| 7 | Practice Mode | ✅ Complete |
+| 8 | Mock Exams | ✅ Complete |
+| 9 | Progress Dashboard | ✅ Complete |
+| 10 | Admin Panel | 🔄 Next |
+| 11 | Testing | 🟡 Partial (11 unit/controller tests; widget/integration pending) |
+| 12 | Deployment | 🟡 Partial (CI workflow added; builds/deploy pending Firebase) |
 
 ## Epic 0 — Repository Foundation ✅
 

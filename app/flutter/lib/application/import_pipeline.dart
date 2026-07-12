@@ -190,7 +190,10 @@ ImportReport runImportPipeline({
 
     questions.add(
       Question(
-        id: 'imp-${norm(text).hashCode.toRadixString(16)}',
+        // Row number + text hash: hash alone collides at 100k-row scale
+        // (observed 4 collisions in the stress test), silently dropping
+        // rows. Deterministic per file, so resume stays stable.
+        id: 'imp-$rowNum-${norm(text).hashCode.toRadixString(16)}',
         examId: examId,
         topicId: topic!.id,
         text: text,

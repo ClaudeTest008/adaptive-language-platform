@@ -15,3 +15,5 @@ One file per decision: `NNNN-title.md`. Statuses: Proposed, Accepted, Superseded
 | [0009](0009-content-studio-v2-versioning.md) | Content Studio V2: 5-state workflow, append-only versioning, bulk ops, import analytics | Accepted |
 | [0010](0010-production-readiness.md) | Rules tested in CI via emulator; AI orchestration over single provider seam; V3 slice | Accepted |
 | [0011](0011-content-intelligence-platform.md) | Content Intelligence: review-queue ingestion, chunked large imports, quality engine, document processing | Accepted |
+| [0012](0012-multi-tenancy-and-libraries.md) | Multi-tenancy (rules-enforced isolation), library inheritance, curriculum hierarchy | Accepted |
+| [0013](0013-workers-search-notifications.md) | Worker contracts, enterprise search seam, notification channels, KG expansion | Accepted |

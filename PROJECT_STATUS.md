@@ -1,6 +1,6 @@
 # Project Status
 
-**Phase:** Epic 17 (Content Intelligence) core complete; 1.0 RC awaits only the Firebase human runbook
+**Phase:** Epic 18 (Enterprise Multi-Tenant) core complete; 1.0 RC awaits only the Firebase human runbook
 **Last updated:** 2026-07-09
 
 ## Completed
@@ -21,6 +21,8 @@
 - Epic 16 core — production readiness (ADR-0010): security rules migrated to status-enum workflow + learner-model/version/import-job coverage, unit-tested via Firestore emulator in CI (new `firestore-rules` job); AI orchestration (`lib/ai/`: AiChatModel seam, AiOrchestrator with 6 capabilities, FakeChatModel, conversation context) — 59 tests total; Content Studio V3 slice (topic/difficulty filters, bulk restore, version diff vs current); threat model, RC checklists, search design, perf/a11y audits.
 
 - Epic 17 core — Content Intelligence (ADR-0011): chunked large-import engine with resume/rollback (10k-row test), deterministic quality engine, TXT/HTML document ingestion (chapters, topics, question opportunities), AI document extraction via pipeline contract, review queue + Review tab (bulk approve/reject, worst-first). Verified: analyze clean, 72 tests, browser end-to-end (40-row import → review queue → reject low-quality → approve 39 → approved:39/published:24).
+
+- Epic 18 core — enterprise platform (ADR-0012/0013): org rules + 9 CI-verified isolation tests, library inheritance resolver, curriculum hierarchy over unchanged adaptive engine, search + notification provider seams with working in-app implementations, AI capability expansion (flashcards + improver orchestrated), worker contracts, 100k stress test (fixed import-id collision bug it exposed). 89 Flutter tests + 22 rules tests.
 
 ## In Progress
 

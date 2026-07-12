@@ -83,6 +83,10 @@ Pure-Dart module `lib/adaptive/` — no Flutter, no Firebase. Learner model (per
 
 All ingestion (bulk imports, documents, AI generation) produces `QuestionCandidate`s in a human review queue — never library questions directly. Application-layer engines: chunked large import (resume/rollback), deterministic quality scoring, TXT/HTML document ingestion. At 100k+ scale the same stage contracts move into Cloud Functions workers.
 
+## Enterprise Platform (ADR-0012/0013)
+
+Multi-tenancy: `/orgs/{orgId}` with membership-gated Firestore rules (isolation proven in CI); org roles owner/admin/editor/member. Content libraries inherit via parent chains without duplication (`resolveLibrary`). Curriculum hierarchy derives hierarchical concept ids consumed by the unchanged adaptive engine. Provider seams with working in-app implementations: `SearchService`, `NotificationChannel`. Background workers wrap existing stage contracts (table in ADR-0013), deploying with Firebase.
+
 ## Future Expansion Hooks
 
 - Exam category, country, topic are database entities (not enums) — new exam types are data, not code.

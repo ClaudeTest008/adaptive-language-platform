@@ -19,7 +19,9 @@ class AiOrchestrator
         AiQuestionGenerator,
         AiMetadataGenerator,
         AiContentReviewer,
-        AiDocumentExtractor {
+        AiDocumentExtractor,
+        AiFlashcardGenerator,
+        AiQuestionImprover {
   const AiOrchestrator(this.model);
 
   final AiChatModel model;
@@ -38,6 +40,8 @@ class AiOrchestrator
       metadataGenerator: o,
       contentReviewer: o,
       documentExtractor: o,
+      flashcardGenerator: o,
+      questionImprover: o,
     );
   }
 
@@ -167,6 +171,53 @@ class AiOrchestrator
       tags: ((parsed['tags'] as List?) ?? const []).cast<String>(),
       learningObjective: parsed['learningObjective'] as String?,
     );
+  }
+
+  @override
+  Future<List<Flashcard>> generateFlashcards(
+    List<Question> sourceQuestions, {
+    int count = 10,
+  }) async {
+    final raw = await _ask(
+      'Create study flashcards strictly from the provided question/'
+      'explanation pairs — no invented facts. Respond with a JSON '
+      'array: [{"front": string, "back": string}]. JSON only.',
+      [
+        'Count: $count',
+        for (final q in sourceQuestions.take(30))
+          'Q: ${q.text}\nA: ${q.answers[q.correctIndex]}\n'
+              'Why: ${q.explanation}',
+      ].join('\n\n'),
+    );
+    final parsed = jsonDecode(raw);
+    if (parsed is! List) {
+      throw const FormatException('Flashcard output was not a JSON array.');
+    }
+    return [
+      for (final item in parsed.cast<Map<String, dynamic>>())
+        Flashcard(front: item['front'] as String, back: item['back'] as String),
+    ];
+  }
+
+  @override
+  Future<List<String>> suggestImprovements(
+    Question question,
+    List<String> qualityIssues,
+  ) async {
+    final raw = await _ask(
+      'Suggest concrete rewrites fixing the listed quality issues of an '
+          'exam question. Respond with a JSON array of suggestion strings. '
+          'JSON only.',
+      'Question: ${question.text}\n'
+          'Answers: ${question.answers.join(' | ')}\n'
+          'Explanation: ${question.explanation}\n'
+          'Issues:\n- ${qualityIssues.join('\n- ')}',
+    );
+    final parsed = jsonDecode(raw);
+    if (parsed is! List) {
+      throw const FormatException('Improvement output was not a JSON array.');
+    }
+    return parsed.cast<String>();
   }
 
   @override

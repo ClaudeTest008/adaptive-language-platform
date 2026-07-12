@@ -185,6 +185,57 @@ service cloud.firestore {
       }
     }
 
+    // ---------- multi-tenancy (ADR-0012) ----------
+    // Tenant isolation: every org-scoped read/write requires a membership
+    // document under the SAME org. Cross-tenant access is impossible by
+    // construction; platform admins retain operator access.
+    match /orgs/{orgId} {
+      function isMember() {
+        return isSignedIn()
+          && exists(/databases/$(database)/documents/orgs/$(orgId)/members/$(request.auth.uid));
+      }
+      function memberRole() {
+        return get(/databases/$(database)/documents/orgs/$(orgId)/members/$(request.auth.uid)).data.role;
+      }
+      function canEditContent() {
+        return isMember() && memberRole() in ['owner', 'admin', 'editor'];
+      }
+      function canManageMembers() {
+        return isMember() && memberRole() in ['owner', 'admin'];
+      }
+
+      // Org document: members read; creation/deletion is a platform
+      // operation (billing) — Admin SDK or platform admin.
+      allow read: if isMember() || isAdmin();
+      allow write: if isAdmin();
+
+      match /members/{memberUid} {
+        allow read: if isMember() || isAdmin();
+        allow write: if (isAdmin() || canManageMembers())
+          && request.resource.data.role in ['owner', 'admin', 'editor', 'member'];
+        allow delete: if isAdmin() || canManageMembers();
+      }
+
+      // Org-private content library (same shape rules as global questions).
+      match /questions/{questionId} {
+        allow read: if isMember() || isAdmin();
+        allow write: if (isAdmin() || canEditContent())
+          && localizedString(request.resource.data.text)
+          && request.resource.data.answers is list
+          && request.resource.data.answers.size() >= 2
+          && request.resource.data.correctIndex is int
+          && request.resource.data.correctIndex >= 0
+          && request.resource.data.correctIndex < request.resource.data.answers.size()
+          && validStatus(request.resource.data.status);
+      }
+
+      // Org analytics: aggregated only, written server-side.
+      match /analytics/{docId} {
+        allow read: if isMember() || isAdmin();
+        allow write: if false; // Admin SDK workers only
+      }
+    }
+
     // ---------- default deny ----------
     match /{document=**} {
       allow read, write: if false;

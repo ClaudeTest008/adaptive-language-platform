@@ -7,6 +7,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- 2026-07-09: Epic 18 core — enterprise multi-tenant platform (ADR-0012/0013): org security rules with membership-gated tenant isolation + per-org roles (emulator-tested in CI); content-library inheritance without duplication; curriculum hierarchy mapped to adaptive concept ids (engine unchanged); SearchService + ClientSearchService; notification channels + adaptive-derived notifications; AI interfaces for flashcards/summaries/lessons/blueprints/improvements/KG proposals (flashcards + improver orchestrated); background-worker contract map; 100k-question stress test.
+
+### Fixed
+
+- 2026-07-09: import-pipeline question ids collided at 100k-row scale (text hash only), silently dropping rows — ids now include the row number; regression-tested by the 100k simulation.
 - 2026-07-09: Epic 17 core — Content Intelligence Platform (ADR-0011): chunked large-import engine with progress stream, resume checkpoint and rollback; deterministic content quality engine; TXT/HTML document ingestion with chapter/topic detection and question-opportunity flagging; AI document extraction through the import-pipeline contract with grounding excerpts; question-candidate review queue with Review tab (bulk approve/reject, quality-sorted); Firestore schema for documents/extraction jobs/candidates.
 - 2026-07-09: Epic 16 core — production readiness (ADR-0010): Firestore rules status-enum migration + learnerModel/questionVersions/importJobs rules, emulator-tested in CI; AI orchestration layer (`lib/ai/`) with provider seam, six vendor-blind capabilities and structural approval gate; Content Studio topic/difficulty filters, bulk restore, version comparison; threat model, 1.0 RC checklists (release/deploy/migration/smoke/rollback/DR/monitoring), search platform design, performance and accessibility audits.
 - 2026-07-09: Epic 15 core — Content Studio V2 (ADR-0009): draft/review/approved/published/archived workflow, append-only question version history with rollback, bulk publish/archive/tag, import job history with duplicate analytics, topic-coverage/author analytics, AI interfaces for OCR/content review/metadata generation, LearnerModel JSON codec (Firestore contract), Firestore swap guide (`docs/deployment/02`).

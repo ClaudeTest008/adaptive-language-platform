@@ -24,6 +24,14 @@ Import analytics: `{startedAt, format, rowsTotal, imported, rejected, duplicateC
 ### `/contentPacks/{packId}` (admin-written)
 Marketplace/licensing groundwork: pack metadata + Storage path of the pack JSON.
 
+### Multi-tenancy collections (ADR-0012, rules live + emulator-tested)
+
+- `/orgs/{orgId}` — `{name, brandColorHex?, logoPath?}`; members read, platform ops write.
+- `/orgs/{orgId}/members/{uid}` — `{role: owner|admin|editor|member}`; owners/admins manage; role whitelist rule-validated.
+- `/orgs/{orgId}/questions/{id}` — org-private library, same shape rules as global questions; editors+ write.
+- `/orgs/{orgId}/analytics/{doc}` — members read, Admin SDK writes only.
+- `/libraries/{libId}` — `{name, scope: global|official|marketplace|organization|private, parentId?}`; questions live under the owning library; resolution client/worker-side (`resolveLibrary`).
+
 ### Content Intelligence collections (ADR-0011)
 
 - `/documents/{docId}` (admin): source documents — `{title, format, storagePath, uploadedBy, uploadedAt, version}`; content bytes in Storage.

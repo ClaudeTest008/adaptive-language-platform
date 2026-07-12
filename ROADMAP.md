@@ -22,6 +22,7 @@ Work executes in this exact order. One epic at a time. Do not repeat completed e
 | 15 | Content Studio V2 | 🟡 Core complete (ADR-0009); Excel/images/scheduling with Epic 14 |
 | 16 | Production Readiness | 🟡 Core complete (ADR-0010): rules tested in CI, AI orchestration, V3 slice, RC checklists |
 | 17 | Content Intelligence Platform | 🟡 Core complete (ADR-0011): large imports, quality engine, document ingestion, review queue |
+| 18 | Enterprise Multi-Tenant Platform | 🟡 Core complete (ADR-0012/0013): tenant isolation in rules+CI, libraries, hierarchy, search/notification seams |
 
 ## Epic 0 — Repository Foundation ✅
 
@@ -112,6 +113,12 @@ Remaining before 1.0 RC ships: Firebase runbook (human) → Firestore swap → A
 Delivered (ADR-0011): chunked large-import engine (10k+ rows, progress stream, resume-after-failure checkpoint, rollback, partial success — UI never blocks); deterministic content quality engine (clarity/ambiguity/distractors/explanation/near-duplicate scoring with named issues); document ingestion for TXT/HTML (extraction, chapter/topic detection, question-opportunity flagging); AI document extraction orchestrated through the import-pipeline contract with grounding excerpts; review queue (`QuestionCandidate`, worst-quality-first) with Review tab, per-item and bulk approve/reject; provenance (source, excerpt, `ai:<provider>` attribution); import job history extended.
 
 Deferred (blockers in ADR-0011): Cloud Functions worker fleet + upload queue (Firebase), PDF/DOCX/OCR/Excel parsers (binary deps + Storage), institution libraries, per-stage resource metrics, search-index stage.
+
+## Epic 18 — Enterprise Multi-Tenant Platform 🟡 (core delivered)
+
+Delivered (ADR-0012/0013): `/orgs/{orgId}` Firestore rules with membership-gated tenant isolation and per-org roles — proven by 9 emulator test cases in CI (cross-tenant denial, role capabilities, escalation prevention, shape validation); content-library inheritance resolver (global→official→marketplace→org→private layering without duplication, override/hide semantics, cycle guard); curriculum hierarchy (subject→…→learning objective) mapped onto existing adaptive concept ids — engine byte-for-byte unchanged; `SearchService` seam + client implementation (entity search, similarity); `NotificationChannel`/`NotificationService` + in-app channel + adaptive-derived notifications; AI interfaces for flashcards/summarizer/study material/question improver/KG builder with flashcards+improver orchestrated; worker contract table mapping every background job to an existing tested stage contract; 100k-question stress test (which caught and fixed a real import-id hash-collision bug).
+
+Deferred (ADR-0012/0013): org UI + branding application, worker deployment (Firebase), external search engines, FCM/email/SMS channels, marketplace licensing, institution analytics workers.
 
 ## Version 2+ (not V1 — architecture-ready only)
 

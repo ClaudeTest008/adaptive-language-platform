@@ -117,6 +117,58 @@ abstract class AiMetadataGenerator implements AiService {
   );
 }
 
+class Flashcard {
+  const Flashcard({required this.front, required this.back});
+
+  final String front;
+  final String back;
+}
+
+abstract class AiFlashcardGenerator implements AiService {
+  /// Flashcards grounded in existing approved content (question +
+  /// explanation pairs) — output enters the review queue like all AI
+  /// content.
+  Future<List<Flashcard>> generateFlashcards(
+    List<Question> sourceQuestions, {
+    int count = 10,
+  });
+}
+
+abstract class AiSummarizer implements AiService {
+  /// Concept or document summaries for study guides.
+  Future<String> summarize(String text, {int maxSentences = 5});
+}
+
+abstract class AiStudyMaterialGenerator implements AiService {
+  /// Lesson text for a topic, grounded in its questions/explanations.
+  Future<String> generateLesson(Topic topic, List<Question> grounding);
+
+  /// Exam blueprint: topic weighting + difficulty distribution proposal.
+  Future<String> generateExamBlueprint(
+    List<Topic> topics,
+    Map<String, int> questionCounts,
+  );
+}
+
+abstract class AiQuestionImprover implements AiService {
+  /// Concrete rewrite suggestions for a question given its quality
+  /// issues; applying a suggestion is a normal versioned edit (human act).
+  Future<List<String>> suggestImprovements(
+    Question question,
+    List<String> qualityIssues,
+  );
+}
+
+abstract class AiKnowledgeGraphBuilder implements AiService {
+  /// Proposes prerequisite/related edges between concept ids. Proposals
+  /// are review-gated before entering the authored graph overrides
+  /// (`conceptGraph` document, docs/database/04).
+  Future<Map<String, List<String>>> proposeRelations(
+    List<String> conceptIds,
+    String contextText,
+  );
+}
+
 /// Registry resolved via DI; every capability is optional.
 class AiServices {
   const AiServices({
@@ -131,6 +183,11 @@ class AiServices {
     this.ocr,
     this.contentReviewer,
     this.metadataGenerator,
+    this.flashcardGenerator,
+    this.summarizer,
+    this.studyMaterialGenerator,
+    this.questionImprover,
+    this.knowledgeGraphBuilder,
   });
 
   /// No providers configured — the V1 state.
@@ -147,4 +204,9 @@ class AiServices {
   final AiOcr? ocr;
   final AiContentReviewer? contentReviewer;
   final AiMetadataGenerator? metadataGenerator;
+  final AiFlashcardGenerator? flashcardGenerator;
+  final AiSummarizer? summarizer;
+  final AiStudyMaterialGenerator? studyMaterialGenerator;
+  final AiQuestionImprover? questionImprover;
+  final AiKnowledgeGraphBuilder? knowledgeGraphBuilder;
 }

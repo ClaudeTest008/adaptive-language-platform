@@ -2,27 +2,19 @@
 
 ## Active
 
-- Epic 14 prerequisite (HUMAN): follow `docs/deployment/01-firebase-setup.md` — firebase login, create projects, deploy rules/indexes/functions, bootstrap admin.
-- After Firebase setup: Firestore repository implementations (Auth/Content/Study/Admin/LearnerModel) + `flutterfire configure`; rules deltas from `docs/database/04-adaptive-schema.md`.
-- Content Studio spec remainder: Excel/upload/image import, version history + rollback, new-exam wizard, user management, import analytics (`docs/product/07`).
+- Phase 1 kickoff: design language domain entities (Language, Level, Skill, Domain, Topic, GrammarConcept, VocabularyConcept, Phrase, ExampleSentence, Exercise, Conversation) as pure-Dart domain model; write ADR for the language domain model.
+- Phase 1: map language hierarchy onto curriculum-hierarchy concept ids (ADR-0012) so the adaptive engine consumes language concepts unchanged.
+- Phase 1: Firestore schema drafts — languages, learners, skills, vocabulary, grammar concepts (`docs/database/`).
 
 ## Backlog
 
-- Firestore repository implementations + firebase packages + `flutterfire configure` (after Epic 4 deploy).
-- Localization scaffolding (ARB/intl) — deferred by ADR-0006.
-- Widget + integration tests; rules emulator tests (needs Firebase CLI + Java).
+- Phase 2: language memory signals in adaptive engine (additive), per-skill mastery aggregation, misconception engine, text-first exercise types.
+- Phase 3: AI tutor foundation — context assembly + six modes over `lib/ai/` orchestrator.
+- Phase 4: daily lesson engine (time-budgeted plans).
+- Phases 5–8: conversation engine, speech/pronunciation, language content ingestion, production deployment. See ROADMAP.md.
+- Rewrite `docs/product/` for the language product (business requirements, personas, learning philosophy) — incremental, as phases touch them.
+- Rename exam-flavored UI copy and routes when Phase 1–2 domain remodel lands (no premature renames).
 
 ## Done
 
-- [x] Epic 0 — Repository foundation (2026-07-07).
-- [x] Epic 1 — Product definition docs in `docs/product/`; CONTRIBUTING.md (2026-07-08).
-- [x] Epic 2 — Architecture docs, security architecture, ADRs 0001–0004 (2026-07-08).
-- [x] Epic 3 — Database design docs, deployable rules/indexes files, ADR-0005 (2026-07-08).
-- [x] Epic 4 code — Cloud Functions (4 functions, tsc-verified), firebase.json, set-admin script, setup runbook (2026-07-08).
-- [x] Epics 5–9 — full learner app in demo mode, analyze clean, 11 tests, browser-verified; CI workflow (2026-07-09).
-- [x] Epic 10 V1 slice — Content Studio: question CRUD, exam settings, CSV/JSON import pipeline, content packs; 21 tests (2026-07-09).
-- [x] Epic 13 — Adaptive learning engine (model, graph, scheduler, confidence, selector, readiness, plans, DNA, AI interfaces); 41 tests total; browser-verified (2026-07-09).
-- [x] Epic 15 core — Content Studio V2: workflow states, versioning + rollback, bulk ops, import analytics, learner-model codec, swap guide; 52 tests total (2026-07-09).
-- [x] Epic 16 core — rules emulator tests in CI, AI orchestration layer, V3 filters/restore/compare, threat model + RC checklists; 59 tests total (2026-07-09).
-- [x] Epic 17 core — large-import engine (chunk/resume/rollback), quality engine, document ingestion, AI extraction, review queue UI; 72 tests total (2026-07-09).
-- [x] Epic 18 core — tenant isolation rules + CI tests, library inheritance, curriculum hierarchy, search/notification seams, AI expansion, 100k stress + collision fix; 89 tests (2026-07-09).
+- [x] Phase 0 — Fork foundation: repo created from adaptive-exam-platform with full history, docs rebranded, ADR-0014, pushed to GitHub (2026-07-12).

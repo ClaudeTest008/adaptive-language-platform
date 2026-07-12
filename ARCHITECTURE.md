@@ -2,6 +2,30 @@
 
 High-level overview. Details in `docs/architecture/`; security in `docs/security/`; decisions in `docs/decisions/`.
 
+## Layering Principle
+
+```
+┌─────────────────────────────────────────────┐
+│ Language Learning Features                  │
+│  AI tutor modes · daily lesson engine ·     │
+│  conversation practice · pronunciation ·    │
+│  misconception engine · immersion           │
+├─────────────────────────────────────────────┤
+│ Adaptive Language Platform                  │
+│  language domain model · language knowledge │
+│  graph · language memory signals · language │
+│  content intelligence                       │
+├─────────────────────────────────────────────┤
+│ Adaptive Learning Core (inherited, frozen   │
+│  in spirit — extend, never rewrite)         │
+│  learner model · knowledge graph · spaced   │
+│  repetition · selector · confidence · DNA · │
+│  AI orchestration · Content Studio          │
+└─────────────────────────────────────────────┘
+```
+
+Language-specific features live above the core and feed it signals; the core stays domain-agnostic and reusable (ADR-0014).
+
 ## System Overview
 
 ```
@@ -34,61 +58,54 @@ Rules:
 - Presentation never touches Firebase directly; always through use cases and repository interfaces.
 - Dependency injection via Riverpod providers (ADR-0002); infrastructure implementations bound to domain interfaces at app startup.
 
-## Feature-First Organization
+## Language Knowledge Hierarchy
 
-Code organized by feature, layered inside each feature:
+Language → Level → Skill → Domain → Topic → Grammar Concept → Vocabulary Concept → Phrase → Example Sentence → Exercise → Conversation
 
-```
-lib/
-├── core/            # shared: theme, routing, errors, logging, widgets, utils
-├── features/
-│   ├── auth/
-│   │   ├── domain/
-│   │   ├── application/
-│   │   ├── infrastructure/
-│   │   └── presentation/
-│   ├── profile/
-│   ├── practice/
-│   ├── mock_exam/
-│   ├── progress/
-│   ├── search/
-│   ├── settings/
-│   └── admin/
-└── main.dart
-```
+Maps onto the inherited curriculum hierarchy (ADR-0012): hierarchical concept ids feed the unchanged adaptive engine. Mastery is tracked per concept and per skill (Vocabulary, Grammar, Reading, Writing, Listening, Speaking, Pronunciation, Conversation, Culture, Comprehension — each independent).
+
+## Adaptive Learning Core (ADR-0008, inherited)
+
+Pure-Dart module `lib/adaptive/` — no Flutter, no Firebase. Learner model (per-concept mastery, spaced-repetition schedule), knowledge graph, confidence model, adaptive selector, readiness, study plans, Learning DNA. Replaceable seams: `ReviewScheduler`, `QuestionSelector`, `LearnerModelRepository`.
+
+Language extension (Phase 2, additive only): recall difficulty, pronunciation confidence, grammar-transfer errors, vocabulary/usage frequency, conversation ability, retention decay. Misconceptions tracked separately from mistakes.
+
+## AI Tutor (Phase 3)
+
+Built on the inherited AI orchestration (`lib/ai/`, ADR-0010): `AiChatModel` = single vendor seam (OpenAI/Anthropic/Gemini/local/speech/translation adapters later, no lock-in); `AiOrchestrator` capabilities are vendor-blind; all AI output passes validation before reaching learners. Tutor modes as orchestrator capabilities: Teacher, Conversation, Coach, Socratic, Grammar, Immersion. Tutor context = learner history + knowledge graph + Learning DNA + mistakes + weak concepts + goals + learning style.
+
+## Daily Lesson Engine (Phase 4)
+
+Generates today's lesson from mastery, weak areas, review schedule, goals, available time, and past performance — a time-budgeted plan across skills (e.g. 10 min vocabulary review, 15 min grammar repair, 10 min conversation, 5 min pronunciation). Builds on inherited study-plan generation.
+
+## Content Intelligence (ADR-0011, inherited)
+
+All ingestion produces candidates in a human review queue — never published content directly. Adapted for language resources (Phase 7): textbooks, novels, articles, podcasts, videos, transcripts, grammar books. Extraction targets: vocabulary, grammar patterns, example sentences, expressions, idioms, difficulty level, topics, cultural references.
+
+## Exercise Types (Phase 2+)
+
+Multiple choice, fill-in-blanks, translation, listening, speaking practice, pronunciation scoring, sentence building, conversation simulation, reading comprehension, writing correction. All flow answer events into the adaptive engine.
+
+## Enterprise Platform (ADR-0012/0013, inherited)
+
+Multi-tenancy (`/orgs/{orgId}`, membership-gated rules, CI-proven isolation), content-library inheritance, search + notification seams, background-worker contracts. Reused as-is.
+
+## Cross-Cutting Concerns
+
+- **Errors:** sealed `Failure` types in domain; infrastructure maps Firebase exceptions; presentation maps to user messages; uncaught → Crashlytics.
+- **Logging:** thin `AppLogger` wrapper.
+- **Analytics:** typed event catalog; events only, no PII.
+- **Security:** Firestore rules least-privilege; admin via custom claims. See `docs/security/`.
+- **Localization:** first-class — the product itself is multilingual; UI locale and target language are independent axes.
 
 ## Key Technology Decisions
 
 | Decision | Choice | ADR |
 |----------|--------|-----|
 | Stack | Flutter + Firebase | 0001 |
-| State management + DI | Riverpod | 0002 |
+| State management + DI + routing | Riverpod, go_router | 0002 |
 | Admin panel | Same Flutter codebase, web, role-gated | 0003 |
 | Offline strategy | Firestore offline persistence | 0004 |
-| Routing | go_router | 0002 |
-
-## Cross-Cutting Concerns
-
-- **Errors:** domain failures as sealed `Failure` types; infrastructure maps Firebase exceptions to failures; presentation maps failures to user messages. Uncaught errors go to Crashlytics.
-- **Logging:** thin `AppLogger` wrapper (debug console in dev, Crashlytics breadcrumbs in prod).
-- **Analytics:** typed event catalog wrapping Firebase Analytics; events only, no PII.
-- **Security:** Firestore rules least-privilege; admin via custom claims. See `docs/security/`.
-- **Localization:** Flutter `intl`/ARB scaffolding from day one; V1 ships English.
-
-## Adaptive Learning Engine (ADR-0008)
-
-Pure-Dart module `lib/adaptive/` — no Flutter, no Firebase. Learner model (per-concept mastery, spaced-repetition schedule), knowledge graph derived from content, confidence model, adaptive question selector, readiness/pass-probability, study plans, learning DNA. Replaceable seams: `ReviewScheduler` (SM-2/FSRS later), `QuestionSelector`, `LearnerModelRepository`. AI capabilities are provider-independent interfaces in `lib/domain/ai_services.dart`; no provider bound in V1.
-
-## Content Intelligence (ADR-0011)
-
-All ingestion (bulk imports, documents, AI generation) produces `QuestionCandidate`s in a human review queue — never library questions directly. Application-layer engines: chunked large import (resume/rollback), deterministic quality scoring, TXT/HTML document ingestion. At 100k+ scale the same stage contracts move into Cloud Functions workers.
-
-## Enterprise Platform (ADR-0012/0013)
-
-Multi-tenancy: `/orgs/{orgId}` with membership-gated Firestore rules (isolation proven in CI); org roles owner/admin/editor/member. Content libraries inherit via parent chains without duplication (`resolveLibrary`). Curriculum hierarchy derives hierarchical concept ids consumed by the unchanged adaptive engine. Provider seams with working in-app implementations: `SearchService`, `NotificationChannel`. Background workers wrap existing stage contracts (table in ADR-0013), deploying with Firebase.
-
-## Future Expansion Hooks
-
-- Exam category, country, topic are database entities (not enums) — new exam types are data, not code.
-- All answer events persisted with correctness/timestamp/duration — input for future adaptive engine.
-- AI features will land as new application-layer services; no layer redesign expected.
+| Adaptive engine | Pure-Dart module, replaceable seams | 0008 |
+| AI orchestration | Single provider seam, vendor-blind capabilities | 0010 |
+| Fork from exam platform, reuse core | History-preserving fork | 0014 |

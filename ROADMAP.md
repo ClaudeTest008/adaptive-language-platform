@@ -1,125 +1,75 @@
-# Master Roadmap v2.0
+# Roadmap
 
-Work executes in this exact order. One epic at a time. Do not repeat completed epics.
+Master plan for the Adaptive Language Platform. Phases are sequential; each ends with working, tested, documented software. Inherited exam-platform epics (0–18) live in the git history and the original repository; this roadmap starts fresh for the language product.
 
-| Epic | Title | Status |
-|------|-------|--------|
-| 0 | Repository Foundation | ✅ Complete |
-| 1 | Product Definition | ✅ Complete |
-| 2 | System Architecture | ✅ Complete |
-| 3 | Database Design | ✅ Complete |
-| 4 | Backend Foundation | 🟡 Code complete; deploy blocked on human Firebase login |
-| 5 | Flutter Foundation | ✅ Complete (demo mode, ADR-0006) |
-| 6 | Question Engine | ✅ Complete (demo mode) |
-| 7 | Practice Mode | ✅ Complete |
-| 8 | Mock Exams | ✅ Complete |
-| 9 | Progress Dashboard | ✅ Complete |
-| 10 | Admin Panel / Content Studio | 🟡 V1 slice complete (ADR-0007); full spec in docs/product/07 |
-| 11 | Testing | 🟡 Partial (41 tests incl. adaptive engine; widget/integration pending) |
-| 12 | Deployment | 🟡 Partial (CI workflow added; builds/deploy pending Firebase) |
-| 13 | Adaptive Learning Engine | ✅ V1 complete (ADR-0008) |
-| 14 | Firebase Production Integration | ⏳ Blocked on human setup; all contracts + swap guide ready (docs/deployment/01+02) |
-| 15 | Content Studio V2 | 🟡 Core complete (ADR-0009); Excel/images/scheduling with Epic 14 |
-| 16 | Production Readiness | 🟡 Core complete (ADR-0010): rules tested in CI, AI orchestration, V3 slice, RC checklists |
-| 17 | Content Intelligence Platform | 🟡 Core complete (ADR-0011): large imports, quality engine, document ingestion, review queue |
-| 18 | Enterprise Multi-Tenant Platform | 🟡 Core complete (ADR-0012/0013): tenant isolation in rules+CI, libraries, hierarchy, search/notification seams |
+## Phase 0 — Fork Foundation ✅ (2026-07-12)
 
-## Epic 0 — Repository Foundation ✅
+- Repository `adaptive-language-platform` created as history-preserving fork of `adaptive-exam-platform` (ADR-0014).
+- Product identity: README, AI_CONTEXT, ARCHITECTURE, ROADMAP, PROJECT_STATUS, TASKS, CHANGELOG rewritten for the language platform.
+- ADR structure continued (0001–0013 inherited; 0014 records the fork).
 
-Repository created with full directory structure and foundation documents. See `README.md` for layout.
+## Phase 1 — Language Domain Model
 
-## Epic 1 — Product Definition ✅
+- Language knowledge hierarchy: Language → Level → Skill → Domain → Topic → Grammar Concept → Vocabulary Concept → Phrase → Example Sentence → Exercise → Conversation.
+- Domain entities: Language, Learner, Skill (10 skills, independent mastery), GrammarConcept, VocabularyConcept, Phrase, ExampleSentence.
+- Knowledge graph extension: language relationship graphs (verb → tense → conjugation family → examples; semantic vocabulary networks) via the inherited curriculum-hierarchy concept ids (ADR-0012).
+- Curriculum structure per language/level (CEFR-aligned levels).
+- Firestore schema drafts: languages, learners, skills, vocabulary, grammar concepts.
+- Tests: knowledge-graph construction, hierarchy → concept-id mapping.
 
-Delivered in `docs/product/`:
-- Business requirements (`01-business-requirements.md`)
-- Product requirements: functional + non-functional (`02-product-requirements.md`)
-- Personas and user journeys (`03-personas-and-user-journeys.md`)
-- Learning philosophy (`04-learning-philosophy.md`)
-- Success metrics (`05-success-metrics.md`)
-- Risk assessment (`06-risk-assessment.md`)
+## Phase 2 — Vocabulary & Grammar Adaptive Tracking
 
-## Epic 2 — System Architecture ✅
+- Extend the adaptive engine (never rewrite) with language signals: recall difficulty, vocabulary strength, grammar confidence, recall speed, usage/vocabulary frequency, retention decay.
+- Per-skill mastery aggregation (e.g. Spanish: Vocabulary 85%, Grammar 62%, Listening 44%).
+- Misconception engine: track misconceptions separately from mistakes; detect native-language transfer (e.g. "Yo soy cansado" → `tener` pattern family); link misconceptions to related concepts.
+- Exercise-type architecture: multiple choice, fill-in-blanks, translation, sentence building, reading comprehension (text-first types).
+- Schema: mistakes, misconceptions, learning goals.
+- Tests: vocabulary mastery, grammar mastery, misconception detection, adaptive recommendations.
 
-Delivered: full `ARCHITECTURE.md`; `docs/architecture/` (application, Flutter, Firebase, offline/errors/logging); `docs/security/01-security-architecture.md`; ADRs 0001–0004 in `docs/decisions/`.
+## Phase 3 — AI Tutor Foundation
 
-## Epic 3 — Database Design ✅
+- Tutor built on inherited AI orchestration (`lib/ai/`, ADR-0010); provider-independent, output validated.
+- Tutor context assembly: learner history, knowledge graph, Learning DNA, previous mistakes, weak concepts, goals, learning style.
+- Six modes as orchestrator capabilities: Teacher (explain/lesson/correct), Conversation (natural dialogue, vocabulary adaptation), Coach (goals, motivation, planning), Socratic (guided questions), Grammar (pattern explanation), Immersion (target language only).
+- Schema: AI tutor history.
+- Tests: tutor orchestration, mode contracts, context assembly.
 
-Delivered: `docs/database/` (schema + access patterns, security rules and validation strategy, indexes and migration strategy); deployable `backend/firestore.rules`, `backend/storage.rules`, `backend/firestore.indexes.json`; ADR-0005 (denormalized questions, client-side scoring).
+## Phase 4 — Daily Personalized Lesson Engine
 
-## Epic 4 — Backend Foundation 🟡
+- Daily plan generated from mastery, weak areas, review schedule, goals, available time, past performance.
+- Time-budgeted plans across skills (e.g. 10 min vocabulary review, 15 min grammar repair, 10 min conversation, 5 min pronunciation).
+- Schema: lesson plans.
+- Tests: daily lesson generation (determinism, time budgets, weak-area priority).
 
-Code complete: `cloud_functions/` TypeScript project (`onUserCreate`, `setUserRole`, `deleteUserData`, `aggregateQuestionStats`), compiles clean; `firebase.json` deploy config; `scripts/set-admin.js` admin bootstrap; `docs/deployment/01-firebase-setup.md`.
+## Phase 5 — Conversation Engine
 
-Remaining (human, interactive): `firebase login`, create dev/prod projects, enable services, deploy rules/indexes/functions, bootstrap first admin — exact steps in `docs/deployment/01-firebase-setup.md`.
+- Conversation simulation exercises; dialogue state, vocabulary adaptation to learner level.
+- Conversation ability signal into the adaptive engine.
+- Schema: conversations.
+- Tests: conversation flow contracts.
 
-## Epic 5 — Flutter Foundation
+## Phase 6 — Speech & Pronunciation
 
-App scaffold, navigation/routing, dependency injection, theme (Material 3, light/dark), localization scaffolding, shared components.
+- Speaking practice and pronunciation scoring exercise types.
+- Speech-model provider seam (same vendor-independence rules as chat models).
+- Pronunciation confidence + listening recognition signals.
+- Schema: pronunciation attempts.
 
-## Epic 6 — Question Engine
+## Phase 7 — Content Ingestion for Language Resources
 
-Question repository, answer validation, bookmarks, review-incorrect, search.
+- Adapt Content Studio + ingestion pipeline (ADR-0011) for language resources: textbooks, novels, articles, podcasts, videos, transcripts, grammar books, course material.
+- Extraction: vocabulary, grammar patterns, example sentences, expressions, idioms, difficulty level, topics, cultural references.
+- Review queue unchanged: all extracted content is a candidate until human approval.
+- Schema: content sources.
+- Tests: content extraction contracts.
 
-## Epic 7 — Practice Mode
+## Phase 8 — Production Deployment
 
-Question flow, immediate feedback, explanations, statistics recording.
+- Firebase production integration (runbooks inherited in `docs/deployment/`), Firestore repository swap, RC checklists, monitoring.
 
-## Epic 8 — Mock Exams
+## Principles
 
-Randomization, timer, scoring, pass/fail, results storage.
-
-## Epic 9 — Progress Dashboard
-
-Statistics, weak topics, study history, achievements (basic).
-
-## Epic 10 — Admin Panel / Content Studio 🟡
-
-Full requirements: `docs/product/07-content-studio-requirements.md`. V1 slice delivered (ADR-0007): Content Studio at `/admin` — overview with content stats, exam settings editor, question management (search, status filter, visual editor, archive-not-delete, version bump on edit), bulk import pipeline (CSV/JSON: parse → schema → validation → duplicate detection → topic mapping → report → approval → import as drafts or published), content-pack JSON export/import.
-
-Remaining for full spec: Excel/upload/image import, full version history + rollback + scheduled publishing, new-exam wizard, regions/subtopics/objectives UI, user management, import analytics, search index, marketplace packs, AI assists.
-
-## Epic 11 — Testing
-
-Unit tests, widget tests, integration tests, performance checks, testing documentation.
-
-## Epic 12 — Deployment
-
-CI/CD (GitHub Actions: format, analyze, test, build), production builds, Firebase deployment, documentation, release candidate.
-
-## Epic 13 — Adaptive Learning Engine ✅ (V1)
-
-Delivered (ADR-0008): pure-Dart engine in `app/flutter/lib/adaptive/` — learner model (per-concept mastery, streaks, lapses, response times), knowledge graph derived from content with lapse propagation, spaced repetition behind a replaceable `ReviewScheduler` (SM-2/FSRS-ready), confidence model, adaptive question selector (due > weak > unseen > consolidation), exam readiness + pass probability, personalized study plan, learning DNA traits. AI platform foundations as provider-independent interfaces (`lib/domain/ai_services.dart`). Wired into practice + mock exams; dashboard readiness card; "Adaptive session" practice entry. Schema extension documented in `docs/database/04-adaptive-schema.md`.
-
-Deferred: learner model Firestore persistence (with Epic 14), per-question exam timing, SM-2/FSRS scheduler, admin analytics dashboards, AI implementations.
-
-## Epic 14 — Firebase Production Integration ⏳
-
-Blocked on human steps (`docs/deployment/01-firebase-setup.md`): create projects, deploy rules/indexes/functions. Then: firebase packages + `flutterfire configure`, Firestore implementations of `AuthRepository`/`ContentRepository`/`StudyRepository`/`AdminRepository`/`LearnerModelRepository` behind unchanged interfaces (swap = provider bindings in `lib/presentation/providers.dart`), Analytics/Crashlytics wiring, App Check, Remote Config, rules emulator tests.
-
-## Epic 15 — Content Studio V2 🟡 (core delivered)
-
-Delivered (ADR-0009): 5-state workflow (draft/review/approved/published/archived, learners see published only), append-only question version history with rollback-as-new-version, bulk operations (publish/archive/tag) through the versioned path, import job history + duplicate analytics, topic-coverage and author analytics, expanded AI interfaces (OCR, content review, metadata generation), LearnerModel JSON codec (Firestore contract, round-trip tested), Firestore swap guide (`docs/deployment/02-firestore-swap-guide.md`).
-
-Deferred to Epic 14 implementation or later (reasons in ADR-0009): Excel import, file upload, image pipeline, scheduled publishing, role-separated review workflow, question usage/accuracy analytics, marketplace/white-label packs.
-
-## Epic 16 — Production Readiness 🟡 (core delivered)
-
-Delivered (ADR-0010): Firestore rules updated to the status-enum workflow with learnerModel/questionVersions/importJobs coverage and unit-tested against the emulator in CI; AI orchestration layer (`lib/ai/`) — single `AiChatModel` provider seam, six capabilities implemented vendor-blind, deterministic `FakeChatModel`, structural admin-approval gate; Content Studio V3 slice (topic/difficulty filters, bulk restore, version comparison); threat model, release/deploy/migration/smoke/rollback/DR/monitoring checklists, search platform design, performance & accessibility audits.
-
-Remaining before 1.0 RC ships: Firebase runbook (human) → Firestore swap → App Check/Remote Config/Analytics/Crashlytics wiring → smoke checklist against real project; AI provider adapters (need API keys); items in ADR-0010 deferred list.
-
-## Epic 17 — Content Intelligence Platform 🟡 (core delivered)
-
-Delivered (ADR-0011): chunked large-import engine (10k+ rows, progress stream, resume-after-failure checkpoint, rollback, partial success — UI never blocks); deterministic content quality engine (clarity/ambiguity/distractors/explanation/near-duplicate scoring with named issues); document ingestion for TXT/HTML (extraction, chapter/topic detection, question-opportunity flagging); AI document extraction orchestrated through the import-pipeline contract with grounding excerpts; review queue (`QuestionCandidate`, worst-quality-first) with Review tab, per-item and bulk approve/reject; provenance (source, excerpt, `ai:<provider>` attribution); import job history extended.
-
-Deferred (blockers in ADR-0011): Cloud Functions worker fleet + upload queue (Firebase), PDF/DOCX/OCR/Excel parsers (binary deps + Storage), institution libraries, per-stage resource metrics, search-index stage.
-
-## Epic 18 — Enterprise Multi-Tenant Platform 🟡 (core delivered)
-
-Delivered (ADR-0012/0013): `/orgs/{orgId}` Firestore rules with membership-gated tenant isolation and per-org roles — proven by 9 emulator test cases in CI (cross-tenant denial, role capabilities, escalation prevention, shape validation); content-library inheritance resolver (global→official→marketplace→org→private layering without duplication, override/hide semantics, cycle guard); curriculum hierarchy (subject→…→learning objective) mapped onto existing adaptive concept ids — engine byte-for-byte unchanged; `SearchService` seam + client implementation (entity search, similarity); `NotificationChannel`/`NotificationService` + in-app channel + adaptive-derived notifications; AI interfaces for flashcards/summarizer/study material/question improver/KG builder with flashcards+improver orchestrated; worker contract table mapping every background job to an existing tested stage contract; 100k-question stress test (which caught and fixed a real import-id hash-collision bug).
-
-Deferred (ADR-0012/0013): org UI + branding application, worker deployment (Firebase), external search engines, FCM/email/SMS channels, marketplace licensing, institution analytics workers.
-
-## Version 2+ (not V1 — architecture-ready only)
-
-Additional exam categories, adaptive learning, AI tutor/explanations/study plans, knowledge graph, spaced repetition, institutional/corporate features, white-label deployments, monetization.
+- The Adaptive Learning Core is extended, never rewritten.
+- Language features stay separated from the core.
+- No vendor lock-in; AI output always validated.
+- Repository is the single source of truth; every session updates status docs and commits.

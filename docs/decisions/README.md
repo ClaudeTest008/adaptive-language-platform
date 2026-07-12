@@ -2,6 +2,8 @@
 
 One file per decision: `NNNN-title.md`. Statuses: Proposed, Accepted, Superseded (link successor).
 
+ADRs 0001–0013 are inherited from the exam-platform lineage and remain binding for the Adaptive Learning Core. ADR-0014 onward are Adaptive Language Platform decisions.
+
 | ADR | Title | Status |
 |-----|-------|--------|
 | [0001](0001-flutter-firebase-stack.md) | Flutter + Firebase stack | Accepted |
@@ -17,3 +19,4 @@ One file per decision: `NNNN-title.md`. Statuses: Proposed, Accepted, Superseded
 | [0011](0011-content-intelligence-platform.md) | Content Intelligence: review-queue ingestion, chunked large imports, quality engine, document processing | Accepted |
 | [0012](0012-multi-tenancy-and-libraries.md) | Multi-tenancy (rules-enforced isolation), library inheritance, curriculum hierarchy | Accepted |
 | [0013](0013-workers-search-notifications.md) | Worker contracts, enterprise search seam, notification channels, KG expansion | Accepted |
+| [0014](0014-fork-from-exam-platform.md) | Fork exam platform as Adaptive Language Platform; reuse core, extend never rewrite | Accepted |

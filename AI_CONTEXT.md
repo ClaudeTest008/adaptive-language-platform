@@ -4,12 +4,26 @@ This file is the permanent memory of the project for AI development sessions. Re
 
 ## What This Project Is
 
-Adaptive exam preparation platform:
+**Adaptive Language Platform** — AI-powered adaptive language learning system:
 
 - Flutter client app (`app/flutter/`)
 - Backend services (`backend/`)
 - Serverless functions (`cloud_functions/`)
-- AI-assisted adaptive learning engine (documented in `docs/learning-engine/` and `docs/ai/`)
+- Adaptive Learning Core (inherited, `lib/adaptive/` + `lib/ai/`) — see Lineage below
+
+Goal: a personalized AI language teacher, not a flashcard app. The adaptive engine tracks mastery of language **concepts** (grammar patterns, vocabulary, skills), not individual exercises.
+
+## Lineage (ADR-0014)
+
+Forked 2026-07-12 from `adaptive-exam-platform` with full git history. Everything up to commit `3b597b2` is inherited exam-platform work. The Adaptive Learning Core is reused, not rewritten:
+
+- `lib/adaptive/` — learner model, knowledge graph, scheduler, selector, confidence, Learning DNA (pure Dart)
+- `lib/ai/` — AiChatModel provider seam, AiOrchestrator
+- `lib/application/` — import pipeline, quality engine, document ingestion (becomes language content intelligence)
+- `lib/domain/` + `lib/infrastructure/` — Clean Architecture repository pattern, demo mode (ADR-0006)
+- Content Studio, multi-tenancy, search/notification seams
+
+Layering: **Adaptive Learning Core → Adaptive Language Platform → Language Learning Features.** Extend the core with language signals; never rewrite it. Keep language-specific features separate from the core.
 
 ## Rules for AI Sessions
 
@@ -20,22 +34,30 @@ Adaptive exam preparation platform:
 5. Record architectural decisions in `docs/decisions/` (one file per decision).
 6. Update `PROJECT_STATUS.md`, `TASKS.md`, and `CHANGELOG.md` when a milestone or task completes.
 7. Keep commits small and focused; report the commit hash after each commit.
+8. Never push to or modify the original `adaptive-exam-platform` repository.
+
+## Language Learning Model
+
+Knowledge hierarchy (replaces exam category → topic → question):
+
+Language → Level → Skill → Domain → Topic → Grammar Concept → Vocabulary Concept → Phrase → Example Sentence → Exercise → Conversation
+
+Skills with independent mastery: Vocabulary, Grammar, Reading, Writing, Listening, Speaking, Pronunciation, Conversation, Culture, Comprehension.
+
+Language-specific memory signals (extend LearnerModel, don't replace): vocabulary strength, grammar confidence, recall speed, pronunciation confidence, listening recognition, speaking ability, common mistakes, native-language interference, retention decay.
+
+Misconceptions tracked separately from mistakes (e.g. "Yo soy cansado" = English grammar transfer → teach `tener` pattern family).
+
+AI tutor modes (architecture in Phase 3): Teacher, Conversation, Coach, Socratic, Grammar, Immersion. Tutor consumes learner history, knowledge graph, Learning DNA, mistakes, weak concepts, goals, learning style. Provider-independent (OpenAI/Anthropic/Gemini/local/speech/translation); all AI output passes validation.
 
 ## Current State
 
-- Epics 0–3 complete; Epic 4 code complete (deploy pending human steps in `docs/deployment/01-firebase-setup.md`); Epics 5–9 complete in demo mode (ADR-0006).
-- App: `app/flutter/` — Flutter 3.44.5 (SDK at `C:\Users\Admin\flutter`), Riverpod 3 (note: `StateProvider` needs `flutter_riverpod/legacy.dart` import; `AsyncValue.valueOrNull` is now `.value`), go_router 16. Repository interfaces in `lib/domain/repositories.dart`; demo implementations in `lib/infrastructure/`; swap point = three providers in `lib/presentation/providers.dart`.
-- Backend code: `cloud_functions/src/index.ts` (4 functions), rules/indexes in `backend/`, deploy config `firebase.json`. CI: `.github/workflows/ci.yml`.
-- Epic 10 V1 slice done: Content Studio at `/admin` (ADR-0007) — question CRUD + import pipeline (`lib/application/import_pipeline.dart`), content packs (`lib/infrastructure/content_pack.dart`), mutable content store serves ContentRepository + AdminRepository. Full spec: `docs/product/07-content-studio-requirements.md`.
-- Epic 13 done: adaptive learning engine (ADR-0008) in `lib/adaptive/` (model/engine/graph/scheduler/selector/repository) — pure Dart, no Flutter imports. Answer events flow from Practice/MockExam controllers via `answerEventFor`; providers in `lib/presentation/providers.dart` (learnerModelProvider, readinessProvider, studyPlanProvider, knowledgeGraphProvider). AI interfaces: `lib/domain/ai_services.dart` (`AiServices.none` bound). Adaptive schema: `docs/database/04-adaptive-schema.md`.
-- Epic 15 core done (ADR-0009): Content Studio V2 — 5-state `ContentStatus` workflow, version history (`AdminRepository.getVersionHistory`/`rollbackQuestion`; rollback = new version, history append-only), bulk ops (`bulkSetStatus`/`bulkAddTag`), `ImportJob` analytics, LearnerModel codec (`lib/adaptive/codec.dart` — frozen Firestore serialization contract).
-- Epic 16 core done (ADR-0010): `backend/firestore.rules` now status-enum + learnerModel/questionVersions/importJobs; rules unit tests in `backend/test/` run in CI (`firestore-rules` job, needs Java — absent locally, CI verifies). AI orchestration: `lib/ai/chat_model.dart` (AiChatModel = single vendor seam, FakeChatModel for tests) + `lib/ai/orchestrator.dart` (6 capabilities; AI content always drafts). Provider adapters intentionally absent until API keys exist.
-- Epic 17 core done (ADR-0011): Content Intelligence — `lib/application/large_import.dart` (chunked engine, `LargeImportCheckpoint` resume/rollback), `quality_engine.dart` (deterministic scoring), `document_ingestion.dart` (TXT/HTML → chapters/opportunities); orchestrator now implements `AiDocumentExtractor` (pipeline column contract + sourceExcerpt); `QuestionCandidate` review queue (`AdminRepository.saveCandidates/getCandidates/removeCandidates`) + Review tab (approve → `approved` status, publish separate).
-- Epic 18 core done (ADR-0012/0013): tenant isolation in `backend/firestore.rules` (`/orgs/{orgId}/**`, membership-gated) + `backend/test/org_isolation.test.js` (CI); `lib/domain/tenancy.dart` (Organization/OrgRole/ContentLibrary + `resolveLibrary` inheritance), `lib/domain/hierarchy.dart` (CurriculumNode → hierarchical concept ids, engine unchanged), `lib/application/search_service.dart` + `notification_service.dart` (seams + working in-app impls); orchestrator adds flashcards + suggestImprovements; import ids now `imp-<row>-<hash>` (collision fix).
-- Next: Firebase human runbook (`docs/deployment/01`) → Firestore swap (`docs/deployment/02`) → RC checklists (`docs/deployment/03`); then org UI + worker deployment per ADR-0012/0013 deferred lists. AI providers: implement AiChatModel per vendor + bind in `aiServicesProvider`.
-- V1 scope: driver's license exam only; Flutter + Firebase; Clean Architecture (feature-first), Riverpod (state + DI), go_router. Admin panel = role-gated routes in same app. Requirements in `docs/product/`; architecture in `docs/architecture/`; schema in `docs/database/`; ADRs 0001–0005 in `docs/decisions/`.
+- Phase 0 (fork foundation): repository created from exam-platform history, docs rebranded, ADR-0014 recorded. No language features built yet.
+- Inherited codebase state (as of fork): Flutter 3.44.5 (SDK at `C:\Users\Admin\flutter`), Riverpod 3 (`StateProvider` needs `flutter_riverpod/legacy.dart`; `AsyncValue.valueOrNull` is now `.value`), go_router 16. Repository interfaces in `lib/domain/repositories.dart`; demo implementations in `lib/infrastructure/`; swap point = providers in `lib/presentation/providers.dart`. 89 Flutter tests + 22 rules tests green at fork point. CI: `.github/workflows/ci.yml`.
+- Inherited domain still speaks "exam/question" language — domain remodel is Phase 1.
+- Next: Phase 1 — language domain model, knowledge graph extension, curriculum structure. See ROADMAP.md.
 
 ## Key Conventions
 
 - Documentation lives in `docs/` split by domain; root-level files are indexes and state.
-- Decision records: `docs/decisions/NNNN-title.md`.
+- Decision records: `docs/decisions/NNNN-title.md`. ADRs 0001–0013 inherited from exam platform (still binding for the core); 0014+ are language-platform decisions.

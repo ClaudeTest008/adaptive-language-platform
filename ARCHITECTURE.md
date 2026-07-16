@@ -58,11 +58,18 @@ Rules:
 - Presentation never touches Firebase directly; always through use cases and repository interfaces.
 - Dependency injection via Riverpod providers (ADR-0002); infrastructure implementations bound to domain interfaces at app startup.
 
-## Language Knowledge Hierarchy
+## Language Domain Model (ADR-0015, `lib/language/`)
 
-Language → Level → Skill → Domain → Topic → Grammar Concept → Vocabulary Concept → Phrase → Example Sentence → Exercise → Conversation
+Language → Level (CEFR A1–C2 + custom) → Skill → Domain → Topic → Grammar Concept → Vocabulary Concept → Phrase → Example Sentence → Exercise → Conversation
 
-Maps onto the inherited curriculum hierarchy (ADR-0012): hierarchical concept ids feed the unchanged adaptive engine. Mastery is tracked per concept and per skill (Vocabulary, Grammar, Reading, Writing, Listening, Speaking, Pronunciation, Conversation, Culture, Comprehension — each independent).
+Pure-Dart layer `lib/language/` — the "Adaptive Language Platform" tier of the layering:
+
+- `entities.dart` — `LanguageNode` hierarchy (parallel naming discipline to ADR-0012's CurriculumNode: hierarchical concept ids like `es:a1:grammar:verbs:present-tense:ar-verbs`, lineage ids, tier-order validation). Typed nodes: `GrammarConceptNode` (pattern + transfer traps), `VocabularyConceptNode` (lemma, translations, frequency rank), `PhraseNode`, `ExampleSentenceNode`, `ExerciseNode` (10 exercise types), `ConversationNode` (scenario).
+- `relationships.dart` — `LanguageKnowledgeGraph` with typed relations (`requires`, `buildsOn`, `interferesWith`, `culturalContext`, `falseFriend`, `relatedTo`); `toCoreGraph()` projects onto the unchanged core `KnowledgeGraph` (ADR-0008), so the engine consumes language structure without knowing languages exist. Interference endpoints may be native-language patterns outside the hierarchy (`en:be-adjective`) — misconception engine input.
+- `signals.dart` — `LanguageConceptSignals` (recall difficulty/speed, pronunciation confidence, listening recognition, grammar-transfer errors, usage frequency, native interference) beside — not inside — the core LearnerModel; `skillMastery`/`weakestSkills` aggregate per-skill mastery (10 independent skills) read-only from the core mastery map.
+- `curriculum.dart` — CEFR curriculum loader; curricula are JSON data per (target, native) language pair (`assets/curriculum/`, schema + Spanish/English seeds).
+
+Mastery is tracked per concept and per skill (Vocabulary, Grammar, Reading, Writing, Listening, Speaking, Pronunciation, Conversation, Culture, Comprehension — each independent). Schema drafts: `docs/database/05-language-schema.md`.
 
 ## Adaptive Learning Core (ADR-0008, inherited)
 

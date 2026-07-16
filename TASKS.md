@@ -2,19 +2,21 @@
 
 ## Active
 
-- Phase 1 kickoff: design language domain entities (Language, Level, Skill, Domain, Topic, GrammarConcept, VocabularyConcept, Phrase, ExampleSentence, Exercise, Conversation) as pure-Dart domain model; write ADR for the language domain model.
-- Phase 1: map language hierarchy onto curriculum-hierarchy concept ids (ADR-0012) so the adaptive engine consumes language concepts unchanged.
-- Phase 1: Firestore schema drafts — languages, learners, skills, vocabulary, grammar concepts (`docs/database/`).
+- Phase 2 kickoff: misconception engine — on wrong answer, check `LanguageKnowledgeGraph.interference()` + `GrammarConceptNode.transferTraps`, record misconception (separate from mistake) with explanation + related concept ids.
+- Phase 2: update `LanguageConceptSignals` from answer events (recall difficulty/speed, usage frequency, native interference); persist beside learner model per `docs/database/05-language-schema.md`.
+- Phase 2: text-first exercise types (multiple choice, fill-in-blank, translation, sentence building, reading comprehension) flowing answer events into the adaptive engine via language concept ids.
 
 ## Backlog
 
-- Phase 2: language memory signals in adaptive engine (additive), per-skill mastery aggregation, misconception engine, text-first exercise types.
+- Phase 2: surface per-skill mastery (`skillMastery`) in dashboard UI.
 - Phase 3: AI tutor foundation — context assembly + six modes over `lib/ai/` orchestrator.
-- Phase 4: daily lesson engine (time-budgeted plans).
+- Phase 4: daily lesson engine (time-budgeted plans; `weakestSkills` input).
 - Phases 5–8: conversation engine, speech/pronunciation, language content ingestion, production deployment. See ROADMAP.md.
-- Rewrite `docs/product/` for the language product (business requirements, personas, learning philosophy) — incremental, as phases touch them.
-- Rename exam-flavored UI copy and routes when Phase 1–2 domain remodel lands (no premature renames).
+- Grow curriculum seeds beyond A1 slices (A2+, more domains) — data-only work.
+- Rewrite `docs/product/` for the language product — incremental, as phases touch them.
+- Rename exam-flavored UI copy, routes, and the `adaptive_exam_platform` package name when Phase 2 domain remodel lands (no premature renames).
 
 ## Done
 
+- [x] Phase 1 — Language domain model: `lib/language/` (entities, relationships, signals, curriculum loader), curriculum JSON schema + es/en seeds, Firestore schema drafts, ADR-0015, 10 new tests (99 total green) (2026-07-16).
 - [x] Phase 0 — Fork foundation: repo created from adaptive-exam-platform with full history, docs rebranded, ADR-0014, pushed to GitHub (2026-07-12).

@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Adaptive Language Platform curriculum",
+  "description": "CEFR-aligned language curriculum (ADR-0015). Nodes are listed parents-first; 'parent' is a full concept id (colon-joined slugs from the language root). The language root node is implicit from 'language'.",
+  "type": "object",
+  "required": ["language", "nativeLanguage", "nodes"],
+  "properties": {
+    "language": {
+      "type": "object",
+      "required": ["code", "name"],
+      "properties": {
+        "code": { "type": "string", "description": "ISO 639-1 code; becomes the root slug" },
+        "name": { "type": "string" }
+      }
+    },
+    "nativeLanguage": { "type": "string", "description": "ISO 639-1 code of the learner's native language this curriculum is authored for (translations, interference)" },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tier", "slug", "name"],
+        "properties": {
+          "tier": {
+            "enum": ["level", "skill", "domain", "topic", "grammarConcept", "vocabularyConcept", "phrase", "exampleSentence", "exercise", "conversation"]
+          },
+          "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "name": { "type": "string" },
+          "parent": { "type": "string", "description": "Full concept id of the parent; omit only for level nodes (parented to the language root implicitly is NOT supported — always give parent, e.g. 'es')" },
+          "prerequisites": { "type": "array", "items": { "type": "string" } },
+          "pattern": { "type": "string", "description": "grammarConcept only" },
+          "explanation": { "type": "string", "description": "grammarConcept only" },
+          "transferTraps": { "type": "array", "items": { "type": "string" }, "description": "grammarConcept only: known native-language transfer errors" },
+          "lemma": { "type": "string", "description": "vocabularyConcept only" },
+          "translations": { "type": "object", "additionalProperties": { "type": "string" }, "description": "vocabularyConcept only: language code → translation" },
+          "frequencyRank": { "type": "integer", "minimum": 1, "description": "vocabularyConcept only" },
+          "text": { "type": "string", "description": "phrase / exampleSentence only" },
+          "translation": { "type": "string", "description": "phrase / exampleSentence only" },
+          "exerciseType": {
+            "enum": ["multipleChoice", "fillInBlank", "translation", "listening", "speaking", "pronunciationScoring", "sentenceBuilding", "conversationSimulation", "readingComprehension", "writingCorrection"],
+            "description": "exercise only"
+          },
+          "scenario": { "type": "string", "description": "conversation only" }
+        }
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "type"],
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "type": { "enum": ["requires", "buildsOn", "interferesWith", "culturalContext", "falseFriend", "relatedTo"] },
+          "note": { "type": "string" }
+        }
+      }
+    }
+  }
+}

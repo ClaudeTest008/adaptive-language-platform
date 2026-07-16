@@ -20,3 +20,4 @@ ADRs 0001–0013 are inherited from the exam-platform lineage and remain binding
 | [0012](0012-multi-tenancy-and-libraries.md) | Multi-tenancy (rules-enforced isolation), library inheritance, curriculum hierarchy | Accepted |
 | [0013](0013-workers-search-notifications.md) | Worker contracts, enterprise search seam, notification channels, KG expansion | Accepted |
 | [0014](0014-fork-from-exam-platform.md) | Fork exam platform as Adaptive Language Platform; reuse core, extend never rewrite | Accepted |
+| [0015](0015-language-domain-model.md) | Language domain model: 11-tier hierarchy, typed relations projected onto core graph, signals beside LearnerModel, curricula as JSON | Accepted |

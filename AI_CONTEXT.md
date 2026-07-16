@@ -52,10 +52,10 @@ AI tutor modes (architecture in Phase 3): Teacher, Conversation, Coach, Socratic
 
 ## Current State
 
-- Phase 0 (fork foundation): repository created from exam-platform history, docs rebranded, ADR-0014 recorded. No language features built yet.
-- Inherited codebase state (as of fork): Flutter 3.44.5 (SDK at `C:\Users\Admin\flutter`), Riverpod 3 (`StateProvider` needs `flutter_riverpod/legacy.dart`; `AsyncValue.valueOrNull` is now `.value`), go_router 16. Repository interfaces in `lib/domain/repositories.dart`; demo implementations in `lib/infrastructure/`; swap point = providers in `lib/presentation/providers.dart`. 89 Flutter tests + 22 rules tests green at fork point. CI: `.github/workflows/ci.yml`.
-- Inherited domain still speaks "exam/question" language — domain remodel is Phase 1.
-- Next: Phase 1 — language domain model, knowledge graph extension, curriculum structure. See ROADMAP.md.
+- Phase 1 complete (2026-07-16, ADR-0015): `lib/language/` pure-Dart layer — `entities.dart` (11-tier LanguageNode hierarchy, typed nodes, CEFR, 10 skills), `relationships.dart` (LanguageKnowledgeGraph, 6 relation types, `toCoreGraph()` projection), `signals.dart` (LanguageConceptSignals, `skillMastery`/`weakestSkills`), `curriculum.dart` (JSON loader). Curricula: `assets/curriculum/` (schema + es-for-en + en-for-es seeds). Schema drafts: `docs/database/05-language-schema.md`. Core untouched. 99 Flutter tests green (`test/language_domain_test.dart` new).
+- Inherited codebase state: Flutter 3.44.5 (SDK at `C:\Users\Admin\flutter`), Riverpod 3 (`StateProvider` needs `flutter_riverpod/legacy.dart`; `AsyncValue.valueOrNull` is now `.value`), go_router 16. Repository interfaces in `lib/domain/repositories.dart`; demo implementations in `lib/infrastructure/`; swap point = providers in `lib/presentation/providers.dart`. Package still named `adaptive_exam_platform` (rename queued with Phase 2 remodel). CI: `.github/workflows/ci.yml`.
+- Inherited app UI/domain still speaks "exam/question" language — remodel lands with Phase 2 as exercise types replace questions.
+- Next: Phase 2 — misconception engine, signal updates from answer events, text-first exercise types. See TASKS.md.
 
 ## Key Conventions
 

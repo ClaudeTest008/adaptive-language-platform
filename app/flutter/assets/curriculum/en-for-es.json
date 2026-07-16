@@ -1,0 +1,47 @@
+{
+  "$schema": "./curriculum.schema.json",
+  "language": { "code": "en", "name": "English" },
+  "nativeLanguage": "es",
+  "nodes": [
+    { "tier": "level", "slug": "a1", "name": "A1 — Beginner", "parent": "en" },
+
+    { "tier": "skill", "slug": "grammar", "name": "Grammar", "parent": "en:a1" },
+    { "tier": "domain", "slug": "verbs", "name": "Verbs", "parent": "en:a1:grammar" },
+    { "tier": "topic", "slug": "present-simple", "name": "Present simple", "parent": "en:a1:grammar:verbs" },
+    { "tier": "grammarConcept", "slug": "third-person-s", "name": "Third person -s", "parent": "en:a1:grammar:verbs:present-simple",
+      "pattern": "he/she/it + verb-s",
+      "explanation": "Present simple adds -s only in the third person singular.",
+      "transferTraps": ["*She speak English* — Spanish drops subject inflection cues; the -s is easily lost"] },
+    { "tier": "vocabularyConcept", "slug": "speak", "name": "speak", "parent": "en:a1:grammar:verbs:present-simple:third-person-s",
+      "lemma": "speak", "translations": { "es": "hablar" }, "frequencyRank": 310 },
+    { "tier": "exampleSentence", "slug": "she-speaks", "name": "She speaks Spanish", "parent": "en:a1:grammar:verbs:present-simple:third-person-s:speak",
+      "text": "She speaks Spanish.", "translation": "Ella habla español." },
+    { "tier": "grammarConcept", "slug": "subject-required", "name": "Mandatory subject pronoun", "parent": "en:a1:grammar:verbs:present-simple",
+      "pattern": "subject + verb (subject never dropped)",
+      "explanation": "English requires an explicit subject; Spanish pro-drop transfers as *Is raining* / *Speaks English*.",
+      "transferTraps": ["*Is cold today* — Spanish pro-drop transfer"] },
+
+    { "tier": "skill", "slug": "vocabulary", "name": "Vocabulary", "parent": "en:a1" },
+    { "tier": "domain", "slug": "everyday", "name": "Everyday life", "parent": "en:a1:vocabulary" },
+    { "tier": "topic", "slug": "greetings", "name": "Greetings", "parent": "en:a1:vocabulary:everyday" },
+    { "tier": "phrase", "slug": "how-are-you", "name": "How are you?", "parent": "en:a1:vocabulary:everyday:greetings",
+      "text": "How are you?", "translation": "¿Cómo estás?" },
+    { "tier": "vocabularyConcept", "slug": "actually", "name": "actually", "parent": "en:a1:vocabulary:everyday",
+      "lemma": "actually", "translations": { "es": "en realidad" }, "frequencyRank": 980 },
+
+    { "tier": "skill", "slug": "conversation", "name": "Conversation", "parent": "en:a1" },
+    { "tier": "conversation", "slug": "introductions", "name": "Introducing yourself", "parent": "en:a1:conversation",
+      "scenario": "Learner introduces themselves at a meetup; partner uses A1 vocabulary, present simple only.",
+      "prerequisites": ["en:a1:vocabulary:everyday:greetings", "en:a1:grammar:verbs:present-simple"] }
+  ],
+  "relations": [
+    { "from": "en:a1:grammar:verbs:present-simple:subject-required", "to": "es:pro-drop",
+      "type": "interferesWith", "note": "Spanish omits subject pronouns; English never does." },
+    { "from": "en:a1:vocabulary:everyday:actually", "to": "es:actualmente",
+      "type": "falseFriend", "note": "actually = en realidad; actualmente = currently." },
+    { "from": "en:a1:grammar:verbs:present-simple:third-person-s", "to": "en:a1:conversation:introductions",
+      "type": "buildsOn" },
+    { "from": "en:a1:vocabulary:everyday:greetings", "to": "en:a1:conversation:introductions",
+      "type": "buildsOn" }
+  ]
+}

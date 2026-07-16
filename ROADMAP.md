@@ -8,14 +8,14 @@ Master plan for the Adaptive Language Platform. Phases are sequential; each ends
 - Product identity: README, AI_CONTEXT, ARCHITECTURE, ROADMAP, PROJECT_STATUS, TASKS, CHANGELOG rewritten for the language platform.
 - ADR structure continued (0001–0013 inherited; 0014 records the fork).
 
-## Phase 1 — Language Domain Model
+## Phase 1 — Language Domain Model ✅ (2026-07-16)
 
-- Language knowledge hierarchy: Language → Level → Skill → Domain → Topic → Grammar Concept → Vocabulary Concept → Phrase → Example Sentence → Exercise → Conversation.
-- Domain entities: Language, Learner, Skill (10 skills, independent mastery), GrammarConcept, VocabularyConcept, Phrase, ExampleSentence.
-- Knowledge graph extension: language relationship graphs (verb → tense → conjugation family → examples; semantic vocabulary networks) via the inherited curriculum-hierarchy concept ids (ADR-0012).
-- Curriculum structure per language/level (CEFR-aligned levels).
-- Firestore schema drafts: languages, learners, skills, vocabulary, grammar concepts.
-- Tests: knowledge-graph construction, hierarchy → concept-id mapping.
+- ✅ Language knowledge hierarchy (`lib/language/entities.dart`): 11-tier `LanguageNode` discipline, typed grammar/vocabulary/phrase/example/exercise/conversation nodes, CEFR levels, 10 skills. (ADR-0015)
+- ✅ Knowledge graph extension (`lib/language/relationships.dart`): typed relations (requires, buildsOn, interferesWith, culturalContext, falseFriend, relatedTo) projected onto the unchanged core graph.
+- ✅ Language signals + per-skill mastery (`lib/language/signals.dart`): recall difficulty/speed, pronunciation confidence, listening recognition, grammar-transfer errors, usage frequency, native interference; `skillMastery`/`weakestSkills`.
+- ✅ CEFR curriculum as data: JSON schema + loader + Spanish-for-English and English-for-Spanish seeds (`assets/curriculum/`).
+- ✅ Firestore schema drafts: `docs/database/05-language-schema.md`.
+- ✅ Tests: hierarchy ids/lineage, tier validation, relation queries, core projection, skill aggregation, seed parsing (10 new; 99 total green).
 
 ## Phase 2 — Vocabulary & Grammar Adaptive Tracking
 

@@ -1,9 +1,17 @@
 # Project Status
 
-**Phase:** Phase 0 — Fork Foundation (complete)
-**Last updated:** 2026-07-12
+**Phase:** Phase 1 — Language Domain Model (complete)
+**Last updated:** 2026-07-16
 
 ## Completed
+
+- Phase 1 — Language domain model (2026-07-16, ADR-0015):
+  - `lib/language/` pure-Dart layer: 11-tier language hierarchy with hierarchical concept ids, typed nodes (grammar concepts with transfer traps, vocabulary with lemma/translations/frequency, phrases, examples, exercises, conversations), CEFR levels, 10 skills.
+  - `LanguageKnowledgeGraph`: typed relations (requires, buildsOn, interferesWith, culturalContext, falseFriend, relatedTo); `toCoreGraph()` projection — core engine consumes language structure unchanged (zero diffs under `lib/adaptive/`).
+  - Language memory signals (`LanguageConceptSignals`) beside the core LearnerModel; per-skill mastery aggregation (`skillMastery`, `weakestSkills`).
+  - CEFR curricula as JSON data: schema + loader + `es-for-en` / `en-for-es` seeds (tener-states misconception family, ser/estar, embarazada + actually false friends, pro-drop interference, cultural context).
+  - Firestore schema drafts: `docs/database/05-language-schema.md`.
+  - Verified: `flutter analyze` clean; 99 tests green (89 inherited unchanged + 10 new in `test/language_domain_test.dart`).
 
 - Phase 0 — Fork foundation (2026-07-12):
   - Repository `adaptive-language-platform` created as history-preserving fork of `adaptive-exam-platform` (ADR-0014). Independent remote; original repo untouched.
@@ -30,7 +38,7 @@ Note: inherited domain code still uses exam vocabulary (questions, exams, topics
 
 ## Next
 
-- Phase 1 — Language domain model: knowledge hierarchy entities, language knowledge-graph extension, CEFR-aligned curriculum structure, schema drafts, tests. See ROADMAP.md.
+- Phase 2 — Vocabulary & grammar adaptive tracking: wire language signals into answer-event flows, misconception engine (interference detection on errors), text-first exercise types, per-skill mastery surfaced in app. See ROADMAP.md.
 
 ## Local Dev
 

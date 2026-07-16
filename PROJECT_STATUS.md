@@ -5,6 +5,13 @@
 
 ## Completed
 
+- Product rebrand — language-first navigation + immersion UI (2026-07-16, ADR-0019):
+  - Language Lab is now the app home (`/`); exam-era routes (practice/mock/bookmarks/search/admin) retired from navigation; login/settings/web manifest/index rebranded — no exam-flavored surface reachable (verified by adversarial sweep).
+  - Multi-language selector (`availableLanguages` registry + `selectedLanguageProvider`): Spanish 🇪🇸 / English 🇬🇧, per-language demo seeds; fresh learner state per switch (review found + fixed cross-language contamination and count inflation; regression-tested round trip).
+  - Immersion theme: teal M3 palette, gradient hero + tutor hero cards, frosted pills, rounded cards, AI Tutor FAB; dashboard reordered — tutor hero, Today's plan, practice CTA, skill mastery, teacher notes.
+  - Tutor goals now derive from the selected curriculum ("Reach A2 {language}").
+  - Verified: `flutter analyze` clean; 132 tests green; web boots cleanly, zero console errors.
+
 - Phase 3 foundation — AI tutor (2026-07-16, ADR-0018):
   - `lib/language/tutor.dart`: `TutorContext` snapshot assembly (skill mastery, weakest concepts, misconceptions, signals, goals, Learning DNA, focus-concept graph slice with relations + pattern family); six mode contracts with distinct personas; `tutorSystemPrompt` serializes learner context; `validateTutorReply` gates every output (structure + grounding), rejected output replaced by safe fallback.
   - Provider-blind: `LanguageTutor` consumes any `AiChatModel` (`lib/ai/` untouched); `tutorModelProvider` = vendor swap point; `DemoTutorModel` composes deterministic teacherly replies from the same prompts a vendor would get (Teacher-mode live flow: misconception repair first, then pattern family).
@@ -66,7 +73,7 @@ Flutter SDK at `C:\Users\Admin\flutter` (3.44.5 stable). Run web: `flutter run -
 
 ## Known Limitations
 
-- Language Lab starts demo-seeded (deterministic scripted learner, reseeds on restart); practice sessions layer real answer events on top. Exam-era practice/mock screens still present alongside; retire with package rename (backlog).
+- Language Lab starts demo-seeded (deterministic scripted learner per language, reseeds on restart/switch); practice sessions layer real answer events on top. Exam-era screens are unrouted dead code until the package rename deletes them (backlog).
 - Exercise pool bounded by curriculum richness (A1 slices) until Phase 7 content ingestion.
 - Firebase production integration deferred to Phase 8 (runbooks in `docs/deployment/`).
 - `docs/product/`, `docs/architecture/`, `docs/database/` subtrees still describe the exam domain; rewritten incrementally as each phase touches them.

@@ -89,18 +89,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               children: [
                 const SizedBox(height: 48),
                 Icon(
-                  Icons.school,
+                  Icons.language,
                   size: 64,
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Exam Prep',
+                  'Adaptive Language Platform',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 Text(
-                  "Driver's License — Demo Mode",
+                  'Your personal AI language teacher — Demo Mode',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),

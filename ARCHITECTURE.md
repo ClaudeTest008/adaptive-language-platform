@@ -44,6 +44,8 @@ Language-specific features live above the core and feed it signals; the core sta
 
 One Flutter codebase serves learners (mobile + web) and administrators (web, role-gated routes). See ADR-0003.
 
+Navigation is language-first (ADR-0019): the Language Lab is the home route; target language is a selector over the `availableLanguages` curriculum registry (adding a language = one curriculum JSON + one registry row). Exam-era screens are retired from navigation (deleted with the package rename). Visual identity: teal immersion Material 3 theme, gradient heroes, tutor as the primary action.
+
 ## Layers (Clean Architecture)
 
 | Layer | Contents | Depends on |

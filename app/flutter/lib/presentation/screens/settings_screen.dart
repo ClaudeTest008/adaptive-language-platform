@@ -77,8 +77,8 @@ class SettingsScreen extends ConsumerWidget {
               leading: Icon(Icons.info_outline),
               title: Text('About'),
               subtitle: Text(
-                'Exam Prep v0.1.0 — demo mode (in-memory data). '
-                'Firebase backend connects in a later milestone.',
+                'Adaptive Language Platform v0.1.0 — demo mode (in-memory '
+                'data). Firebase backend connects in a later milestone.',
               ),
             ),
           ],

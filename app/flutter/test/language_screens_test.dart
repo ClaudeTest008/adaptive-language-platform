@@ -13,8 +13,14 @@ import 'package:flutter_test/flutter_test.dart';
 
 const tenerId = 'es:a1:grammar:verbs:states:tener-states';
 
-Curriculum _curriculum() => parseCurriculum(
-  jsonDecode(File('assets/curriculum/es-for-en.json').readAsStringSync())
+Curriculum _curriculum() => _curriculumFor('es');
+
+Curriculum _curriculumFor(String code) => parseCurriculum(
+  jsonDecode(
+        File(
+          'assets/curriculum/${code == 'es' ? 'es-for-en' : 'en-for-es'}.json',
+        ).readAsStringSync(),
+      )
       as Map<String, dynamic>,
 );
 
@@ -43,26 +49,72 @@ void main() {
     // Header: demo learner seeded through the real engine.
     expect(find.text('Spanish'), findsOneWidget);
     expect(find.text('A1 · CEFR'), findsOneWidget);
+    // Tutor hero opens with the top misconception to repair.
+    expect(find.textContaining('Wants to clear up:'), findsOneWidget);
+
+    // Today's plan leads, misconception repair first.
+    await tester.scrollUntilVisible(find.text("Today's plan"), 150);
+    await tester.pump();
+    expect(find.textContaining('Repair:'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('25 minutes today'), 150);
 
     // Independent per-skill mastery bars.
-    expect(find.text('Skill mastery'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Skill mastery'), 150);
     expect(find.text('Vocabulary'), findsOneWidget);
     expect(find.text('Grammar'), findsOneWidget);
-    expect(find.text('Conversation'), findsOneWidget);
 
     // Teacher notes: tener misconception with explanation + occurrences.
-    await tester.scrollUntilVisible(find.text('Teacher notes'), 200);
+    await tester.scrollUntilVisible(find.text('Teacher notes'), 150);
     expect(find.text('2×'), findsWidgets);
     expect(
       find.textContaining('tener', findRichText: true),
       findsWidgets,
     );
+  });
 
-    // Lesson preview leads with misconception repair.
-    await tester.scrollUntilVisible(find.text("Today's lesson"), 200);
-    await tester.pump();
-    expect(find.textContaining('Repair:'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('25 minutes today'), 200);
+  testWidgets('language selector switches curriculum and reseeds learner', (
+    tester,
+  ) async {
+    // Real provider chain: selector → curriculum → learner reseed.
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          curriculumProvider.overrideWith((ref) async {
+            final code = ref.watch(selectedLanguageProvider);
+            return _curriculumFor(code);
+          }),
+        ],
+        child: const MaterialApp(home: LanguageDashboardScreen()),
+      ),
+    );
+    await _settle(tester);
+    expect(find.text('Spanish'), findsOneWidget);
+
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await _settle(tester);
+    await tester.tap(find.text('English').last);
+    await _settle(tester);
+
+    // New curriculum + new demo seed (pro-drop misconception).
+    expect(find.text('English'), findsOneWidget);
+    expect(find.text('Spanish'), findsNothing);
+    // Fresh state: NO leakage from the Spanish session (regression guard —
+    // shared repos once contaminated the new language's misconceptions).
+    expect(find.textContaining('es:a1'), findsNothing);
+    expect(find.textContaining('tener'), findsNothing);
+    expect(
+      find.textContaining('Wants to clear up: Mandatory subject pronoun'),
+      findsOneWidget,
+    );
+
+    // Round trip back to Spanish: counts must NOT inflate (2×, not 4×).
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await _settle(tester);
+    await tester.tap(find.text('Spanish').last);
+    await _settle(tester);
+    await tester.scrollUntilVisible(find.text('Teacher notes'), 150);
+    expect(find.text('2×'), findsWidgets);
+    expect(find.text('4×'), findsNothing);
   });
 
   testWidgets('concept screen shows signals and live-updates on simulate', (

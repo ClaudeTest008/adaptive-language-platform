@@ -8,6 +8,7 @@ library;
 
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import 'dart:convert';
 
@@ -24,9 +25,20 @@ import '../language/misconceptions.dart';
 import '../language/signals.dart';
 import '../language/tutor.dart';
 
-/// Demo curriculum: Spanish for English speakers (assets/curriculum/).
+/// Available (target language, native language) curricula. Adding a
+/// language = adding a curriculum JSON + one row here.
+const availableLanguages = [
+  (code: 'es', name: 'Spanish', flag: '🇪🇸', asset: 'assets/curriculum/es-for-en.json'),
+  (code: 'en', name: 'English', flag: '🇬🇧', asset: 'assets/curriculum/en-for-es.json'),
+];
+
+/// Currently selected target language (Language Lab selector).
+final selectedLanguageProvider = StateProvider<String>((ref) => 'es');
+
 final curriculumProvider = FutureProvider<Curriculum>((ref) async {
-  final raw = await rootBundle.loadString('assets/curriculum/es-for-en.json');
+  final code = ref.watch(selectedLanguageProvider);
+  final lang = availableLanguages.firstWhere((l) => l.code == code);
+  final raw = await rootBundle.loadString(lang.asset);
   return parseCurriculum(jsonDecode(raw) as Map<String, dynamic>);
 });
 
@@ -77,6 +89,9 @@ class LanguageLearnerController extends Notifier<LanguageLearnerState> {
 
   @override
   LanguageLearnerState build() {
+    // Language switch rebuilds the whole learner state for the new
+    // curriculum (demo mode: state is per-run anyway).
+    ref.watch(selectedLanguageProvider);
     _initFuture = _init();
     return const LanguageLearnerState();
   }
@@ -88,10 +103,21 @@ class LanguageLearnerController extends Notifier<LanguageLearnerState> {
       curriculum.graph,
       nativeLanguage: curriculum.nativeLanguage,
     );
-    final log = await ref.read(misconceptionRepositoryProvider).load();
-    final signals = await ref.read(languageSignalsRepositoryProvider).load();
-    state = state.copyWith(misconceptions: log, signals: signals, ready: true);
-    if (state.model.totalAnswered == 0) _seedDemo(curriculum);
+    // Demo mode: the core model is never persisted, so every (re)build —
+    // app start or language switch — starts a fresh learner. The stores
+    // MUST match the model or a language switch would leak the previous
+    // language's misconceptions/signals into this one (and re-seeding
+    // would inflate occurrence counts on every switch round trip).
+    // Loading from the repositories returns when LearnerModel persistence
+    // lands with the Firestore swap (Phase 8).
+    state = state.copyWith(
+      misconceptions: const MisconceptionLog(),
+      signals: const LanguageSignalsStore(),
+      ready: true,
+    );
+    await ref.read(misconceptionRepositoryProvider).save(state.misconceptions);
+    await ref.read(languageSignalsRepositoryProvider).save(state.signals);
+    _seedDemo(curriculum);
   }
 
   /// Records one exercise answer on [node]. Returns the misconceptions
@@ -155,51 +181,57 @@ class LanguageLearnerController extends Notifier<LanguageLearnerState> {
     return detected;
   }
 
-  /// Deterministic demo learner (ADR-0006 demo mode): strong vocabulary,
-  /// weak grammar with two live misconceptions — the showcase state the
-  /// Phase 2 screens render.
+  /// Deterministic demo learner per language (ADR-0006 demo mode):
+  /// strong vocabulary, weak grammar with live misconceptions — the
+  /// showcase state the Language Lab renders on first launch.
+  static const _seedScripts = <String, List<(String, bool, double)>>{
+    'es': [
+      // Vocabulary: fast and solid, one false-friend slip.
+      ('es:a1:vocabulary:food:fruit:manzana', true, 2.1),
+      ('es:a1:vocabulary:food:fruit:manzana', true, 1.6),
+      ('es:a1:vocabulary:food:fruit:manzana', true, 1.2),
+      ('es:a1:vocabulary:food:restaurant:embarazada', false, 6.8),
+      ('es:a1:vocabulary:food:restaurant:embarazada', true, 3.0),
+      // Grammar: tener-states hit twice (transfer), ser/estar once.
+      ('es:a1:grammar:verbs:present-tense:ar-verbs', true, 4.0),
+      ('es:a1:grammar:verbs:present-tense:ar-verbs', true, 3.2),
+      ('es:a1:grammar:verbs:states:tener-states', false, 8.5),
+      ('es:a1:grammar:verbs:states:tener-states', false, 7.9),
+      ('es:a1:grammar:verbs:states:ser-estar', false, 9.1),
+      ('es:a1:grammar:verbs:states:ser-estar', true, 5.0),
+      // A taste of conversation + culture.
+      ('es:a1:conversation:ordering-food', true, 12.0),
+      ('es:a1:culture:meal-times', true, 4.5),
+    ],
+    'en': [
+      // Vocabulary solid, one false friend (actually/actualmente).
+      ('en:a1:vocabulary:everyday:greetings:how-are-you', true, 2.0),
+      ('en:a1:vocabulary:everyday:greetings:how-are-you', true, 1.5),
+      ('en:a1:vocabulary:everyday:actually', false, 7.2),
+      ('en:a1:vocabulary:everyday:actually', true, 3.1),
+      // Grammar: pro-drop transfer twice, third-person -s once.
+      ('en:a1:grammar:verbs:present-simple:subject-required', false, 8.8),
+      ('en:a1:grammar:verbs:present-simple:subject-required', false, 8.1),
+      ('en:a1:grammar:verbs:present-simple:third-person-s', false, 6.5),
+      ('en:a1:grammar:verbs:present-simple:third-person-s', true, 4.2),
+      ('en:a1:conversation:introductions', true, 11.0),
+    ],
+  };
+
   void _seedDemo(Curriculum c) {
-    final g = c.graph;
     var t = DateTime(2026, 7, 15, 9);
-    Future<void> answer(String id, bool correct, double seconds) {
-      final node = g[id];
-      if (node == null) return Future.value();
+    for (final (id, correct, seconds)
+        in _seedScripts[c.languageCode] ?? const <(String, bool, double)>[]) {
+      final node = c.graph[id];
+      if (node == null) continue;
       t = t.add(const Duration(minutes: 3));
-      return recordAnswer(
+      recordAnswer(
         node: node,
         correct: correct,
         responseSeconds: seconds,
         at: t,
       );
     }
-
-    const vocabFruit = 'es:a1:vocabulary:food:fruit:manzana';
-    const vocabFalse = 'es:a1:vocabulary:food:restaurant:embarazada';
-    const arVerbs = 'es:a1:grammar:verbs:present-tense:ar-verbs';
-    const tener = 'es:a1:grammar:verbs:states:tener-states';
-    const serEstar = 'es:a1:grammar:verbs:states:ser-estar';
-    const ordering = 'es:a1:conversation:ordering-food';
-    const mealTimes = 'es:a1:culture:meal-times';
-
-    // Vocabulary: fast and solid, one false-friend slip.
-    answer(vocabFruit, true, 2.1);
-    answer(vocabFruit, true, 1.6);
-    answer(vocabFruit, true, 1.2);
-    answer(vocabFalse, false, 6.8); // false friend bites
-    answer(vocabFalse, true, 3.0);
-
-    // Grammar: -ar verbs fine; tener-states hit twice (transfer error),
-    // ser/estar once — the misconception showcase.
-    answer(arVerbs, true, 4.0);
-    answer(arVerbs, true, 3.2);
-    answer(tener, false, 8.5);
-    answer(tener, false, 7.9);
-    answer(serEstar, false, 9.1);
-    answer(serEstar, true, 5.0);
-
-    // A taste of conversation + culture.
-    answer(ordering, true, 12.0);
-    answer(mealTimes, true, 4.5);
   }
 }
 
@@ -263,7 +295,10 @@ class LanguagePracticeState {
 
 class LanguagePracticeController extends Notifier<LanguagePracticeState?> {
   @override
-  LanguagePracticeState? build() => null;
+  LanguagePracticeState? build() {
+    ref.watch(selectedLanguageProvider); // language switch ends the session
+    return null;
+  }
 
   /// Starts a session. [focusConceptIds] (repair concepts) sort first.
   void start({List<String> focusConceptIds = const [], int limit = 8}) {
@@ -349,7 +384,7 @@ TutorContext? assembleTutorContext(Ref ref, {String? focusConceptId}) {
     conceptMastery: learner.conceptMastery,
     misconceptions: learner.misconceptions,
     signals: learner.signals,
-    goals: const ['Reach A2 Spanish'],
+    goals: ['Reach A2 ${curriculum.languageName}'],
     focusConceptId:
         focusConceptId ?? learner.misconceptions.all.firstOrNull?.conceptId,
   );
@@ -383,7 +418,10 @@ class TutorSessionState {
 
 class TutorSessionController extends Notifier<TutorSessionState?> {
   @override
-  TutorSessionState? build() => null;
+  TutorSessionState? build() {
+    ref.watch(selectedLanguageProvider); // language switch ends the session
+    return null;
+  }
 
   /// Starts a session: assembles fresh context and asks the tutor to open.
   Future<void> start(TutorMode mode, {String? focusConceptId}) async {

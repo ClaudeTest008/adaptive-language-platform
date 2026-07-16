@@ -6,9 +6,9 @@ import '../../language/entities.dart';
 import '../../language/lesson.dart';
 import '../language_providers.dart';
 
-/// Phase 2 showcase: per-skill mastery, misconception "Teacher Notes",
-/// and today's lesson preview — all driven live by the language layer
-/// over the unchanged core engine.
+/// Language Lab — the app's home (ADR-0019). Everything the vision
+/// promises, driven live: AI tutor hero, today's personalized plan,
+/// independent per-skill mastery, misconception Teacher Notes.
 class LanguageDashboardScreen extends ConsumerWidget {
   const LanguageDashboardScreen({super.key});
 
@@ -31,20 +31,44 @@ class LanguageDashboardScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Language Lab')),
+      appBar: AppBar(
+        title: const Text('Language Lab'),
+        actions: [
+          const _LanguageMenu(),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: () => context.push('/settings'),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        icon: const Icon(Icons.school),
+        label: const Text('AI Tutor'),
+        onPressed: () => context.push('/language/tutor'),
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
             children: [
               _HeaderCard(
                 languageName: curriculum.languageName,
-                level: 'A1 · CEFR',
+                languageCode: curriculum.languageCode,
                 answered: learner.model.totalAnswered,
                 accuracy: learner.model.overallAccuracy,
               ),
               const SizedBox(height: 12),
+              const _TutorHeroCard(),
+              const SizedBox(height: 16),
+              _SectionHeader(
+                icon: Icons.today,
+                title: "Today's plan",
+                subtitle: 'Personalized · misconception repair first',
+              ),
+              const _LessonPreviewCard(),
+              const SizedBox(height: 8),
               const _PracticeCta(),
               const SizedBox(height: 16),
               _SectionHeader(
@@ -57,20 +81,13 @@ class LanguageDashboardScreen extends ConsumerWidget {
               _SectionHeader(
                 icon: Icons.school,
                 title: 'Teacher notes',
-                subtitle: 'Interference from English, explained',
+                subtitle: 'Interference from your native language',
               ),
               const _TeacherNotesCard(),
-              const SizedBox(height: 16),
-              _SectionHeader(
-                icon: Icons.today,
-                title: "Today's lesson",
-                subtitle: 'Misconception repair first',
-              ),
-              const _LessonPreviewCard(),
               const SizedBox(height: 24),
               Text(
-                'Demo learner · answers simulated through the adaptive core · '
-                'tap a note or lesson block to inspect the concept',
+                'Demo learner · every number comes from the live adaptive '
+                'engine · tap anything to dig in',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: scheme.onSurfaceVariant,
@@ -84,16 +101,58 @@ class LanguageDashboardScreen extends ConsumerWidget {
   }
 }
 
+/// Target-language switcher — a new language is one curriculum JSON away.
+class _LanguageMenu extends ConsumerWidget {
+  const _LanguageMenu();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(selectedLanguageProvider);
+    final current = availableLanguages.firstWhere((l) => l.code == selected);
+    return PopupMenuButton<String>(
+      tooltip: 'Switch language',
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
+          children: [
+            Text(current.flag, style: const TextStyle(fontSize: 20)),
+            const Icon(Icons.arrow_drop_down),
+          ],
+        ),
+      ),
+      onSelected: (code) =>
+          ref.read(selectedLanguageProvider.notifier).state = code,
+      itemBuilder: (context) => [
+        for (final l in availableLanguages)
+          PopupMenuItem(
+            value: l.code,
+            child: Row(
+              children: [
+                Text(l.flag, style: const TextStyle(fontSize: 18)),
+                const SizedBox(width: 8),
+                Text(l.name),
+                if (l.code == selected) ...[
+                  const Spacer(),
+                  const Icon(Icons.check, size: 16),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _HeaderCard extends StatelessWidget {
   const _HeaderCard({
     required this.languageName,
-    required this.level,
+    required this.languageCode,
     required this.answered,
     required this.accuracy,
   });
 
   final String languageName;
-  final String level;
+  final String languageCode;
   final int answered;
   final double accuracy;
 
@@ -101,14 +160,23 @@ class _HeaderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final flag = availableLanguages
+        .firstWhere(
+          (l) => l.code == languageCode,
+          orElse: () => availableLanguages.first,
+        )
+        .flag;
     return Card(
-      elevation: 0,
       color: Colors.transparent,
       clipBehavior: Clip.antiAlias,
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [scheme.primaryContainer, scheme.tertiaryContainer],
+            colors: [
+              scheme.primaryContainer,
+              scheme.tertiaryContainer,
+              scheme.secondaryContainer,
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -116,14 +184,7 @@ class _HeaderCard extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 26,
-              backgroundColor: scheme.primary,
-              child: Text(
-                '🇪🇸',
-                style: text.headlineSmall,
-              ),
-            ),
+            Text(flag, style: const TextStyle(fontSize: 40)),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -133,35 +194,22 @@ class _HeaderCard extends StatelessWidget {
                     languageName,
                     style: text.headlineSmall?.copyWith(
                       color: scheme.onPrimaryContainer,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  Text(
-                    level,
-                    style: text.bodyMedium?.copyWith(
-                      color: scheme.onPrimaryContainer,
-                    ),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 6,
+                    children: [
+                      _GlassPill(label: 'A1 · CEFR'),
+                      _GlassPill(label: '$answered answers'),
+                      _GlassPill(
+                        label: '${(accuracy * 100).round()}% correct',
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '$answered',
-                  style: text.headlineSmall?.copyWith(
-                    color: scheme.onPrimaryContainer,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  'answers · ${(accuracy * 100).round()}% correct',
-                  style: text.bodySmall?.copyWith(
-                    color: scheme.onPrimaryContainer,
-                  ),
-                ),
-              ],
             ),
           ],
         ),
@@ -170,8 +218,99 @@ class _HeaderCard extends StatelessWidget {
   }
 }
 
-/// Primary action: jump straight into a session focused on the repair
-/// block (weakest material first).
+/// Frosted pill on the gradient header.
+class _GlassPill extends StatelessWidget {
+  const _GlassPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: scheme.surface.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: scheme.onSurface,
+        ),
+      ),
+    );
+  }
+}
+
+/// The star of the app: your personal teacher, opening with the exact
+/// misconception it plans to repair.
+class _TutorHeroCard extends ConsumerWidget {
+  const _TutorHeroCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final learner = ref.watch(languageLearnerProvider);
+    final curriculum = ref.watch(curriculumProvider).value;
+    final top = learner.misconceptions.all.firstOrNull;
+    return Card(
+      color: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push('/language/tutor'),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [scheme.primary, scheme.tertiary],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: scheme.onPrimary.withValues(alpha: 0.2),
+                child: Icon(Icons.school, color: scheme.onPrimary, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Your AI teacher is ready',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: scheme.onPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      top == null || curriculum == null
+                          ? 'Teacher · Conversation · Coach · Socratic · '
+                                'Grammar · Immersion'
+                          : 'Wants to clear up: '
+                                '${curriculum.graph[top.conceptId]?.name ?? top.conceptId}',
+                      style: TextStyle(
+                        color: scheme.onPrimary.withValues(alpha: 0.9),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward, color: scheme.onPrimary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Practice CTA under today's plan.
 class _PracticeCta extends ConsumerWidget {
   const _PracticeCta();
 
@@ -181,33 +320,22 @@ class _PracticeCta extends ConsumerWidget {
     final repair = blocks
         .where((b) => b.kind == LessonBlockKind.repair)
         .firstOrNull;
-    final buttonStyle = FilledButton.styleFrom(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      textStyle: Theme.of(context).textTheme.titleMedium,
-    );
-    return Row(
-      children: [
-        Expanded(
-          child: FilledButton.icon(
-            style: buttonStyle,
-            icon: const Icon(Icons.play_arrow),
-            label: Text(repair == null ? 'Practice' : 'Fix weak spots'),
-            onPressed: () => context.push(
-              '/language/practice',
-              extra: repair?.conceptIds ?? const <String>[],
-            ),
-          ),
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.tonalIcon(
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          textStyle: Theme.of(context).textTheme.titleMedium,
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: FilledButton.tonalIcon(
-            style: buttonStyle,
-            icon: const Icon(Icons.school),
-            label: const Text('AI Tutor'),
-            onPressed: () => context.push('/language/tutor'),
-          ),
+        icon: const Icon(Icons.play_arrow),
+        label: Text(
+          repair == null ? 'Start practice' : 'Start practice — fix weak spots',
         ),
-      ],
+        onPressed: () => context.push(
+          '/language/practice',
+          extra: repair?.conceptIds ?? const <String>[],
+        ),
+      ),
     );
   }
 }
@@ -262,8 +390,7 @@ class _SkillMasteryCard extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            for (final e in ordered)
-              _SkillBar(skill: e.key, value: e.value),
+            for (final e in ordered) _SkillBar(skill: e.key, value: e.value),
           ],
         ),
       ),
@@ -368,7 +495,7 @@ class _TeacherNotesCard extends ConsumerWidget {
           Card(
             margin: const EdgeInsets.only(bottom: 8),
             child: InkWell(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               onTap: () => context.push(
                 '/language/concept/${Uri.encodeComponent(m.conceptId)}',
               ),
@@ -416,7 +543,8 @@ class _TeacherNotesCard extends ConsumerWidget {
                         children: [
                           for (final id in m.relatedConceptIds.take(5))
                             _Pill(
-                              label: curriculum.graph[id]?.name ??
+                              label:
+                                  curriculum.graph[id]?.name ??
                                   id.split(':').last,
                               color: scheme.secondaryContainer,
                               textColor: scheme.onSecondaryContainer,

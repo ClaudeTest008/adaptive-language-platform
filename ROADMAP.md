@@ -17,7 +17,7 @@ Master plan for the Adaptive Language Platform. Phases are sequential; each ends
 - ✅ Firestore schema drafts: `docs/database/05-language-schema.md`.
 - ✅ Tests: hierarchy ids/lineage, tier validation, relation queries, core projection, skill aggregation, seed parsing (10 new; 99 total green).
 
-## Phase 2 — Vocabulary & Grammar Adaptive Tracking (core complete 2026-07-16)
+## Phase 2 — Vocabulary & Grammar Adaptive Tracking ✅ (2026-07-16)
 
 - ✅ Language signals from answer events (ADR-0016): EWMA recall difficulty/speed, usage frequency, grammar-transfer errors, native interference — beside the unchanged core model (`signals.dart`, `LanguageSignalsStore` + repository seam).
 - ✅ Per-skill mastery aggregation surfaced in UI (Language Lab dashboard: per-skill animated bars).
@@ -26,7 +26,8 @@ Master plan for the Adaptive Language Platform. Phases are sequential; each ends
 - ✅ Showcase UI: `/language` dashboard + `/language/concept/:id` detail with live simulate (ADR-0016).
 - ✅ Daily lesson preview (repair-first stopgap; full engine in Phase 4).
 - ✅ Tests: detection, log merge, signal updates, end-to-end through core engine, widget tests for both screens (110 total green).
-- ⏳ Remaining: text-first exercise flows (multiple choice, fill-in-blanks, translation, sentence building, reading comprehension) wired to `recordAnswer`; learning-goals schema usage.
+- ✅ Text-first exercise flows (ADR-0017): five types derived from curriculum data, deterministic generation, `/language/practice` session with inline teacher notes; lineage-walking misconception detection; dashboard "Practice your weak spots" CTA.
+- Deferred to Phase 4: learning-goals schema usage (first consumer is the lesson engine).
 
 ## Phase 3 — AI Tutor Foundation
 

@@ -93,9 +93,9 @@ Generates today's lesson from mastery, weak areas, review schedule, goals, avail
 
 All ingestion produces candidates in a human review queue — never published content directly. Adapted for language resources (Phase 7): textbooks, novels, articles, podcasts, videos, transcripts, grammar books. Extraction targets: vocabulary, grammar patterns, example sentences, expressions, idioms, difficulty level, topics, cultural references.
 
-## Exercise Types (Phase 2+)
+## Exercise Types (ADR-0017)
 
-Multiple choice, fill-in-blanks, translation, listening, speaking practice, pronunciation scoring, sentence building, conversation simulation, reading comprehension, writing correction. All flow answer events into the adaptive engine.
+Text-first types live: multiple choice, fill-in-blank, translation, sentence building, reading comprehension — **derived from curriculum data** (`lib/language/exercises.dart`, deterministic seeded generation, repair concepts first, diacritic-preserving answer checks), served by `/language/practice`. Every submission is a real answer event: core engine mastery, lineage-walking misconception detection (child-exercise errors implicate ancestor grammar concepts) and signal updates, with teacher notes inline. Listening, speaking, pronunciation scoring, conversation simulation, writing correction arrive with their engines (Phases 5–6).
 
 ## Enterprise Platform (ADR-0012/0013, inherited)
 

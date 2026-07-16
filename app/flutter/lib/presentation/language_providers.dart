@@ -16,6 +16,7 @@ import '../adaptive/model.dart' as adaptive;
 import '../infrastructure/language_repositories.dart';
 import '../language/curriculum.dart';
 import '../language/entities.dart';
+import '../language/exercises.dart';
 import '../language/lesson.dart';
 import '../language/misconceptions.dart';
 import '../language/signals.dart';
@@ -69,10 +70,11 @@ class LanguageLearnerState {
 class LanguageLearnerController extends Notifier<LanguageLearnerState> {
   LearnerEngine? _engine;
   MisconceptionDetector? _detector;
+  Future<void>? _initFuture;
 
   @override
   LanguageLearnerState build() {
-    _init();
+    _initFuture = _init();
     return const LanguageLearnerState();
   }
 
@@ -89,16 +91,19 @@ class LanguageLearnerController extends Notifier<LanguageLearnerState> {
     if (state.model.totalAnswered == 0) _seedDemo(curriculum);
   }
 
-  /// Records one exercise answer on [node].
-  Future<void> recordAnswer({
+  /// Records one exercise answer on [node]. Returns the misconceptions
+  /// detected by THIS answer (empty when correct or unattributed) so
+  /// exercise flows can show teacher feedback immediately.
+  Future<List<Misconception>> recordAnswer({
     required LanguageNode node,
     required bool correct,
     required double responseSeconds,
     DateTime? at,
   }) async {
+    await _initFuture; // answers may arrive before _init completes
     final engine = _engine;
     final detector = _detector;
-    if (engine == null || detector == null) return;
+    if (engine == null || detector == null) return const [];
     final when = at ?? DateTime.now();
 
     // Core engine: whole lineage exercised, exactly like exam questions.
@@ -116,19 +121,25 @@ class LanguageLearnerController extends Notifier<LanguageLearnerState> {
       ),
     );
 
-    // Misconception engine: interference authored on the concept itself.
+    // Misconception engine over the whole lineage: an error on a child
+    // exercise ("Tengo hambre") is evidence of the ancestor grammar
+    // concept's misconception (tener-states). Ancestors without authored
+    // interference contribute nothing.
     final detected = detector.detect(
-      conceptIds: [node.conceptId],
+      conceptIds: node.lineageConceptIds.reversed.toList(),
       correct: correct,
       at: when,
     );
     final misconceptions = state.misconceptions.record(detected);
 
+    // Signals land on the answered concept plus any ancestor a
+    // misconception was attributed to (so its transfer counters move).
+    final transferIds = {for (final m in detected) m.conceptId};
     final signals = state.signals.afterAnswer(
-      conceptIds: [node.conceptId],
+      conceptIds: [node.conceptId, ...transferIds.difference({node.conceptId})],
       correct: correct,
       responseSeconds: responseSeconds,
-      transferConceptIds: {for (final m in detected) m.conceptId},
+      transferConceptIds: transferIds,
     );
 
     state = state.copyWith(
@@ -138,6 +149,7 @@ class LanguageLearnerController extends Notifier<LanguageLearnerState> {
     );
     await ref.read(misconceptionRepositoryProvider).save(misconceptions);
     await ref.read(languageSignalsRepositoryProvider).save(signals);
+    return detected;
   }
 
   /// Deterministic demo learner (ADR-0006 demo mode): strong vocabulary,
@@ -191,6 +203,123 @@ class LanguageLearnerController extends Notifier<LanguageLearnerState> {
 final languageLearnerProvider =
     NotifierProvider<LanguageLearnerController, LanguageLearnerState>(
       LanguageLearnerController.new,
+    );
+
+// ---------- practice session (text-first exercise flows, ADR-0017) ----------
+
+class LanguagePracticeState {
+  const LanguagePracticeState({
+    required this.items,
+    required this.index,
+    required this.correctCount,
+    required this.shownAt,
+    this.given,
+    this.wasCorrect,
+    this.feedback = const [],
+    this.finished = false,
+  });
+
+  final List<ExerciseItem> items;
+  final int index;
+  final int correctCount;
+
+  /// When the current exercise appeared — response-time input.
+  final DateTime shownAt;
+
+  /// Learner's submission for the current item (null = unanswered).
+  final String? given;
+  final bool? wasCorrect;
+
+  /// Misconceptions detected by the current answer (teacher feedback).
+  final List<Misconception> feedback;
+  final bool finished;
+
+  ExerciseItem get current => items[index];
+  bool get answered => given != null;
+
+  LanguagePracticeState copyWith({
+    int? index,
+    int? correctCount,
+    String? given,
+    bool? wasCorrect,
+    List<Misconception>? feedback,
+    bool clearAnswer = false,
+    bool? finished,
+    DateTime? shownAt,
+  }) => LanguagePracticeState(
+    items: items,
+    index: index ?? this.index,
+    correctCount: correctCount ?? this.correctCount,
+    shownAt: shownAt ?? this.shownAt,
+    given: clearAnswer ? null : (given ?? this.given),
+    wasCorrect: clearAnswer ? null : (wasCorrect ?? this.wasCorrect),
+    feedback: clearAnswer ? const [] : (feedback ?? this.feedback),
+    finished: finished ?? this.finished,
+  );
+}
+
+class LanguagePracticeController extends Notifier<LanguagePracticeState?> {
+  @override
+  LanguagePracticeState? build() => null;
+
+  /// Starts a session. [focusConceptIds] (repair concepts) sort first.
+  void start({List<String> focusConceptIds = const [], int limit = 8}) {
+    final curriculum = ref.read(curriculumProvider).value;
+    if (curriculum == null) return;
+    state = LanguagePracticeState(
+      items: generateExercises(
+        curriculum.graph,
+        focusConceptIds: focusConceptIds,
+        limit: limit,
+      ),
+      index: 0,
+      correctCount: 0,
+      shownAt: DateTime.now(),
+    );
+  }
+
+  /// Checks [given], records the real answer event (engine + detector +
+  /// signals) and stores teacher feedback for the UI.
+  Future<void> submit(String given) async {
+    final s = state;
+    if (s == null || s.answered || s.finished) return;
+    final correct = checkAnswer(s.current, given);
+    final detected = await ref
+        .read(languageLearnerProvider.notifier)
+        .recordAnswer(
+          node: s.current.node,
+          correct: correct,
+          responseSeconds:
+              DateTime.now().difference(s.shownAt).inMilliseconds / 1000,
+        );
+    state = s.copyWith(
+      given: given,
+      wasCorrect: correct,
+      correctCount: s.correctCount + (correct ? 1 : 0),
+      feedback: detected,
+    );
+  }
+
+  void next() {
+    final s = state;
+    if (s == null || !s.answered) return;
+    if (s.index + 1 < s.items.length) {
+      state = s.copyWith(
+        index: s.index + 1,
+        clearAnswer: true,
+        shownAt: DateTime.now(),
+      );
+    } else {
+      state = s.copyWith(finished: true);
+    }
+  }
+
+  void reset() => state = null;
+}
+
+final languagePracticeProvider =
+    NotifierProvider<LanguagePracticeController, LanguagePracticeState?>(
+      LanguagePracticeController.new,
     );
 
 /// Per-skill mastery for the dashboard (Spanish: Vocabulary 85% …).

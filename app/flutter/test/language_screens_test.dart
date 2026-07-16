@@ -5,6 +5,7 @@ import 'package:adaptive_exam_platform/language/curriculum.dart';
 import 'package:adaptive_exam_platform/presentation/language_providers.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_concept_screen.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_dashboard_screen.dart';
+import 'package:adaptive_exam_platform/presentation/screens/language_practice_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -86,5 +87,36 @@ void main() {
     await tester.tap(find.text('Wrong'));
     await _settle(tester);
     expect(find.textContaining('seen 3×'), findsWidgets);
+  });
+
+  testWidgets('practice flow: wrong choice surfaces inline teacher note', (
+    tester,
+  ) async {
+    const embarazadaId = 'es:a1:vocabulary:food:restaurant:embarazada';
+    await tester.pumpWidget(
+      _app(
+        curriculum,
+        const LanguagePracticeScreen(focus: [embarazadaId]),
+      ),
+    );
+    await _settle(tester);
+
+    // Focused session leads with the embarazada multiple-choice item.
+    expect(find.textContaining("What does 'embarazada' mean?"), findsOneWidget);
+
+    // Pick a deliberately wrong option (any option that isn't the answer).
+    await tester.tap(find.text('apple').last);
+    await _settle(tester);
+
+    expect(find.text('Not quite'), findsOneWidget);
+    // The false-friend misconception speaks inline.
+    await tester.scrollUntilVisible(find.text('Teacher note'), 200);
+    expect(find.textContaining('pregnant'), findsWidgets);
+
+    // Advance: progress header moves to item 2.
+    await tester.scrollUntilVisible(find.text('Next'), 200);
+    await tester.tap(find.text('Next'));
+    await _settle(tester);
+    expect(find.textContaining('Practice 2/'), findsOneWidget);
   });
 }

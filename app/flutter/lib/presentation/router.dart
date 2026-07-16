@@ -7,6 +7,7 @@ import 'screens/bookmarks_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/language_concept_screen.dart';
 import 'screens/language_dashboard_screen.dart';
+import 'screens/language_practice_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/mock_exam_screen.dart';
 import 'screens/practice_screen.dart';
@@ -49,6 +50,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/language',
         builder: (_, _) => const LanguageDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/language/practice',
+        builder: (_, state) => LanguagePracticeScreen(
+          focus: (state.extra as List<String>?) ?? const [],
+        ),
       ),
       GoRoute(
         path: '/language/concept/:id',

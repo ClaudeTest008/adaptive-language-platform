@@ -1,9 +1,16 @@
 # Project Status
 
-**Phase:** Phase 2 — Vocabulary & Grammar Adaptive Tracking (core complete; exercise flows remaining)
+**Phase:** Phase 2 — Vocabulary & Grammar Adaptive Tracking (COMPLETE)
 **Last updated:** 2026-07-16
 
 ## Completed
+
+- Phase 2 finish — text-first exercise flows + demo readiness (2026-07-16, ADR-0017):
+  - Exercise generation derived from curriculum data (`lib/language/exercises.dart`): multiple choice, fill-in-blank, translation, sentence building, reading comprehension; deterministic (seeded shuffles); repair concepts sort first; diacritic-preserving answer checks.
+  - `/language/practice` session screen: animated progress, per-type inputs (option cards, text field, word-bank chips), inline feedback with teacher notes from the misconception engine, animated score summary. Dashboard "Practice your weak spots" CTA (focused on the repair block).
+  - `recordAnswer` returns detected misconceptions (inline feedback), awaits controller init (cold deep links safe), detects over the concept lineage — an error on "Tengo hambre" implicates `tener-states` — and registers transfer signals on the attributed ancestor.
+  - Seed curricula gained three example sentences (data-only) to enrich the exercise pool.
+  - Verified: `flutter analyze` clean; 120 tests green (10 new); web app boots cleanly (`flutter run -d web-server`, zero console errors, title "Adaptive Language Platform").
 
 - Phase 2 core — misconception engine + signal tracking + Language Lab UI (2026-07-16, ADR-0016):
   - Misconception engine: graph-authorized detection (interference relations, transfer traps), recorded separately from mistakes with explanation, source, pattern family; occurrences merge by stable id.
@@ -11,10 +18,6 @@
   - Core engine reused unchanged: `LearnerEngine(graph: languageGraph.toCoreGraph())`, answers exercise full concept lineage.
   - Language Lab UI: `/language` (animated per-skill mastery, misconception Teacher Notes, repair-first daily lesson preview) + `/language/concept/:id` (signals, graph relations, pattern family, live simulate buttons); entry card on the main dashboard; app title now "Adaptive Language Platform".
   - Verified: `flutter analyze` clean; 110 tests green (9 tracking + 2 widget tests new); web app boots and renders (manual screenshot blocked by tooling, screens verified by widget tests).
-
-## In Progress
-
-- Phase 2 remainder: text-first exercise flows (multiple choice, fill-in-blanks, translation, sentence building, reading comprehension) calling `LanguageLearnerController.recordAnswer`.
 
 - Phase 1 — Language domain model (2026-07-16, ADR-0015):
   - `lib/language/` pure-Dart layer: 11-tier language hierarchy with hierarchical concept ids, typed nodes (grammar concepts with transfer traps, vocabulary with lemma/translations/frequency, phrases, examples, exercises, conversations), CEFR levels, 10 skills.
@@ -28,6 +31,10 @@
   - Repository `adaptive-language-platform` created as history-preserving fork of `adaptive-exam-platform` (ADR-0014). Independent remote; original repo untouched.
   - Product identity: README, AI_CONTEXT, ARCHITECTURE, ROADMAP, PROJECT_STATUS, TASKS, CHANGELOG rewritten for the language platform.
   - ADR structure continued: 0001–0013 inherited (binding for the Adaptive Learning Core), 0014 records the fork decision.
+
+## In Progress
+
+- Nothing. Phase 2 closed.
 
 ## Inherited at Fork Point (commit 3b597b2 lineage)
 
@@ -45,7 +52,7 @@ Note: inherited domain code still uses exam vocabulary (questions, exams, topics
 
 ## Next
 
-- Finish Phase 2: exercise flows (see In Progress), then Phase 3 — AI tutor foundation over `lib/ai/` orchestrator consuming MisconceptionLog + signals. See ROADMAP.md.
+- Phase 3 — AI tutor foundation: context assembly (MisconceptionLog + signals + skill mastery + Learning DNA) and the six tutor modes over the `lib/ai/` orchestrator. See ROADMAP.md.
 
 ## Local Dev
 
@@ -53,6 +60,7 @@ Flutter SDK at `C:\Users\Admin\flutter` (3.44.5 stable). Run web: `flutter run -
 
 ## Known Limitations
 
-- Language Lab is a demo-seeded showcase (deterministic scripted learner, reseeds on restart); real exercise flows are the Phase 2 remainder. Exam-era practice/mock screens still present alongside.
+- Language Lab starts demo-seeded (deterministic scripted learner, reseeds on restart); practice sessions layer real answer events on top. Exam-era practice/mock screens still present alongside; retire with package rename (backlog).
+- Exercise pool bounded by curriculum richness (A1 slices) until Phase 7 content ingestion.
 - Firebase production integration deferred to Phase 8 (runbooks in `docs/deployment/`).
 - `docs/product/`, `docs/architecture/`, `docs/database/` subtrees still describe the exam domain; rewritten incrementally as each phase touches them.

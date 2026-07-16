@@ -44,6 +44,8 @@ class LanguageDashboardScreen extends ConsumerWidget {
                 answered: learner.model.totalAnswered,
                 accuracy: learner.model.overallAccuracy,
               ),
+              const SizedBox(height: 12),
+              const _PracticeCta(),
               const SizedBox(height: 16),
               _SectionHeader(
                 icon: Icons.insights,
@@ -162,6 +164,37 @@ class _HeaderCard extends StatelessWidget {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Primary action: jump straight into a session focused on the repair
+/// block (weakest material first).
+class _PracticeCta extends ConsumerWidget {
+  const _PracticeCta();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final blocks = ref.watch(lessonPreviewProvider);
+    final repair = blocks
+        .where((b) => b.kind == LessonBlockKind.repair)
+        .firstOrNull;
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          textStyle: Theme.of(context).textTheme.titleMedium,
+        ),
+        icon: const Icon(Icons.play_arrow),
+        label: Text(
+          repair == null ? 'Start practice' : 'Practice your weak spots',
+        ),
+        onPressed: () => context.push(
+          '/language/practice',
+          extra: repair?.conceptIds ?? const <String>[],
         ),
       ),
     );
@@ -335,16 +368,20 @@ class _TeacherNotesCard extends ConsumerWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          m.relationType == null
-                              ? Icons.sync_problem
-                              : m.relationType!.name == 'falseFriend'
-                              ? Icons.compare_arrows
-                              : Icons.translate,
-                          size: 18,
-                          color: scheme.error,
+                        CircleAvatar(
+                          radius: 14,
+                          backgroundColor: scheme.errorContainer,
+                          child: Icon(
+                            m.relationType == null
+                                ? Icons.sync_problem
+                                : m.relationType!.name == 'falseFriend'
+                                ? Icons.compare_arrows
+                                : Icons.translate,
+                            size: 16,
+                            color: scheme.onErrorContainer,
+                          ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             curriculum.graph[m.conceptId]?.name ?? m.conceptId,

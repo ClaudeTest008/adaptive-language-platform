@@ -22,3 +22,4 @@ ADRs 0001–0013 are inherited from the exam-platform lineage and remain binding
 | [0014](0014-fork-from-exam-platform.md) | Fork exam platform as Adaptive Language Platform; reuse core, extend never rewrite | Accepted |
 | [0015](0015-language-domain-model.md) | Language domain model: 11-tier hierarchy, typed relations projected onto core graph, signals beside LearnerModel, curricula as JSON | Accepted |
 | [0016](0016-misconception-engine-and-signal-tracking.md) | Misconception engine (graph-authorized detection, log separate from mistakes), EWMA signal tracking, core engine reused via projection, showcase UI | Accepted |
+| [0017](0017-exercise-generation.md) | Exercises derived from curriculum data (deterministic, focus-first); lineage-walking detection; diacritic-preserving answer checks | Accepted |

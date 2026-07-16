@@ -1,9 +1,20 @@
 # Project Status
 
-**Phase:** Phase 1 — Language Domain Model (complete)
+**Phase:** Phase 2 — Vocabulary & Grammar Adaptive Tracking (core complete; exercise flows remaining)
 **Last updated:** 2026-07-16
 
 ## Completed
+
+- Phase 2 core — misconception engine + signal tracking + Language Lab UI (2026-07-16, ADR-0016):
+  - Misconception engine: graph-authorized detection (interference relations, transfer traps), recorded separately from mistakes with explanation, source, pattern family; occurrences merge by stable id.
+  - `LanguageConceptSignals.afterAnswer` EWMA updates (recall difficulty/speed, usage frequency, transfer errors, native interference) + `LanguageSignalsStore`; persistence seams with in-memory demo implementations.
+  - Core engine reused unchanged: `LearnerEngine(graph: languageGraph.toCoreGraph())`, answers exercise full concept lineage.
+  - Language Lab UI: `/language` (animated per-skill mastery, misconception Teacher Notes, repair-first daily lesson preview) + `/language/concept/:id` (signals, graph relations, pattern family, live simulate buttons); entry card on the main dashboard; app title now "Adaptive Language Platform".
+  - Verified: `flutter analyze` clean; 110 tests green (9 tracking + 2 widget tests new); web app boots and renders (manual screenshot blocked by tooling, screens verified by widget tests).
+
+## In Progress
+
+- Phase 2 remainder: text-first exercise flows (multiple choice, fill-in-blanks, translation, sentence building, reading comprehension) calling `LanguageLearnerController.recordAnswer`.
 
 - Phase 1 — Language domain model (2026-07-16, ADR-0015):
   - `lib/language/` pure-Dart layer: 11-tier language hierarchy with hierarchical concept ids, typed nodes (grammar concepts with transfer traps, vocabulary with lemma/translations/frequency, phrases, examples, exercises, conversations), CEFR levels, 10 skills.
@@ -32,13 +43,9 @@ Working Adaptive Learning Core from the exam platform, reused as-is:
 
 Note: inherited domain code still uses exam vocabulary (questions, exams, topics). Remodeling to the language hierarchy is Phase 1 — docs describe the target; code catches up phase by phase.
 
-## In Progress
-
-- Nothing. Phase 1 closed.
-
 ## Next
 
-- Phase 2 — Vocabulary & grammar adaptive tracking: wire language signals into answer-event flows, misconception engine (interference detection on errors), text-first exercise types, per-skill mastery surfaced in app. See ROADMAP.md.
+- Finish Phase 2: exercise flows (see In Progress), then Phase 3 — AI tutor foundation over `lib/ai/` orchestrator consuming MisconceptionLog + signals. See ROADMAP.md.
 
 ## Local Dev
 
@@ -46,6 +53,6 @@ Flutter SDK at `C:\Users\Admin\flutter` (3.44.5 stable). Run web: `flutter run -
 
 ## Known Limitations
 
-- Language domain model exists (`lib/language/`) but nothing consumes it at runtime yet; app still behaves as the exam product until Phase 2 lands.
+- Language Lab is a demo-seeded showcase (deterministic scripted learner, reseeds on restart); real exercise flows are the Phase 2 remainder. Exam-era practice/mock screens still present alongside.
 - Firebase production integration deferred to Phase 8 (runbooks in `docs/deployment/`).
 - `docs/product/`, `docs/architecture/`, `docs/database/` subtrees still describe the exam domain; rewritten incrementally as each phase touches them.

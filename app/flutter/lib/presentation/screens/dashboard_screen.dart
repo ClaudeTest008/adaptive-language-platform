@@ -44,6 +44,12 @@ class DashboardScreen extends ConsumerWidget {
             _WeakTopics(stats: stats, topics: topics),
             const SizedBox(height: 16),
             _ActionCard(
+              icon: Icons.language,
+              title: 'Language Lab',
+              subtitle: 'Spanish demo — skill mastery, teacher notes, lessons',
+              onTap: () => context.push('/language'),
+            ),
+            _ActionCard(
               icon: Icons.menu_book,
               title: 'Practice',
               subtitle: 'Immediate feedback and explanations',

@@ -17,14 +17,16 @@ Master plan for the Adaptive Language Platform. Phases are sequential; each ends
 - ✅ Firestore schema drafts: `docs/database/05-language-schema.md`.
 - ✅ Tests: hierarchy ids/lineage, tier validation, relation queries, core projection, skill aggregation, seed parsing (10 new; 99 total green).
 
-## Phase 2 — Vocabulary & Grammar Adaptive Tracking
+## Phase 2 — Vocabulary & Grammar Adaptive Tracking (core complete 2026-07-16)
 
-- Extend the adaptive engine (never rewrite) with language signals: recall difficulty, vocabulary strength, grammar confidence, recall speed, usage/vocabulary frequency, retention decay.
-- Per-skill mastery aggregation (e.g. Spanish: Vocabulary 85%, Grammar 62%, Listening 44%).
-- Misconception engine: track misconceptions separately from mistakes; detect native-language transfer (e.g. "Yo soy cansado" → `tener` pattern family); link misconceptions to related concepts.
-- Exercise-type architecture: multiple choice, fill-in-blanks, translation, sentence building, reading comprehension (text-first types).
-- Schema: mistakes, misconceptions, learning goals.
-- Tests: vocabulary mastery, grammar mastery, misconception detection, adaptive recommendations.
+- ✅ Language signals from answer events (ADR-0016): EWMA recall difficulty/speed, usage frequency, grammar-transfer errors, native interference — beside the unchanged core model (`signals.dart`, `LanguageSignalsStore` + repository seam).
+- ✅ Per-skill mastery aggregation surfaced in UI (Language Lab dashboard: per-skill animated bars).
+- ✅ Misconception engine (`misconceptions.dart`): graph-authorized detection (interference relations + transfer traps), log separate from mistakes, occurrences merge, related-concept pattern families; Teacher Notes UI.
+- ✅ Core engine reused unchanged for language mastery: `LearnerEngine(graph: toCoreGraph())`, lineage concept ids.
+- ✅ Showcase UI: `/language` dashboard + `/language/concept/:id` detail with live simulate (ADR-0016).
+- ✅ Daily lesson preview (repair-first stopgap; full engine in Phase 4).
+- ✅ Tests: detection, log merge, signal updates, end-to-end through core engine, widget tests for both screens (110 total green).
+- ⏳ Remaining: text-first exercise flows (multiple choice, fill-in-blanks, translation, sentence building, reading comprehension) wired to `recordAnswer`; learning-goals schema usage.
 
 ## Phase 3 — AI Tutor Foundation
 

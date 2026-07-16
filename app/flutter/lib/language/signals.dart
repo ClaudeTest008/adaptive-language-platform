@@ -16,6 +16,7 @@ class LanguageConceptSignals {
     this.recallSpeedMs,
     this.pronunciationConfidence,
     this.listeningRecognition,
+    this.conversationAbility,
     this.grammarTransferErrors = 0,
     this.usageFrequency = 0,
     this.nativeInterference = 0,
@@ -32,6 +33,9 @@ class LanguageConceptSignals {
 
   /// 0…1; null until listening exercises exist (Phase 5/6).
   final double? listeningRecognition;
+
+  /// 0…1; null until the conversation engine produces scores (Phase 5).
+  final double? conversationAbility;
 
   /// Count of errors attributed to native-language grammar transfer
   /// (misconception engine, Phase 2).
@@ -50,6 +54,7 @@ class LanguageConceptSignals {
     int? recallSpeedMs,
     double? pronunciationConfidence,
     double? listeningRecognition,
+    double? conversationAbility,
     int? grammarTransferErrors,
     int? usageFrequency,
     double? nativeInterference,
@@ -59,11 +64,76 @@ class LanguageConceptSignals {
     pronunciationConfidence:
         pronunciationConfidence ?? this.pronunciationConfidence,
     listeningRecognition: listeningRecognition ?? this.listeningRecognition,
+    conversationAbility: conversationAbility ?? this.conversationAbility,
     grammarTransferErrors:
         grammarTransferErrors ?? this.grammarTransferErrors,
     usageFrequency: usageFrequency ?? this.usageFrequency,
     nativeInterference: nativeInterference ?? this.nativeInterference,
   );
+
+  /// Applies one answer event. EWMA (alpha [_alpha]) so recent evidence
+  /// dominates without erasing history — same philosophy as the core
+  /// engine's mastery update, but the core model is never modified.
+  ///
+  /// [transferError] = the misconception detector attributed this error
+  /// to native-language interference.
+  LanguageConceptSignals afterAnswer({
+    required bool correct,
+    required double responseSeconds,
+    bool transferError = false,
+  }) {
+    const alpha = 0.3;
+    final ms = (responseSeconds * 1000).round();
+    return copyWith(
+      recallDifficulty:
+          recallDifficulty * (1 - alpha) + (correct ? 0.0 : 1.0) * alpha,
+      recallSpeedMs: recallSpeedMs == null
+          ? ms
+          : (recallSpeedMs! * (1 - alpha) + ms * alpha).round(),
+      usageFrequency: usageFrequency + 1,
+      grammarTransferErrors: grammarTransferErrors + (transferError ? 1 : 0),
+      nativeInterference: transferError
+          ? nativeInterference * (1 - alpha) + alpha
+          : nativeInterference * (1 - alpha),
+    );
+  }
+}
+
+/// Per-learner signal state: concept id → signals. Immutable.
+class LanguageSignalsStore {
+  const LanguageSignalsStore([this.byConcept = const {}]);
+
+  final Map<String, LanguageConceptSignals> byConcept;
+
+  LanguageConceptSignals operator [](String conceptId) =>
+      byConcept[conceptId] ?? const LanguageConceptSignals();
+
+  /// Applies one answer to every concept it exercises. [transferConceptIds]
+  /// are the concepts the misconception detector flagged on this answer.
+  LanguageSignalsStore afterAnswer({
+    required List<String> conceptIds,
+    required bool correct,
+    required double responseSeconds,
+    Set<String> transferConceptIds = const {},
+  }) {
+    final next = Map<String, LanguageConceptSignals>.of(byConcept);
+    for (final id in conceptIds) {
+      next[id] = this[id].afterAnswer(
+        correct: correct,
+        responseSeconds: responseSeconds,
+        transferError: transferConceptIds.contains(id),
+      );
+    }
+    return LanguageSignalsStore(next);
+  }
+}
+
+/// Persistence seam (ADR-0015 consequence: contracts land with their
+/// first producer). In-memory demo implementation until the Firestore
+/// swap (`docs/database/05-language-schema.md`, Phase 8).
+abstract class LanguageSignalsRepository {
+  Future<LanguageSignalsStore> load();
+  Future<void> save(LanguageSignalsStore store);
 }
 
 /// Independent mastery per skill, aggregated from per-concept mastery.

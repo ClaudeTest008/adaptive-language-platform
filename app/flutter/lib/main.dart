@@ -15,7 +15,7 @@ class App extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     const seed = Color(0xFF1565C0);
     return MaterialApp.router(
-      title: 'Exam Prep',
+      title: 'Adaptive Language Platform',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: seed)),
       darkTheme: ThemeData(

@@ -22,3 +22,4 @@ Phase 1 needs the language knowledge hierarchy (Language → Level → Skill →
 - Misconception engine (Phase 2) consumes `interference()` + `transferTraps`; daily lessons (Phase 4) consume `weakestSkills`.
 - Duplication of the CurriculumNode pattern (~40 lines) accepted in exchange for exact tiers and zero risk to exam-inherited code paths.
 - Curriculum JSON is authoring format AND seed data; Firestore persistence shape drafted in `docs/database/05-language-schema.md`, implemented Phase 8.
+- No language repository interfaces in Phase 1 by design: the inherited interfaces (`lib/domain/repositories.dart`, `lib/adaptive/repository.dart`) are the seams language behavior enters through (ADR-0014 §2). Language-specific persistence contracts (signals, misconceptions) arrive with Phase 2 signal wiring — with their first producer/consumer, not before.

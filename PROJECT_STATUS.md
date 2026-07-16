@@ -34,7 +34,7 @@ Note: inherited domain code still uses exam vocabulary (questions, exams, topics
 
 ## In Progress
 
-- Nothing. Phase 0 closed.
+- Nothing. Phase 1 closed.
 
 ## Next
 
@@ -46,6 +46,6 @@ Flutter SDK at `C:\Users\Admin\flutter` (3.44.5 stable). Run web: `flutter run -
 
 ## Known Limitations
 
-- No language-specific features yet; app still behaves as the exam product until Phase 1–2 land.
+- Language domain model exists (`lib/language/`) but nothing consumes it at runtime yet; app still behaves as the exam product until Phase 2 lands.
 - Firebase production integration deferred to Phase 8 (runbooks in `docs/deployment/`).
 - `docs/product/`, `docs/architecture/`, `docs/database/` subtrees still describe the exam domain; rewritten incrementally as each phase touches them.

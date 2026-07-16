@@ -116,3 +116,4 @@ Multi-tenancy (`/orgs/{orgId}`, membership-gated rules, CI-proven isolation), co
 | Adaptive engine | Pure-Dart module, replaceable seams | 0008 |
 | AI orchestration | Single provider seam, vendor-blind capabilities | 0010 |
 | Fork from exam platform, reuse core | History-preserving fork | 0014 |
+| Language domain model | Parallel 11-tier naming discipline, typed relations projected onto core graph, curricula as JSON data | 0015 |

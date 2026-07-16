@@ -13,6 +13,8 @@ import 'dart:convert';
 
 import '../adaptive/engine.dart';
 import '../adaptive/model.dart' as adaptive;
+import '../ai/chat_model.dart';
+import '../infrastructure/demo_tutor_model.dart';
 import '../infrastructure/language_repositories.dart';
 import '../language/curriculum.dart';
 import '../language/entities.dart';
@@ -20,6 +22,7 @@ import '../language/exercises.dart';
 import '../language/lesson.dart';
 import '../language/misconceptions.dart';
 import '../language/signals.dart';
+import '../language/tutor.dart';
 
 /// Demo curriculum: Spanish for English speakers (assets/curriculum/).
 final curriculumProvider = FutureProvider<Curriculum>((ref) async {
@@ -320,6 +323,107 @@ class LanguagePracticeController extends Notifier<LanguagePracticeState?> {
 final languagePracticeProvider =
     NotifierProvider<LanguagePracticeController, LanguagePracticeState?>(
       LanguagePracticeController.new,
+    );
+
+// ---------- AI tutor (Phase 3 foundation, ADR-0018) ----------
+
+/// Vendor swap point: bind AnthropicChatModel/OpenAiChatModel/... here
+/// once API keys exist. The demo model consumes the same prompts.
+final tutorModelProvider = Provider<AiChatModel>(
+  (ref) => const DemoTutorModel(),
+);
+
+final languageTutorProvider = Provider<LanguageTutor>(
+  (ref) => LanguageTutor(ref.watch(tutorModelProvider)),
+);
+
+/// Fresh tutor context from live learner state. [focusConceptId] targets
+/// one concept (Teacher/Grammar modes); default focus = the top
+/// misconception's concept, so "repair first" is the tutor's opening too.
+TutorContext? assembleTutorContext(Ref ref, {String? focusConceptId}) {
+  final curriculum = ref.read(curriculumProvider).value;
+  if (curriculum == null) return null;
+  final learner = ref.read(languageLearnerProvider);
+  return buildTutorContext(
+    curriculum: curriculum,
+    conceptMastery: learner.conceptMastery,
+    misconceptions: learner.misconceptions,
+    signals: learner.signals,
+    goals: const ['Reach A2 Spanish'],
+    focusConceptId:
+        focusConceptId ?? learner.misconceptions.all.firstOrNull?.conceptId,
+  );
+}
+
+class TutorSessionState {
+  const TutorSessionState({
+    required this.mode,
+    required this.context,
+    this.transcript = const [],
+    this.busy = false,
+  });
+
+  final TutorMode mode;
+  final TutorContext context;
+
+  /// (isTutor, text) pairs, oldest first.
+  final List<(bool, String)> transcript;
+  final bool busy;
+
+  TutorSessionState copyWith({
+    List<(bool, String)>? transcript,
+    bool? busy,
+  }) => TutorSessionState(
+    mode: mode,
+    context: context,
+    transcript: transcript ?? this.transcript,
+    busy: busy ?? this.busy,
+  );
+}
+
+class TutorSessionController extends Notifier<TutorSessionState?> {
+  @override
+  TutorSessionState? build() => null;
+
+  /// Starts a session: assembles fresh context and asks the tutor to open.
+  Future<void> start(TutorMode mode, {String? focusConceptId}) async {
+    final context = assembleTutorContext(ref, focusConceptId: focusConceptId);
+    if (context == null) return;
+    state = TutorSessionState(mode: mode, context: context, busy: true);
+    final reply = await ref.read(languageTutorProvider).respond(
+      mode: mode,
+      context: context,
+      userMessage: 'Start the session.',
+    );
+    state = state?.copyWith(transcript: [(true, reply.text)], busy: false);
+  }
+
+  Future<void> send(String message) async {
+    final s = state;
+    if (s == null || s.busy || message.trim().isEmpty) return;
+    state = s.copyWith(transcript: [...s.transcript, (false, message)], busy: true);
+    final history = [
+      for (final (isTutor, text) in s.transcript)
+        AiMessage(isTutor ? AiRole.assistant : AiRole.user, text),
+    ];
+    final reply = await ref.read(languageTutorProvider).respond(
+      mode: s.mode,
+      context: s.context,
+      userMessage: message,
+      history: history,
+    );
+    state = state?.copyWith(
+      transcript: [...?state?.transcript, (true, reply.text)],
+      busy: false,
+    );
+  }
+
+  void reset() => state = null;
+}
+
+final tutorSessionProvider =
+    NotifierProvider<TutorSessionController, TutorSessionState?>(
+      TutorSessionController.new,
     );
 
 /// Per-skill mastery for the dashboard (Spanish: Vocabulary 85% …).

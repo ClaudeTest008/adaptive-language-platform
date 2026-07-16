@@ -6,6 +6,7 @@ import 'package:adaptive_exam_platform/presentation/language_providers.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_concept_screen.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_dashboard_screen.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_practice_screen.dart';
+import 'package:adaptive_exam_platform/presentation/screens/language_tutor_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -118,5 +119,30 @@ void main() {
     await tester.tap(find.text('Next'));
     await _settle(tester);
     expect(find.textContaining('Practice 2/'), findsOneWidget);
+  });
+
+  testWidgets('tutor: mode selector starts a teacher session with real '
+      'context', (tester) async {
+    await tester.pumpWidget(_app(curriculum, const LanguageTutorScreen()));
+    await _settle(tester);
+
+    // All six modes offered.
+    for (final title in [
+      'Teacher', 'Conversation', 'Coach', 'Socratic', 'Grammar', 'Immersion',
+    ]) {
+      expect(find.text(title), findsOneWidget);
+    }
+    // Context header knows the top misconception from the demo seed.
+    expect(find.textContaining('First up:'), findsOneWidget);
+
+    await tester.tap(find.text('Teacher'));
+    await _settle(tester);
+
+    // Session chips show assembled context.
+    expect(find.text('Teacher mode'), findsOneWidget);
+    expect(find.textContaining('Focus:'), findsOneWidget);
+    expect(find.textContaining('misconceptions in context'), findsOneWidget);
+    // Demo tutor teaches the tener concept with repair, from graph data.
+    expect(find.textContaining('tener'), findsWidgets);
   });
 }

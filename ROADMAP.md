@@ -29,13 +29,13 @@ Master plan for the Adaptive Language Platform. Phases are sequential; each ends
 - ✅ Text-first exercise flows (ADR-0017): five types derived from curriculum data, deterministic generation, `/language/practice` session with inline teacher notes; lineage-walking misconception detection; dashboard "Practice your weak spots" CTA.
 - Deferred to Phase 4: learning-goals schema usage (first consumer is the lesson engine).
 
-## Phase 3 — AI Tutor Foundation
+## Phase 3 — AI Tutor Foundation (foundation complete 2026-07-16)
 
-- Tutor built on inherited AI orchestration (`lib/ai/`, ADR-0010); provider-independent, output validated.
-- Tutor context assembly: learner history, knowledge graph, Learning DNA, previous mistakes, weak concepts, goals, learning style.
-- Six modes as orchestrator capabilities: Teacher (explain/lesson/correct), Conversation (natural dialogue, vocabulary adaptation), Coach (goals, motivation, planning), Socratic (guided questions), Grammar (pattern explanation), Immersion (target language only).
-- Schema: AI tutor history.
-- Tests: tutor orchestration, mode contracts, context assembly.
+- ✅ Tutor foundation (ADR-0018, `lib/language/tutor.dart`): provider-blind over the `AiChatModel` seam (ADR-0010, `lib/ai/` untouched); every output validated (structure + focus-concept grounding), rejected output never reaches the learner.
+- ✅ Context assembly: `TutorContext` snapshot — skill mastery, weakest concepts, misconceptions, signals, goals, Learning DNA traits, knowledge-graph slice (focus relations + pattern family). Default focus = top misconception (repair first).
+- ✅ Six mode contracts (Teacher, Conversation, Coach, Socratic, Grammar, Immersion): distinct personas + serialized learner context; `/language/tutor` mode selector + chat session UI; dashboard tutor CTA; DemoTutorModel live Teacher-mode flow from real graph data.
+- ✅ Tests: context assembly, mode prompts, validation gate, tutor service (valid/invalid/history), demo teacher flow, widget test (131 total green).
+- ⏳ Remaining (deeper Phase 3): mode-specific dialogue logic (turn strategies, vocabulary adaptation, Socratic questioning), immersion language-purity validation, tutor history persistence (schema drafted), real vendor adapters (API keys).
 
 ## Phase 4 — Daily Personalized Lesson Engine
 

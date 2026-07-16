@@ -1,9 +1,15 @@
 # Project Status
 
-**Phase:** Phase 2 — Vocabulary & Grammar Adaptive Tracking (COMPLETE)
+**Phase:** Phase 3 — AI Tutor Foundation (foundation complete; dialogue depth remaining)
 **Last updated:** 2026-07-16
 
 ## Completed
+
+- Phase 3 foundation — AI tutor (2026-07-16, ADR-0018):
+  - `lib/language/tutor.dart`: `TutorContext` snapshot assembly (skill mastery, weakest concepts, misconceptions, signals, goals, Learning DNA, focus-concept graph slice with relations + pattern family); six mode contracts with distinct personas; `tutorSystemPrompt` serializes learner context; `validateTutorReply` gates every output (structure + grounding), rejected output replaced by safe fallback.
+  - Provider-blind: `LanguageTutor` consumes any `AiChatModel` (`lib/ai/` untouched); `tutorModelProvider` = vendor swap point; `DemoTutorModel` composes deterministic teacherly replies from the same prompts a vendor would get (Teacher-mode live flow: misconception repair first, then pattern family).
+  - UI: `/language/tutor` — gradient hero with live learner stats, six-mode grid, chat session with context chips (mode, focus, misconception count); AI Tutor CTA beside practice on the Language Lab dashboard.
+  - Verified: `flutter analyze` clean; 131 tests green (11 new: context assembly, mode prompts, validation, tutor service, demo flow, widget); web boots cleanly.
 
 - Phase 2 finish — text-first exercise flows + demo readiness (2026-07-16, ADR-0017):
   - Exercise generation derived from curriculum data (`lib/language/exercises.dart`): multiple choice, fill-in-blank, translation, sentence building, reading comprehension; deterministic (seeded shuffles); repair concepts sort first; diacritic-preserving answer checks.
@@ -34,7 +40,7 @@
 
 ## In Progress
 
-- Nothing. Phase 2 closed.
+- Phase 3 remainder: mode-specific dialogue logic, immersion language-purity validation, tutor history persistence, real vendor adapters (blocked on API keys).
 
 ## Inherited at Fork Point (commit 3b597b2 lineage)
 
@@ -52,7 +58,7 @@ Note: inherited domain code still uses exam vocabulary (questions, exams, topics
 
 ## Next
 
-- Phase 3 — AI tutor foundation: context assembly (MisconceptionLog + signals + skill mastery + Learning DNA) and the six tutor modes over the `lib/ai/` orchestrator. See ROADMAP.md.
+- Deeper Phase 3 (dialogue logic per mode), then Phase 4 — daily lesson engine. See ROADMAP.md.
 
 ## Local Dev
 

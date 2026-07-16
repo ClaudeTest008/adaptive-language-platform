@@ -81,9 +81,9 @@ Pure-Dart module `lib/adaptive/` — no Flutter, no Firebase. Learner model (per
 
 Language extension (Phase 2, additive only): recall difficulty, pronunciation confidence, grammar-transfer errors, vocabulary/usage frequency, conversation ability, retention decay. Misconceptions tracked separately from mistakes.
 
-## AI Tutor (Phase 3)
+## AI Tutor (ADR-0018, `lib/language/tutor.dart`)
 
-Built on the inherited AI orchestration (`lib/ai/`, ADR-0010): `AiChatModel` = single vendor seam (OpenAI/Anthropic/Gemini/local/speech/translation adapters later, no lock-in); `AiOrchestrator` capabilities are vendor-blind; all AI output passes validation before reaching learners. Tutor modes as orchestrator capabilities: Teacher, Conversation, Coach, Socratic, Grammar, Immersion. Tutor context = learner history + knowledge graph + Learning DNA + mistakes + weak concepts + goals + learning style.
+Provider-blind over the inherited `AiChatModel` seam (ADR-0010; `lib/ai/` untouched — the tutor is language-platform orchestration, not a core capability). Per session, `buildTutorContext` assembles an immutable `TutorContext` snapshot: skill mastery, weakest concepts, most-frequent misconceptions, per-concept signals, goals, Learning DNA traits, and a knowledge-graph slice for the focus concept (typed relations + pattern family). Default focus = top misconception ("repair first"). Six mode contracts (Teacher, Conversation, Coach, Socratic, Grammar, Immersion): persona + serialized `[LEARNER CONTEXT]` + output rules. Every reply passes `validateTutorReply` (structure + focus-concept grounding); rejected output never reaches the learner. Vendor swap point: `tutorModelProvider` (currently `DemoTutorModel`, deterministic, consumes the same prompts). UI: `/language/tutor` mode selector + chat session. Deeper dialogue logic, immersion purity validation and history persistence are later Phase 3 work.
 
 ## Daily Lesson Engine (Phase 4)
 

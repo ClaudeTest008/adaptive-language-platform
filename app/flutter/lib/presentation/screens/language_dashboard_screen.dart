@@ -181,22 +181,33 @@ class _PracticeCta extends ConsumerWidget {
     final repair = blocks
         .where((b) => b.kind == LessonBlockKind.repair)
         .firstOrNull;
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton.icon(
-        style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          textStyle: Theme.of(context).textTheme.titleMedium,
+    final buttonStyle = FilledButton.styleFrom(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      textStyle: Theme.of(context).textTheme.titleMedium,
+    );
+    return Row(
+      children: [
+        Expanded(
+          child: FilledButton.icon(
+            style: buttonStyle,
+            icon: const Icon(Icons.play_arrow),
+            label: Text(repair == null ? 'Practice' : 'Fix weak spots'),
+            onPressed: () => context.push(
+              '/language/practice',
+              extra: repair?.conceptIds ?? const <String>[],
+            ),
+          ),
         ),
-        icon: const Icon(Icons.play_arrow),
-        label: Text(
-          repair == null ? 'Start practice' : 'Practice your weak spots',
+        const SizedBox(width: 8),
+        Expanded(
+          child: FilledButton.tonalIcon(
+            style: buttonStyle,
+            icon: const Icon(Icons.school),
+            label: const Text('AI Tutor'),
+            onPressed: () => context.push('/language/tutor'),
+          ),
         ),
-        onPressed: () => context.push(
-          '/language/practice',
-          extra: repair?.conceptIds ?? const <String>[],
-        ),
-      ),
+      ],
     );
   }
 }

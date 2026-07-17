@@ -14,7 +14,7 @@
 - A2+ conversation scenarios; grow curriculum seeds beyond A1 (data-only; enlarges exercises + stories + drills).
 - Cloud phoneme/prosody speech models (replace the on-device edit-distance approximation + flutter_tts prosody with a neural provider behind the SpeechService seam).
 - Lesson engine follow-ups: real `nextReviewAt` scheduling once sessions carry timestamps (Phase 8).
-- Grow story seeds (more stories per language/level, A2+ mini-adventures).
+- Grow story seeds: en-for-es classics + more B1/B2 tales; add vocabulary/questions to the earlier seed stories (the Phase-12 fields are optional).
 - Rewrite `docs/product/` for the language product — incremental, as phases touch them.
 - Remove demo seed once real learner accounts persist language state (Firestore swap, Phase 8).
 

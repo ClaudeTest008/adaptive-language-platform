@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../language/story.dart';
 import '../language_providers.dart';
 import '../ui.dart';
 
@@ -20,11 +21,68 @@ class LanguageStoryReaderScreen extends ConsumerStatefulWidget {
 class _LanguageStoryReaderScreenState
     extends ConsumerState<LanguageStoryReaderScreen> {
   int _phrase = 0;
+  bool _showQuiz = false;
 
   @override
   void dispose() {
     ref.read(speechServiceProvider).stop();
     super.dispose();
+  }
+
+  /// Key-words glossary as a bottom sheet.
+  void _showVocab(BuildContext context, Story story) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.xl,
+            0,
+            AppSpace.xl,
+            AppSpace.xl,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Key words', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: AppSpace.md),
+              for (final v in story.vocabulary)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          v.word,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          v.meaning,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(
+                                color:
+                                    Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -47,6 +105,7 @@ class _LanguageStoryReaderScreenState
     final phrase = story.phrases[_phrase];
     final bcp47 = ref.watch(languageBcp47Provider);
     final speech = ref.read(speechServiceProvider);
+    final isLast = _phrase + 1 >= story.phrases.length;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -54,6 +113,12 @@ class _LanguageStoryReaderScreenState
         backgroundColor: Colors.transparent,
         title: Text(story.title),
         actions: [
+          if (story.vocabulary.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.menu_book_outlined),
+              tooltip: 'Key words',
+              onPressed: () => _showVocab(context, story),
+            ),
           IconButton(
             icon: const Icon(Icons.headphones),
             tooltip: 'Listen to the whole story',
@@ -63,95 +128,256 @@ class _LanguageStoryReaderScreenState
       ),
       body: AtmosphericBackground(
         child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                LinearProgressIndicator(
-                  value: (_phrase + 1) / story.phrases.length,
-                  minHeight: 6,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Phrase ${_phrase + 1} of ${story.phrases.length}',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const Spacer(),
-                FadeInUp(
-                  key: ValueKey(_phrase),
-                  child: Card(
-                  color: scheme.surfaceContainerHigh,
-                  child: Padding(
-                    padding: const EdgeInsets.all(28),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: _showQuiz
+                ? _Quiz(
+                    story: story,
+                    onFinish: () => Navigator.of(context).pop(),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.all(AppSpace.xl),
                     child: Column(
                       children: [
-                        Text(
-                          phrase.text,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineSmall,
+                        LinearProgressIndicator(
+                          value: (_phrase + 1) / story.phrases.length,
+                          minHeight: 6,
                         ),
-                        const SizedBox(height: 16),
-                        Divider(color: scheme.outlineVariant),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSpace.sm),
                         Text(
-                          phrase.translation,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(color: scheme.onSurfaceVariant),
+                          'Phrase ${_phrase + 1} of ${story.phrases.length}',
+                          style: Theme.of(context).textTheme.bodySmall,
                         ),
-                        const SizedBox(height: 20),
-                        FilledButton.tonalIcon(
-                          icon: const Icon(Icons.volume_up),
-                          label: const Text('Listen'),
-                          onPressed: () =>
-                              speech.speak(phrase.text, langCode: bcp47),
+                        const Spacer(),
+                        FadeInUp(
+                          key: ValueKey(_phrase),
+                          child: Card(
+                            color: scheme.surfaceContainerHigh,
+                            child: Padding(
+                              padding: const EdgeInsets.all(28),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    phrase.text,
+                                    textAlign: TextAlign.center,
+                                    style:
+                                        Theme.of(context).textTheme.headlineSmall,
+                                  ),
+                                  const SizedBox(height: AppSpace.lg),
+                                  Divider(color: scheme.outlineVariant),
+                                  const SizedBox(height: AppSpace.lg),
+                                  Text(
+                                    phrase.translation,
+                                    textAlign: TextAlign.center,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: scheme.onSurfaceVariant,
+                                        ),
+                                  ),
+                                  const SizedBox(height: AppSpace.lg),
+                                  FilledButton.tonalIcon(
+                                    icon: const Icon(Icons.volume_up),
+                                    label: const Text('Listen'),
+                                    onPressed: () => speech.speak(
+                                      phrase.text,
+                                      langCode: bcp47,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                icon: const Icon(Icons.arrow_back),
+                                label: const Text('Back'),
+                                onPressed: _phrase == 0
+                                    ? null
+                                    : () => setState(() => _phrase--),
+                              ),
+                            ),
+                            const SizedBox(width: AppSpace.md),
+                            Expanded(
+                              child: FilledButton.icon(
+                                icon: Icon(
+                                  isLast
+                                      ? (story.questions.isEmpty
+                                          ? Icons.check
+                                          : Icons.quiz_outlined)
+                                      : Icons.arrow_forward,
+                                ),
+                                label: Text(
+                                  isLast
+                                      ? (story.questions.isEmpty
+                                          ? 'Done'
+                                          : 'Quiz')
+                                      : 'Next',
+                                ),
+                                onPressed: () {
+                                  if (!isLast) {
+                                    setState(() => _phrase++);
+                                  } else if (story.questions.isNotEmpty) {
+                                    setState(() => _showQuiz = true);
+                                  } else {
+                                    Navigator.of(context).pop();
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                ),
-                ),
-                const Spacer(),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.arrow_back),
-                        label: const Text('Back'),
-                        onPressed: _phrase == 0
-                            ? null
-                            : () => setState(() => _phrase--),
-                      ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Comprehension quiz shown after the reading: each question reveals the
+/// correct answer once tapped; a running score sits at the top.
+class _Quiz extends StatefulWidget {
+  const _Quiz({required this.story, required this.onFinish});
+
+  final Story story;
+  final VoidCallback onFinish;
+
+  @override
+  State<_Quiz> createState() => _QuizState();
+}
+
+class _QuizState extends State<_Quiz> {
+  final Map<int, int> _picked = {};
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final questions = widget.story.questions;
+    final correct = [
+      for (final e in _picked.entries)
+        if (questions[e.key].answerIndex == e.value) e,
+    ].length;
+    return ListView(
+      padding: const EdgeInsets.all(AppSpace.xl),
+      children: [
+        Text(
+          'Comprehension',
+          style: Theme.of(context)
+              .textTheme
+              .headlineSmall
+              ?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: AppSpace.xs),
+        Text(
+          '$correct / ${questions.length} correct',
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(color: scheme.primary),
+        ),
+        const SizedBox(height: AppSpace.lg),
+        for (final (qi, q) in questions.indexed)
+          FadeInUp(
+            delayMs: qi * 60,
+            child: GlassCard(
+              padding: const EdgeInsets.all(AppSpace.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    q.prompt,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: AppSpace.md),
+                  for (final (oi, opt) in q.options.indexed)
+                    _Option(
+                      label: opt,
+                      state: _picked[qi] == null
+                          ? _OptState.idle
+                          : oi == q.answerIndex
+                              ? _OptState.correct
+                              : (_picked[qi] == oi
+                                  ? _OptState.wrong
+                                  : _OptState.idle),
+                      onTap: _picked.containsKey(qi)
+                          ? null
+                          : () => setState(() => _picked[qi] = oi),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton.icon(
-                        icon: Icon(
-                          _phrase + 1 < story.phrases.length
-                              ? Icons.arrow_forward
-                              : Icons.check,
-                        ),
-                        label: Text(
-                          _phrase + 1 < story.phrases.length ? 'Next' : 'Done',
-                        ),
-                        onPressed: () {
-                          if (_phrase + 1 < story.phrases.length) {
-                            setState(() => _phrase++);
-                          } else {
-                            Navigator.of(context).pop();
-                          }
-                        },
-                      ),
-                    ),
-                  ],
+                ],
+              ),
+            ),
+          ),
+        const SizedBox(height: AppSpace.lg),
+        FilledButton.icon(
+          icon: const Icon(Icons.check),
+          label: const Text('Finish'),
+          onPressed: widget.onFinish,
+        ),
+        const SizedBox(height: AppSpace.xl),
+      ],
+    );
+  }
+}
+
+enum _OptState { idle, correct, wrong }
+
+class _Option extends StatelessWidget {
+  const _Option({required this.label, required this.state, this.onTap});
+
+  final String label;
+  final _OptState state;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final (bg, fg, icon) = switch (state) {
+      _OptState.correct => (
+          scheme.primaryContainer,
+          scheme.onPrimaryContainer,
+          Icons.check_circle,
+        ),
+      _OptState.wrong => (
+          scheme.errorContainer,
+          scheme.onErrorContainer,
+          Icons.cancel,
+        ),
+      _OptState.idle => (scheme.surfaceContainerHighest, scheme.onSurface, null),
+    };
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpace.sm),
+      child: Material(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadius.input),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.input),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.lg,
+              vertical: AppSpace.md,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(label, style: TextStyle(color: fg)),
                 ),
+                if (icon != null) Icon(icon, size: 18, color: fg),
               ],
             ),
           ),
         ),
-      ),
       ),
     );
   }

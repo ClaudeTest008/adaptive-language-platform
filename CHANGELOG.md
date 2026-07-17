@@ -9,6 +9,19 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-17: Phase 12 — classic stories, quiz, voice + Stories usability.
+  Three famous public-domain tales adapted as graded readers (A1 fable
+  "La liebre y la tortuga", A2 legend "La leyenda de la Llorona", B1
+  "Don Quijote y los molinos de viento"), each with a key-words glossary
+  and a comprehension quiz. `Story` gains optional `vocabulary` +
+  `questions` (parsed from the stories JSON; legacy stories unaffected).
+  The reader adds a Key-words bottom sheet and an end-of-story quiz
+  (per-question correct/incorrect colouring + running score). Stories are
+  grouped under CEFR-level section headers with a Quiz badge on cards.
+  Voice: `spokenText` now turns em/en dashes (Spanish dialogue) and
+  ellipses into natural pauses instead of speaking them. 3 new tests
+  (201 green). Emulator-verified end to end.
+
 - 2026-07-17: Phase 10 — first-run onboarding + Hume-inspired visual
   maturity (UI only). New immersive onboarding flow (`/onboarding`,
   gated by `onboardingSeenProvider`): a 3-step atmospheric PageView

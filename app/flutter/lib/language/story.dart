@@ -26,6 +26,27 @@ class StoryPhrase {
   final List<String> conceptIds;
 }
 
+/// A highlighted key word from a story: target word + a short gloss.
+class StoryVocab {
+  const StoryVocab({required this.word, required this.meaning});
+
+  final String word;
+  final String meaning;
+}
+
+/// A single comprehension check shown after the reading.
+class StoryQuestion {
+  const StoryQuestion({
+    required this.prompt,
+    required this.options,
+    required this.answerIndex,
+  });
+
+  final String prompt;
+  final List<String> options;
+  final int answerIndex;
+}
+
 class Story {
   const Story({
     required this.id,
@@ -33,6 +54,8 @@ class Story {
     required this.level,
     required this.phrases,
     this.topics = const [],
+    this.vocabulary = const [],
+    this.questions = const [],
   });
 
   final String id;
@@ -40,6 +63,12 @@ class Story {
   final CefrLevel level;
   final List<StoryPhrase> phrases;
   final List<String> topics;
+
+  /// Key words worth highlighting while reading (optional).
+  final List<StoryVocab> vocabulary;
+
+  /// Comprehension questions shown after the last phrase (optional).
+  final List<StoryQuestion> questions;
 
   /// Whole story as target text — the "Listen to the story" payload.
   String get fullText => phrases.map((p) => p.text).join(' ');
@@ -64,6 +93,21 @@ List<Story> parseStories(Map<String, dynamic> json) => [
             translation: p['translation'] as String,
             conceptIds:
                 [...(p['conceptIds'] as List? ?? const []).cast<String>()],
+          ),
+      ],
+      vocabulary: [
+        for (final v in (raw['vocabulary'] as List? ?? const []))
+          StoryVocab(
+            word: (v as Map<String, dynamic>)['word'] as String,
+            meaning: v['meaning'] as String,
+          ),
+      ],
+      questions: [
+        for (final q in (raw['questions'] as List? ?? const []))
+          StoryQuestion(
+            prompt: (q as Map<String, dynamic>)['prompt'] as String,
+            options: [...(q['options'] as List).cast<String>()],
+            answerIndex: q['answer'] as int,
           ),
       ],
     ),

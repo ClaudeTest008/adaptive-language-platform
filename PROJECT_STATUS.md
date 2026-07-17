@@ -5,6 +5,14 @@
 
 ## Completed
 
+- Phase 12 — classic stories + quiz + voice + Stories usability (2026-07-17, branch `feature/phase12-stories-voice-usability`):
+  - Content: 3 famous public-domain stories adapted as graded readers — A1 fable (La liebre y la tortuga), A2 legend (La leyenda de la Llorona), B1 Don Quixote (los molinos de viento) — with key-words glossaries + comprehension questions in `assets/stories/es-for-en.json`.
+  - Model: `Story.vocabulary`/`Story.questions` (optional; legacy stories unaffected); reader Key-words bottom sheet + end-of-story comprehension quiz (scored, coloured feedback).
+  - Usability: Stories list grouped under CEFR-level headers, Quiz badge on cards.
+  - Voice: `spokenText` turns em/en dashes (Spanish dialogue) + ellipses into natural pauses.
+  - 201 tests green; analyze clean; emulator-verified (onboarding→Stories→Don Quixote read→Key words→quiz).
+  - Note (honest): the "English words in Spanish sound robotic" issue is a platform-TTS limitation — a single utterance can't switch language mid-sentence; the fix reduces mis-read punctuation but true per-word language switching needs a cloud neural provider (Phase 8 seam).
+
 - Phase 10 — onboarding + Hume visual maturity (2026-07-17, UI only, branch `feature/phase10-hume-visual-maturity-onboarding`):
   - First-run onboarding (`/onboarding`, gated by `onboardingSeenProvider`): immersive 3-step atmospheric flow (welcome → target language → daily minutes + target CEFR level) writing the live `selectedLanguage`/`learnerGoals` providers; segmented progress, full-width CTA.
   - UI kit: `AtmosphericBackground` (dark-first gradient + colour glows), `GlassCard` (frosted backdrop-blur surface + hairline border), `_fadeThrough` shared-axis route transitions. Applied atmospheric backdrops across Lab/Tutor/Stories/Speaking/Story-reader; glass on plan + skill-mastery cards + onboarding.

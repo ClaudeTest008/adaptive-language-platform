@@ -26,10 +26,12 @@ abstract class SpeechService {
   bool get available;
 }
 
-/// Normalizes tutor/markdown text into clean prose for text-to-speech, so
-/// the engine never reads "asterisk asterisk" or a code backtick aloud.
-/// Strips emphasis/code markers, heading/list/quote markers and link URLs;
-/// keeps sentence punctuation (incl. Spanish `¿¡`) so prosody survives.
+/// Normalizes tutor/markdown/story text into clean prose for
+/// text-to-speech, so the engine never reads markup, a dialogue dash or a
+/// backtick aloud. Strips emphasis/code/heading/list/quote markers and link
+/// URLs; turns em/en dashes (Spanish dialogue punctuation) and ellipses
+/// into natural pauses; keeps sentence punctuation (incl. Spanish `¿¡`) so
+/// prosody survives.
 String spokenText(String markdown) {
   var s = markdown;
   // [label](url) → label
@@ -39,11 +41,19 @@ String spokenText(String markdown) {
       RegExp(r'^[ \t]{0,3}([#>]+|[-+*]|\d+[.)])[ \t]+', multiLine: true), '');
   // Inline emphasis / code / strikethrough markers.
   s = s.replaceAll(RegExp(r'[*_`~]'), '');
+  // Em/en dashes (—Quiero…, dialogue and asides) → a comma-length pause,
+  // never spoken as "raya"/"dash". Ellipses → a single trailing pause.
+  s = s.replaceAll(RegExp(r'[—–]'), ', ');
+  s = s.replaceAll(RegExp(r'\.{3,}|…'), '. ');
   // Collapse whitespace; blank lines become a sentence break for a pause.
   s = s
       .replaceAll(RegExp(r'[ \t]+'), ' ')
       .replaceAll(RegExp(r'\n{2,}'), '. ')
       .replaceAll('\n', ' ')
+      // Tidy the punctuation the dash/ellipsis passes can leave behind.
+      .replaceAllMapped(RegExp(r'\s+([,.;:!?])'), (m) => m[1]!)
+      .replaceAll(RegExp(r'(,\s*){2,}'), ', ')
+      .replaceAll(RegExp(r'^[\s,.;:]+'), '')
       .trim();
   return s;
 }

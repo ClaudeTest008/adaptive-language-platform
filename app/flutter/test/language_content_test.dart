@@ -41,6 +41,23 @@ void main() {
       expect(restaurant.conceptIds, contains(tenerId));
     });
 
+    test('classic stories carry vocabulary + comprehension questions', () {
+      final stories = parseStories(_storiesJson());
+      final quijote =
+          stories.firstWhere((s) => s.id == 'es-b1-quijote-molinos');
+      expect(quijote.level, CefrLevel.b1);
+      expect(quijote.vocabulary, isNotEmpty);
+      expect(quijote.vocabulary.first.word, isNotEmpty);
+      expect(quijote.vocabulary.first.meaning, isNotEmpty);
+      expect(quijote.questions, hasLength(3));
+      final q = quijote.questions.first;
+      expect(q.options.length, greaterThanOrEqualTo(2));
+      expect(q.answerIndex, inInclusiveRange(0, q.options.length - 1));
+      // Legacy stories still parse with empty vocab/questions.
+      final mercado = stories.firstWhere((s) => s.id == 'es-a1-mercado');
+      expect(mercado.questions, isEmpty);
+    });
+
     test('recommendedLevel drops a level only when struggling', () {
       expect(recommendedLevel(CefrLevel.a2, averageMastery: 0.8), CefrLevel.a2);
       expect(recommendedLevel(CefrLevel.a2, averageMastery: 0.2), CefrLevel.a1);

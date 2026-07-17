@@ -146,6 +146,130 @@
           "translation": "He gets up fast. The day is new and everything is calm.",
           "conceptIds": ["es:a1:grammar:verbs:states:ser-estar"] }
       ]
+    },
+    {
+      "id": "es-a1-liebre-tortuga",
+      "title": "La liebre y la tortuga",
+      "level": "a1",
+      "topics": ["fable", "animals", "classic"],
+      "vocabulary": [
+        { "word": "la liebre", "meaning": "the hare" },
+        { "word": "la tortuga", "meaning": "the tortoise" },
+        { "word": "lenta", "meaning": "slow" },
+        { "word": "rápida", "meaning": "fast" },
+        { "word": "la carrera", "meaning": "the race" },
+        { "word": "la meta", "meaning": "the finish line" }
+      ],
+      "phrases": [
+        { "text": "Una liebre muy rápida se ríe de una tortuga lenta.",
+          "translation": "A very fast hare laughs at a slow tortoise." },
+        { "text": "—Tú eres muy lenta —dice la liebre—. Yo soy la más rápida.",
+          "translation": "\"You are very slow,\" says the hare. \"I am the fastest.\"",
+          "conceptIds": ["es:a1:grammar:verbs:states:ser-estar"] },
+        { "text": "La tortuga responde: —Vamos a correr. El árbol es la meta.",
+          "translation": "The tortoise answers: \"Let's race. The tree is the finish.\"" },
+        { "text": "La liebre corre muy rápido y pronto está muy lejos.",
+          "translation": "The hare runs very fast and soon is far ahead." },
+        { "text": "Como tiene tiempo, la liebre duerme un poco bajo un árbol.",
+          "translation": "Since she has time, the hare sleeps a while under a tree.",
+          "conceptIds": ["es:a1:grammar:verbs:states:tener-states"] },
+        { "text": "La tortuga camina despacio, pero nunca para.",
+          "translation": "The tortoise walks slowly, but never stops." },
+        { "text": "Cuando la liebre despierta, la tortuga ya gana la carrera.",
+          "translation": "When the hare wakes up, the tortoise has already won the race." },
+        { "text": "La lección es simple: despacio y con paciencia se llega lejos.",
+          "translation": "The lesson is simple: slowly and with patience you get far." }
+      ],
+      "questions": [
+        { "prompt": "¿Quién gana la carrera?",
+          "options": ["La liebre", "La tortuga", "Nadie"], "answer": 1 },
+        { "prompt": "¿Por qué pierde la liebre?",
+          "options": ["Corre despacio", "Se duerme", "Se pierde"], "answer": 1 },
+        { "prompt": "¿Cuál es la lección de la historia?",
+          "options": ["Ser el más rápido", "Tener paciencia", "No correr nunca"], "answer": 1 }
+      ]
+    },
+    {
+      "id": "es-a2-llorona",
+      "title": "La leyenda de la Llorona",
+      "level": "a2",
+      "topics": ["legend", "culture", "classic"],
+      "vocabulary": [
+        { "word": "el río", "meaning": "the river" },
+        { "word": "los hijos", "meaning": "the children" },
+        { "word": "el corazón", "meaning": "the heart" },
+        { "word": "la orilla", "meaning": "the shore" },
+        { "word": "llorar", "meaning": "to cry" },
+        { "word": "el miedo", "meaning": "fear" }
+      ],
+      "phrases": [
+        { "text": "Hace muchos años, una mujer hermosa vive cerca de un río.",
+          "translation": "Many years ago, a beautiful woman lives near a river." },
+        { "text": "Ella tiene dos hijos pequeños y los quiere con todo el corazón.",
+          "translation": "She has two small children and loves them with all her heart.",
+          "conceptIds": ["es:a1:grammar:verbs:states:tener-states"] },
+        { "text": "Un día, el hombre que ama se va de la casa para siempre.",
+          "translation": "One day, the man she loves leaves the house forever." },
+        { "text": "Con el corazón roto, la mujer pierde poco a poco la razón.",
+          "translation": "With a broken heart, the woman slowly loses her mind." },
+        { "text": "En una noche terrible, sus hijos desaparecen en el agua del río.",
+          "translation": "On a terrible night, her children disappear in the river water." },
+        { "text": "Desde entonces, ella camina por la orilla y llora sin parar.",
+          "translation": "Since then, she walks along the shore and cries without stopping." },
+        { "text": "La gente escucha una voz triste: —¡Ay, mis hijos!",
+          "translation": "People hear a sad voice: \"Oh, my children!\"" },
+        { "text": "Hoy, muchos niños tienen miedo de salir cerca del río de noche.",
+          "translation": "Today, many children are afraid to go out near the river at night.",
+          "conceptIds": ["es:a1:grammar:verbs:states:tener-states"] }
+      ],
+      "questions": [
+        { "prompt": "¿Dónde vive la mujer?",
+          "options": ["En la montaña", "Cerca de un río", "En la ciudad"], "answer": 1 },
+        { "prompt": "¿Qué les pasa a sus hijos?",
+          "options": ["Crecen felices", "Desaparecen en el agua", "Van a la escuela"], "answer": 1 },
+        { "prompt": "¿Por qué llora la Llorona por las noches?",
+          "options": ["Busca a sus hijos", "Tiene frío", "Está aburrida"], "answer": 0 }
+      ]
+    },
+    {
+      "id": "es-b1-quijote-molinos",
+      "title": "Don Quijote y los molinos de viento",
+      "level": "b1",
+      "topics": ["classic", "literature", "don-quijote"],
+      "vocabulary": [
+        { "word": "el caballero", "meaning": "the knight" },
+        { "word": "el molino de viento", "meaning": "the windmill" },
+        { "word": "el gigante", "meaning": "the giant" },
+        { "word": "el escudero", "meaning": "the squire" },
+        { "word": "la lanza", "meaning": "the lance" },
+        { "word": "las aspas", "meaning": "the blades" }
+      ],
+      "phrases": [
+        { "text": "Don Quijote es un hombre que lee demasiados libros de caballeros.",
+          "translation": "Don Quixote is a man who reads too many books about knights." },
+        { "text": "Un día, en los campos de la Mancha, ve treinta molinos de viento.",
+          "translation": "One day, in the fields of La Mancha, he sees thirty windmills." },
+        { "text": "—¡Mira, Sancho! —grita—. ¡Son gigantes con brazos enormes!",
+          "translation": "\"Look, Sancho!\" he shouts. \"They are giants with enormous arms!\"" },
+        { "text": "Su escudero responde con calma: —Señor, solo son molinos.",
+          "translation": "His squire answers calmly: \"Sir, they are only windmills.\"" },
+        { "text": "Pero don Quijote no escucha y ataca a los gigantes con su lanza.",
+          "translation": "But Don Quixote does not listen and attacks the giants with his lance." },
+        { "text": "El viento mueve las aspas y lo tira al suelo con mucha fuerza.",
+          "translation": "The wind moves the blades and throws him to the ground very hard." },
+        { "text": "Sancho corre a ayudarlo y dice: —Se lo advertí, señor.",
+          "translation": "Sancho runs to help him and says: \"I warned you, sir.\"" },
+        { "text": "En el suelo, don Quijote todavía cree en su mundo de sueños.",
+          "translation": "On the ground, Don Quixote still believes in his world of dreams." }
+      ],
+      "questions": [
+        { "prompt": "¿Qué cree ver don Quijote en el campo?",
+          "options": ["Molinos", "Gigantes", "Otros caballeros"], "answer": 1 },
+        { "prompt": "¿Quién es Sancho?",
+          "options": ["Un gigante", "Su escudero", "Un rey"], "answer": 1 },
+        { "prompt": "¿Qué pasa cuando don Quijote ataca?",
+          "options": ["Gana la lucha", "El viento lo tira al suelo", "Los gigantes huyen"], "answer": 1 }
+      ]
     }
   ]
 }

@@ -37,6 +37,11 @@ void main() {
       expect(spokenText(q), q);
     });
 
+    test('dialogue dashes and ellipses become natural pauses', () {
+      expect(spokenText('—Quiero pan —dice Ana.'), 'Quiero pan, dice Ana.');
+      expect(spokenText('Espera... ya voy.'), 'Espera. ya voy.');
+    });
+
     test('drops list/heading markers and link URLs, collapses blank lines',
         () {
       expect(spokenText('# Title\n\n- one\n- two'), 'Title. one two');

@@ -38,14 +38,14 @@ class LanguageStoriesScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(AppSpace.lg),
                 children: [
                   Text(
-                    'Matched to your level — read, then tap Listen',
+                    'Short stories & classics, matched to your level. '
+                    'Read, listen, then check your understanding.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: AppSpace.md),
-                  for (final (i, s) in stories.indexed)
-                    FadeInUp(delayMs: i * 60, child: _StoryCard(story: s)),
+                  const SizedBox(height: AppSpace.lg),
+                  ..._groupedByLevel(context, stories),
                 ],
               ),
             ),
@@ -55,6 +55,37 @@ class LanguageStoriesScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Stories grouped under CEFR-level section headers, easiest first — a
+/// clearer hierarchy than one long flat list.
+List<Widget> _groupedByLevel(BuildContext context, List<Story> stories) {
+  final out = <Widget>[];
+  String? currentLevel;
+  var i = 0;
+  for (final s in stories) {
+    final lvl = s.level.name.toUpperCase();
+    if (lvl != currentLevel) {
+      currentLevel = lvl;
+      out.add(
+        Padding(
+          padding: EdgeInsets.only(
+            top: out.isEmpty ? 0 : AppSpace.md,
+            bottom: AppSpace.sm,
+          ),
+          child: Text(
+            'Level $lvl',
+            style: Theme.of(context)
+                .textTheme
+                .titleSmall
+                ?.copyWith(color: Theme.of(context).colorScheme.primary),
+          ),
+        ),
+      );
+    }
+    out.add(FadeInUp(delayMs: (i++) * 50, child: _StoryCard(story: s)));
+  }
+  return out;
 }
 
 class _StoryCard extends StatelessWidget {
@@ -101,6 +132,7 @@ class _StoryCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Wrap(
                       spacing: 6,
+                      runSpacing: 4,
                       children: [
                         Chip(
                           visualDensity: VisualDensity.compact,
@@ -110,6 +142,12 @@ class _StoryCard extends StatelessWidget {
                           visualDensity: VisualDensity.compact,
                           label: Text('${story.phrases.length} phrases'),
                         ),
+                        if (story.questions.isNotEmpty)
+                          Chip(
+                            visualDensity: VisualDensity.compact,
+                            avatar: const Icon(Icons.quiz_outlined, size: 14),
+                            label: const Text('Quiz'),
+                          ),
                       ],
                     ),
                   ],

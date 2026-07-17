@@ -77,6 +77,10 @@ what must land before a real launch, grouped by area. Status: ✅ done ·
   no floating elements; keyboard shows only on field focus; Flutter text
   selection toolbar suppressed on learner inputs; markdown rendered (no
   literal asterisks in chat); refined typography.
+- ✅ Premium visual system (Phase 9): shared UI kit (`presentation/ui.dart`)
+  — spacing/radius/motion tokens, reusable gradient hero with depth + glass
+  sheen, frosted pills, staggered entrance motion — applied across all
+  learner surfaces; card depth via theme; dark-mode audited (no regressions).
 - ✅ Learner goals surface (minutes/day + target level) driving the plan.
 - ⬜ Onboarding flow (pick target language + native language + goals on
   first run) — today the learner lands on a seeded demo.

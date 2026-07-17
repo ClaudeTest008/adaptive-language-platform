@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../language/story.dart';
 import '../language_providers.dart';
+import '../ui.dart';
 
 /// Stories tab (ADR-0020): level-matched short stories. Reading feeds the
 /// same knowledge graph; a story recommends itself by the learner's CEFR
@@ -29,7 +30,7 @@ class LanguageStoriesScreen extends ConsumerWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 720),
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpace.lg),
                 children: [
                   Text(
                     'Matched to your level — read, then tap Listen',
@@ -37,8 +38,9 @@ class LanguageStoriesScreen extends ConsumerWidget {
                       color: scheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  for (final s in stories) _StoryCard(story: s),
+                  const SizedBox(height: AppSpace.md),
+                  for (final (i, s) in stories.indexed)
+                    FadeInUp(delayMs: i * 60, child: _StoryCard(story: s)),
                 ],
               ),
             ),
@@ -58,25 +60,32 @@ class _StoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: AppSpace.md),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.card),
         onTap: () =>
             context.push('/story/${Uri.encodeComponent(story.id)}'),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpace.lg),
           child: Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
-                  color: scheme.tertiaryContainer,
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    colors: [
+                      scheme.tertiaryContainer,
+                      scheme.primaryContainer,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(Icons.menu_book, color: scheme.onTertiaryContainer),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: AppSpace.lg),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

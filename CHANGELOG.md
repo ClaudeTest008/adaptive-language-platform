@@ -9,6 +9,19 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Changed
 
+- 2026-07-17: Phase 9 — deeper premium redesign + consistency (UI only, no
+  logic/core changes). New shared UI kit `presentation/ui.dart`: a 4-based
+  spacing scale (`AppSpace`), radius/motion tokens, a reusable `GradientHero`
+  (soft shadow + top-left glass sheen — dedupes the dashboard/tutor heroes),
+  a frosted `GlassPill`, and a `FadeInUp` entrance (staggered via curve
+  interval, no timers). Applied across the dashboard (staggered section
+  entrances, hero depth), tutor mode grid + hero + chat bubbles, stories
+  (gradient leading tiles, cascade in), speaking intro (gradient halo icon)
+  and the story reader (per-phrase fade). Theme: cards gain a faint shadow
+  with no surface tint for clean depth; consistent card/input radii.
+  Full dark-mode audit on the emulator — all surfaces adapt via scheme
+  roles, no regressions. 198 tests still green; analyze clean.
+
 - 2026-07-17: UX polish — the AI-tutor chat renders `**bold**`/`*italic*`
   markdown as real emphasis instead of literal asterisks; the tutor reply
   and practice text fields drop the Flutter floating selection toolbar

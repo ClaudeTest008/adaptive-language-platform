@@ -4,8 +4,6 @@
 
 - Delete unrouted exam-era screens (dashboard/practice/mock/bookmarks/search/admin studio) together with the `adaptive_exam_platform` → `adaptive_language_platform` package rename (single sweep; ADR-0019 retired them from navigation).
 
-- Phase 3 depth: mode-specific dialogue logic — Teacher lesson sequencing (explain → example → exercise → check), Socratic question chains, Conversation vocabulary adaptation to learner level, Coach daily-goal generation from `weakestSkills` + available time.
-- Phase 3: immersion language-purity validation (reject native-language output in Immersion mode — needs lightweight language detection).
 - Phase 3: tutor history persistence seam (`tutorHistory` shape in docs/database/05) + session summaries feeding Learning DNA.
 
 ## Backlog
@@ -18,6 +16,8 @@
 - Remove demo seed once real learner accounts persist language state (Firestore swap, Phase 8).
 
 ## Done
+
+- [x] Phase 3 dialogue depth — per-mode Session-flow plans + MODE tag in prompts, six mode-true DemoTutorModel strategies (multi-turn aware), immersion purity gate (native stopwords), live Learning DNA in TutorContext, typing indicator + avatar bubbles, tappable Today's Plan blocks, exercise-type interleaving; Android emulator run verified with screenshots; 137 tests green (2026-07-16).
 
 - [x] Product rebrand — language-first navigation (Language Lab at `/`, exam routes retired), multi-language selector with per-language seeds + contamination fix, teal immersion theme, tutor hero + FAB, rebranded copy/manifest, ADR-0019; 132 tests green (2026-07-16).
 - [x] Phase 3 foundation — AI tutor: TutorContext assembly, six mode contracts, output validation with grounding, provider-blind LanguageTutor + DemoTutorModel, `/language/tutor` UI + dashboard CTA, ADR-0018; 131 tests green (2026-07-16).

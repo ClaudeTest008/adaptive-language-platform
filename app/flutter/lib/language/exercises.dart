@@ -86,11 +86,29 @@ List<ExerciseItem> generateExercises(
   final focus = focusConceptIds.toSet();
   int rank(ExerciseItem e) =>
       e.node.lineageConceptIds.any(focus.contains) ? 0 : 1;
-  final ordered = items..sort((a, b) {
+  items.sort((a, b) {
     final byFocus = rank(a).compareTo(rank(b));
     return byFocus != 0 ? byFocus : a.id.compareTo(b.id);
   });
-  return ordered.take(limit).toList();
+  // Round-robin across types within each rank group so a session mixes
+  // exercise forms instead of clustering all multiple-choice first.
+  final result = <ExerciseItem>[];
+  for (final group in [
+    items.where((e) => rank(e) == 0),
+    items.where((e) => rank(e) == 1),
+  ]) {
+    final byType = <ExerciseType, List<ExerciseItem>>{};
+    for (final e in group) {
+      byType.putIfAbsent(e.type, () => []).add(e);
+    }
+    while (byType.isNotEmpty) {
+      for (final type in byType.keys.toList()) {
+        result.add(byType[type]!.removeAt(0));
+        if (byType[type]!.isEmpty) byType.remove(type);
+      }
+    }
+  }
+  return result.take(limit).toList();
 }
 
 List<ExerciseItem> _vocabItems(

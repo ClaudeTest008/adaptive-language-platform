@@ -35,7 +35,8 @@ Master plan for the Adaptive Language Platform. Phases are sequential; each ends
 - ✅ Context assembly: `TutorContext` snapshot — skill mastery, weakest concepts, misconceptions, signals, goals, Learning DNA traits, knowledge-graph slice (focus relations + pattern family). Default focus = top misconception (repair first).
 - ✅ Six mode contracts (Teacher, Conversation, Coach, Socratic, Grammar, Immersion): distinct personas + serialized learner context; `/language/tutor` mode selector + chat session UI; dashboard tutor CTA; DemoTutorModel live Teacher-mode flow from real graph data.
 - ✅ Tests: context assembly, mode prompts, validation gate, tutor service (valid/invalid/history), demo teacher flow, widget test (131 total green).
-- ⏳ Remaining (deeper Phase 3): mode-specific dialogue logic (turn strategies, vocabulary adaptation, Socratic questioning), immersion language-purity validation, tutor history persistence (schema drafted), real vendor adapters (API keys).
+- ✅ Dialogue depth (ADR-0018 addendum): per-mode `Session flow` dialogue plans in prompts, mode-true DemoTutorModel strategies (multi-turn aware), immersion language-purity validation (native-stopword gate), live Learning DNA in every TutorContext; typing indicator + avatar chat bubbles; interactive Today's Plan (blocks launch focused practice); exercise-type interleaving.
+- ⏳ Remaining (deeper Phase 3): tutor history persistence (schema drafted), session summaries feeding Learning DNA, real vendor adapters (API keys).
 
 ## Phase 4 — Daily Personalized Lesson Engine
 

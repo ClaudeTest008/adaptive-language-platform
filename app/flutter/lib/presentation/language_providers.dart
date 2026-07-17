@@ -54,6 +54,7 @@ class LanguageLearnerState {
     this.model = const adaptive.LearnerModel(),
     this.misconceptions = const MisconceptionLog(),
     this.signals = const LanguageSignalsStore(),
+    this.traits = const [],
     this.ready = false,
   });
 
@@ -61,6 +62,10 @@ class LanguageLearnerState {
   final adaptive.LearnerModel model;
   final MisconceptionLog misconceptions;
   final LanguageSignalsStore signals;
+
+  /// Learning DNA trait names, derived by the core engine after every
+  /// answer (never stored — recomputed, per the core's contract).
+  final List<String> traits;
   final bool ready;
 
   Map<String, double> get conceptMastery => {
@@ -71,11 +76,13 @@ class LanguageLearnerState {
     adaptive.LearnerModel? model,
     MisconceptionLog? misconceptions,
     LanguageSignalsStore? signals,
+    List<String>? traits,
     bool? ready,
   }) => LanguageLearnerState(
     model: model ?? this.model,
     misconceptions: misconceptions ?? this.misconceptions,
     signals: signals ?? this.signals,
+    traits: traits ?? this.traits,
     ready: ready ?? this.ready,
   );
 }
@@ -175,6 +182,7 @@ class LanguageLearnerController extends Notifier<LanguageLearnerState> {
       model: model,
       misconceptions: misconceptions,
       signals: signals,
+      traits: [for (final t in engine.learningDna(model)) t.name],
     );
     await ref.read(misconceptionRepositoryProvider).save(misconceptions);
     await ref.read(languageSignalsRepositoryProvider).save(signals);
@@ -385,6 +393,7 @@ TutorContext? assembleTutorContext(Ref ref, {String? focusConceptId}) {
     misconceptions: learner.misconceptions,
     signals: learner.signals,
     goals: ['Reach A2 ${curriculum.languageName}'],
+    learningTraits: learner.traits,
     focusConceptId:
         focusConceptId ?? learner.misconceptions.all.firstOrNull?.conceptId,
   );

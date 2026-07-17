@@ -56,6 +56,114 @@ class _LanguageTutorScreenState extends ConsumerState<LanguageTutorScreen> {
   }
 }
 
+class _Bubble extends StatelessWidget {
+  const _Bubble({required this.isTutor, required this.text});
+
+  final bool isTutor;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final bubble = Container(
+      constraints: const BoxConstraints(maxWidth: 480),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isTutor ? scheme.secondaryContainer : scheme.primary,
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(18),
+          topRight: const Radius.circular(18),
+          bottomLeft: Radius.circular(isTutor ? 4 : 18),
+          bottomRight: Radius.circular(isTutor ? 18 : 4),
+        ),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: isTutor ? scheme.onSecondaryContainer : scheme.onPrimary,
+        ),
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment:
+            isTutor ? MainAxisAlignment.start : MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (isTutor) ...[
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: scheme.primaryContainer,
+              child: Icon(
+                Icons.school,
+                size: 16,
+                color: scheme.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Flexible(child: bubble),
+        ],
+      ),
+    );
+  }
+}
+
+/// Three softly pulsing dots — the tutor is "thinking".
+class _TypingIndicator extends StatefulWidget {
+  const _TypingIndicator();
+
+  @override
+  State<_TypingIndicator> createState() => _TypingIndicatorState();
+}
+
+class _TypingIndicatorState extends State<_TypingIndicator>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(left: 36, top: 8, bottom: 8),
+      child: Row(
+        children: [
+          for (var i = 0; i < 3; i++)
+            AnimatedBuilder(
+              animation: _c,
+              builder: (context, _) {
+                final phase = (_c.value * 3 - i).clamp(0.0, 1.0);
+                final lift = phase < 0.5 ? phase : 1 - phase;
+                return Container(
+                  margin: EdgeInsets.only(
+                    right: 4,
+                    bottom: 2 + lift * 6,
+                  ),
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: scheme.primary.withValues(alpha: 0.4 + lift * 0.6),
+                    shape: BoxShape.circle,
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ModeInfo {
   const _ModeInfo(this.mode, this.title, this.subtitle, this.icon);
 
@@ -226,7 +334,6 @@ class _Session extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final mode = _modes.firstWhere((m) => m.mode == session.mode);
     return Column(
       children: [
@@ -260,39 +367,8 @@ class _Session extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             children: [
               for (final (isTutor, text) in session.transcript)
-                Align(
-                  alignment:
-                      isTutor ? Alignment.centerLeft : Alignment.centerRight,
-                  child: Card(
-                    color: isTutor
-                        ? scheme.secondaryContainer
-                        : scheme.primaryContainer,
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    child: Container(
-                      constraints: const BoxConstraints(maxWidth: 520),
-                      padding: const EdgeInsets.all(14),
-                      child: Text(
-                        text,
-                        style: TextStyle(
-                          color: isTutor
-                              ? scheme.onSecondaryContainer
-                              : scheme.onPrimaryContainer,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              if (session.busy)
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(
-                    child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                ),
+                _Bubble(isTutor: isTutor, text: text),
+              if (session.busy) const _TypingIndicator(),
             ],
           ),
         ),

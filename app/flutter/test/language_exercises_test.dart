@@ -48,6 +48,12 @@ void main() {
       expect([for (final e in a) e.options], [for (final e in b) e.options]);
     });
 
+    test('sessions interleave exercise types instead of clustering', () {
+      final items = generateExercises(graph, limit: 8);
+      final firstFour = items.take(4).map((e) => e.type).toSet();
+      expect(firstFour.length, greaterThanOrEqualTo(3));
+    });
+
     test('focus concepts sort first (repair-driven sessions)', () {
       final items = generateExercises(
         graph,
@@ -174,6 +180,8 @@ void main() {
       expect(after, greaterThan(before));
       // Transfer signal registered on the ancestor concept.
       expect(learner.signals[tenerId].grammarTransferErrors, greaterThan(0));
+      // Learning DNA derived live by the core engine.
+      expect(learner.traits, isNotEmpty);
     });
 
     test('full session: submit/next through finish, score counted', () async {

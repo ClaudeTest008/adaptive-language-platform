@@ -5,6 +5,13 @@
 
 ## Completed
 
+- Phase 3 dialogue depth + Android verification (2026-07-16, ADR-0018 addendum):
+  - Per-mode dialogue plans in every tutor prompt (`Session flow:` + `MODE:` tag); DemoTutorModel now composes six mode-true strategies (Teacher lesson w/ check question, Conversation scenario turns, Coach minute-plans from real skill percentages, Socratic single-question chains, Grammar minimal pairs, Immersion target-language-only), multi-turn aware.
+  - Immersion language-purity validation: native-stopword gate in `validateTutorReply` (≥2 distinct native function words → rejected).
+  - Learning DNA live: traits recomputed by the core engine after every answer, fed into every TutorContext.
+  - UI: typing indicator (pulsing dots), avatar chat bubbles with asymmetric corners; Today's Plan blocks tappable (launch focused practice); exercise sessions interleave types.
+  - Verified: `flutter analyze` clean; 137 tests green (5 new); **Android emulator run verified with screenshots** — login, Language Lab, tutor mode selector, live Teacher session with misconception repair all rendering the teal theme correctly on 1080×2400 (incl. dark mode).
+
 - Product rebrand — language-first navigation + immersion UI (2026-07-16, ADR-0019):
   - Language Lab is now the app home (`/`); exam-era routes (practice/mock/bookmarks/search/admin) retired from navigation; login/settings/web manifest/index rebranded — no exam-flavored surface reachable (verified by adversarial sweep).
   - Multi-language selector (`availableLanguages` registry + `selectedLanguageProvider`): Spanish 🇪🇸 / English 🇬🇧, per-language demo seeds; fresh learner state per switch (review found + fixed cross-language contamination and count inflation; regression-tested round trip).
@@ -47,7 +54,7 @@
 
 ## In Progress
 
-- Phase 3 remainder: mode-specific dialogue logic, immersion language-purity validation, tutor history persistence, real vendor adapters (blocked on API keys).
+- Phase 3 remainder: tutor history persistence + session summaries feeding Learning DNA; real vendor adapters (blocked on API keys).
 
 ## Inherited at Fork Point (commit 3b597b2 lineage)
 

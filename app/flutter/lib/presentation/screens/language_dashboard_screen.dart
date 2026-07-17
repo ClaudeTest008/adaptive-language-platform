@@ -619,39 +619,58 @@ class _LessonPreviewCard extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             for (final (i, b) in blocks.indexed) ...[
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: b.kind == LessonBlockKind.repair
-                        ? scheme.errorContainer
-                        : scheme.primaryContainer,
-                    child: Icon(
-                      _kindIcons[b.kind],
-                      size: 18,
-                      color: b.kind == LessonBlockKind.repair
-                          ? scheme.onErrorContainer
-                          : scheme.onPrimaryContainer,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          b.title,
-                          style: Theme.of(context).textTheme.bodyMedium,
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                // Tapping a block starts practice focused on its concepts.
+                onTap: b.conceptIds.isEmpty
+                    ? null
+                    : () => context.push(
+                        '/language/practice',
+                        extra: b.conceptIds,
+                      ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor: b.kind == LessonBlockKind.repair
+                            ? scheme.errorContainer
+                            : scheme.primaryContainer,
+                        child: Icon(
+                          _kindIcons[b.kind],
+                          size: 18,
+                          color: b.kind == LessonBlockKind.repair
+                              ? scheme.onErrorContainer
+                              : scheme.onPrimaryContainer,
                         ),
-                        Text(
-                          '${b.minutes} min · ${b.kind.name}',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: scheme.onSurfaceVariant),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              b.title,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            Text(
+                              '${b.minutes} min · ${b.kind.name}',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: scheme.onSurfaceVariant),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      if (b.conceptIds.isNotEmpty)
+                        Icon(
+                          Icons.chevron_right,
+                          size: 18,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                    ],
                   ),
-                ],
+                ),
               ),
               if (i < blocks.length - 1)
                 Padding(

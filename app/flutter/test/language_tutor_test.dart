@@ -79,6 +79,18 @@ void main() {
   });
 
   group('mode prompts', () {
+    test('prompts carry MODE tag and per-mode dialogue plan', () {
+      final ctx = context(focus: tenerId);
+      final p = tutorSystemPrompt(TutorMode.socratic, ctx);
+      expect(p, contains('MODE: socratic'));
+      expect(p, contains('Session flow:'));
+      expect(p, contains('NEVER state the rule'));
+      expect(
+        tutorSystemPrompt(TutorMode.teacher, ctx),
+        contains('comprehension check question'),
+      );
+    });
+
     test('each mode has a distinct persona; context serialized once', () {
       final ctx = context(focus: tenerId);
       final prompts = {
@@ -102,6 +114,36 @@ void main() {
 
   group('output validation', () {
     final ctx = context(focus: tenerId);
+
+    test('immersion purity: native language must not leak', () {
+      // Native = English (es-for-en curriculum). English sentence → reject.
+      expect(
+        validateTutorReply(
+          TutorMode.immersion,
+          ctx,
+          'You are doing great, keep practicing the phrases!',
+        ),
+        contains('native language leaked'),
+      );
+      // Pure Spanish passes.
+      expect(
+        validateTutorReply(
+          TutorMode.immersion,
+          ctx,
+          '¡Hola! Yo tengo hambre. ¿Tú también?',
+        ),
+        isNull,
+      );
+      // Other modes are free to use the native language.
+      expect(
+        validateTutorReply(
+          TutorMode.teacher,
+          ctx,
+          'The tener family covers physical states like tener hambre.',
+        ),
+        isNull,
+      );
+    });
 
     test('rejects empty, oversized and context-leaking replies', () {
       expect(validateTutorReply(TutorMode.teacher, ctx, '  '), isNotNull);
@@ -206,6 +248,49 @@ void main() {
       // Misconception repair speaks first-class.
       expect(reply.text, contains('tener'));
       expect(reply.text.toLowerCase(), contains('hambre'));
+    });
+
+    test('each mode composes a distinct, mode-true reply', () async {
+      final tutor = LanguageTutor(const DemoTutorModel());
+      Future<TutorReply> reply(TutorMode m) => tutor.respond(
+        mode: m,
+        context: context(focus: tenerId),
+        userMessage: 'Start the session.',
+      );
+
+      final socratic = await reply(TutorMode.socratic);
+      expect(socratic.valid, isTrue);
+      expect(socratic.text, endsWith('?')); // asks, never tells
+
+      final coach = await reply(TutorMode.coach);
+      expect(coach.text, contains('plan for today'));
+      expect(coach.text, contains('Reach A2')); // real goal from context
+
+      final grammar = await reply(TutorMode.grammar);
+      expect(grammar.text, contains('Pattern:'));
+      expect(grammar.text, contains('Minimal pairs'));
+
+      final conversation = await reply(TutorMode.conversation);
+      expect(conversation.text, contains('?'));
+
+      final immersion = await reply(TutorMode.immersion);
+      expect(immersion.valid, isTrue); // passes the purity gate
+      expect(immersion.text, contains('tengo'));
+    });
+
+    test('immersion follow-up turns stay pure', () async {
+      final tutor = LanguageTutor(const DemoTutorModel());
+      final second = await tutor.respond(
+        mode: TutorMode.immersion,
+        context: context(focus: tenerId),
+        userMessage: 'Sí, yo también.',
+        history: const [
+          AiMessage(AiRole.assistant, '¡Hola! ¿Tú tienes hambre?'),
+          AiMessage(AiRole.user, 'Sí.'),
+        ],
+      );
+      expect(second.valid, isTrue);
+      expect(second.text, contains('¿'));
     });
 
     test('without context it still replies validly', () async {

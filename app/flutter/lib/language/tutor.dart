@@ -161,11 +161,47 @@ const _personas = {
       'use the learner\'s native language.',
 };
 
-/// System prompt = persona + serialized learner context + output rules.
-/// The context block is the tutor's memory of who it is teaching.
+/// Per-mode dialogue strategy — how a session should FLOW, not just who
+/// the tutor is. Consumed by real vendors as instructions and by
+/// DemoTutorModel as its composition plan.
+const _dialoguePlans = {
+  TutorMode.teacher:
+      'Session flow: (1) name the focus concept and its pattern, '
+      '(2) repair the known misconception with a contrast example, '
+      '(3) give two example sentences, (4) end each turn with ONE short '
+      'comprehension check question.',
+  TutorMode.conversation:
+      'Session flow: stay inside a everyday scenario, one or two short '
+      'target-language sentences per turn, always end with a question. '
+      'Prefer vocabulary from the learner\'s weak concepts so practice '
+      'hits where it matters. Recast errors in your reply, never lecture.',
+  TutorMode.coach:
+      'Session flow: (1) acknowledge progress using the skill percentages, '
+      '(2) name the single weakest skill, (3) propose a concrete plan for '
+      'today in minutes, (4) end with an encouraging commitment question.',
+  TutorMode.socratic:
+      'Session flow: ask exactly ONE question per turn, each question one '
+      'step closer to the insight. If the learner answers wrongly, ask a '
+      'smaller question. NEVER state the rule yourself.',
+  TutorMode.grammar:
+      'Session flow: (1) state the pattern precisely, (2) contrast it with '
+      'the native-language structure that interferes, (3) give minimal '
+      'pairs from the pattern family, (4) one transformation drill.',
+  TutorMode.immersion:
+      'Session flow: reply ONLY in the target language. Short sentences at '
+      'the learner\'s level, using pattern-family vocabulary. One question '
+      'per turn. If the learner uses their native language, continue in '
+      'the target language anyway.',
+};
+
+/// System prompt = persona + dialogue plan + serialized learner context +
+/// output rules. The context block is the tutor's memory of who it is
+/// teaching; the MODE tag lets offline models dispatch without guessing.
 String tutorSystemPrompt(TutorMode mode, TutorContext ctx) {
   final b = StringBuffer()
+    ..writeln('MODE: ${mode.name}')
     ..writeln(_personas[mode])
+    ..writeln(_dialoguePlans[mode])
     ..writeln()
     ..writeln('[LEARNER CONTEXT]')
     ..writeln(
@@ -221,6 +257,20 @@ String tutorSystemPrompt(TutorMode mode, TutorContext ctx) {
 
 // ───────────────────────────────────────────────── validation ──
 
+/// Distinctive function words per language — used to detect the
+/// learner's NATIVE language leaking into Immersion-mode replies.
+/// Deliberately excludes words the two languages share ('no', 'a').
+const _stopwords = {
+  'en': {
+    'the', 'and', 'you', 'are', 'is', 'of', 'to', 'it', 'that',
+    'have', 'with', 'this', 'your', 'what',
+  },
+  'es': {
+    'el', 'la', 'los', 'las', 'es', 'de', 'que', 'y', 'con',
+    'para', 'una', 'tienes', 'qué', 'cómo',
+  },
+};
+
 /// Structural validation gate — every tutor output passes through here
 /// before the learner sees it. Returns null when valid, else a reason.
 String? validateTutorReply(TutorMode mode, TutorContext ctx, String reply) {
@@ -229,6 +279,21 @@ String? validateTutorReply(TutorMode mode, TutorContext ctx, String reply) {
   if (text.length > 4000) return 'reply too long';
   if (text.contains('[LEARNER CONTEXT]') || text.contains('[/LEARNER CONTEXT]')) {
     return 'context block leaked';
+  }
+  // Immersion purity: the learner's native language must not leak in.
+  // Two or more distinct native function words = a native-language
+  // sentence, not a loanword or proper noun.
+  if (mode == TutorMode.immersion) {
+    final native = _stopwords[ctx.nativeLanguage] ?? const <String>{};
+    final tokens = text
+        .toLowerCase()
+        .split(RegExp(r'[^a-záéíóúüñ]+'))
+        .toSet();
+    final leaked = native.intersection(tokens);
+    if (leaked.length >= 2) {
+      return 'native language leaked into immersion reply '
+          '(${leaked.take(3).join(", ")})';
+    }
   }
   // Grounding: a teacher/grammar reply about a focus concept must actually
   // talk about it.

@@ -17,6 +17,13 @@ Phase 3 needs the tutor foundation: a personal teacher that knows the learner (v
 6. **Default session focus = the top misconception's concept** — "repair first" is the tutor's opening move, consistent with the lesson engine.
 7. UI: `/language/tutor` (mode selector grid + chat session with context chips), tutor CTA on the Language Lab dashboard.
 
+## Addendum (2026-07-16, same day — dialogue depth session)
+
+- Mode contracts extended with **dialogue plans**: each mode's system prompt now carries a `Session flow:` strategy (Teacher: explain → repair → examples → check question; Socratic: one question per turn, never state the rule; Coach: progress → weakest skill → minute plan → commitment; Grammar: pattern → native contrast → minimal pairs → drill; Conversation: scenario turns ending in questions; Immersion: target-language-only short turns). A `MODE:` tag lets offline models dispatch without guessing.
+- **Immersion purity validation** delivered: `validateTutorReply` rejects Immersion replies containing ≥2 distinct native-language function words (per-language stopword sets; threshold avoids false positives on shared words/loanwords).
+- **Learning DNA is live**: `LanguageLearnerState.traits` recomputed by the core engine's `learningDna` after every answer and fed into every `TutorContext` (previously plumbed but empty).
+- `DemoTutorModel` composes mode-true replies (six distinct strategies) from the same prompts; multi-turn aware via assistant-turn count.
+
 ## Consequences
 
 - Real vendors (Anthropic/OpenAI/Gemini/local) land as `AiChatModel` adapters bound in `tutorModelProvider`; prompts, validation and UI are already final.

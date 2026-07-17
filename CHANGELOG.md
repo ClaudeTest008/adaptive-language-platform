@@ -7,6 +7,23 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
+### Fixed
+
+- 2026-07-17: Phase 15 revision — "floating voice sidebar" root-caused and
+  resolved, with receipts. The vertical floating pill (mic / backspace /
+  send / emoji / ☰) over the tutor is **not app UI**: grep proves zero
+  `OverlayEntry`/`Overlay`/`FloatingActionButton`/`Positioned` floating
+  code exists in `lib/presentation/`, and the tutor input row is exactly
+  [Mic][TextField][Send]. Opening the pill's own ☰ menu shows Gboard
+  items ("Show on-screen keyboard", "Switch to horizontal toolbar" …): it
+  is **Gboard's hardware-keyboard companion toolbar** — the emulator
+  reports the host's physical keyboard, so Gboard suppresses the on-screen
+  QWERTY and floats its toolbar instead. Fix (device-level):
+  `settings put secure show_ime_with_hard_keyboard 1` + Gboard restart —
+  the standard **docked QWERTY** now opens on field focus, cursor and
+  typing behave like a normal messaging app, and the pill is gone
+  (screenshot-verified). No app code changed; nothing existed to delete.
+
 ### Added
 
 - 2026-07-17: Phase 15 final — **real Piper offline-neural TTS + flagship

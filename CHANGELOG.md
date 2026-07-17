@@ -7,6 +7,10 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
+### Fixed
+
+- 2026-07-16: Android `applicationId` → `com.adaptiveexam.adaptive_language_platform` and iOS bundle id → `com.adaptiveexam.adaptiveLanguagePlatform` (inherited exam-platform ids made emulator installs silently replace the exam app; both apps now verified side by side on one device). Kotlin namespace/MainActivity package left for the queued package-rename sweep.
+
 ### Added
 
 - 2026-07-16: Phase 3 dialogue depth (ADR-0018 addendum): per-mode dialogue plans (`Session flow:`) and `MODE:` tag in tutor prompts; DemoTutorModel composes six mode-true strategies (Teacher lesson with comprehension check, Conversation scenario turns, Coach minute-plans from live skill mastery, Socratic question chains, Grammar minimal pairs, Immersion target-language-only) with multi-turn awareness; immersion language-purity validation via native-stopword gate; Learning DNA traits recomputed after every answer and fed into TutorContext; tutor UI typing indicator + avatar chat bubbles; Today's Plan blocks launch focused practice on tap; exercise sessions interleave types; Android emulator verification with screenshots; 5 new tests (137 green).

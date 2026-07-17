@@ -15,8 +15,10 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.adaptiveexam.adaptive_exam_platform"
+        // Must stay distinct from the exam-platform fork so both installs coexist on one device.
+        // namespace above intentionally unchanged: it is build-internal and will move with the
+        // queued package-rename sweep (see TASKS.md).
+        applicationId = "com.adaptiveexam.adaptive_language_platform"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

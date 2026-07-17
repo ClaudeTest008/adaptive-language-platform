@@ -58,6 +58,27 @@ void main() {
       expect(mercado.questions, isEmpty);
     });
 
+    test('flagship novel parses with chapters and real length', () {
+      final novel = parseStories(
+        jsonDecode(
+              File('assets/stories/es-novela-faro.json').readAsStringSync(),
+            )
+            as Map<String, dynamic>,
+      ).single;
+      expect(novel.id, 'es-a2-novela-faro');
+      expect(novel.hasChapters, isTrue);
+      expect(novel.chapterTitles, hasLength(7));
+      expect(novel.chapterStarts.first, 0);
+      // Continuous pages across chapters; a real book, not an exercise.
+      expect(novel.phrases.length, greaterThanOrEqualTo(40));
+      expect(novel.readingMinutes, greaterThanOrEqualTo(15));
+      // chapterOf maps pages to chapters monotonically.
+      expect(novel.chapterOf(0), 0);
+      expect(novel.chapterOf(novel.phrases.length - 1), 6);
+      // Quiz exists but is optional (never forced by the reader).
+      expect(novel.questions, isNotEmpty);
+    });
+
     test('recommendedLevel drops a level only when struggling', () {
       expect(recommendedLevel(CefrLevel.a2, averageMastery: 0.8), CefrLevel.a2);
       expect(recommendedLevel(CefrLevel.a2, averageMastery: 0.2), CefrLevel.a1);

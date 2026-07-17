@@ -97,6 +97,12 @@ final storiesProvider = FutureProvider<List<Story>>((ref) async {
   final lang = availableLanguages.firstWhere((l) => l.code == code);
   final raw = await rootBundle.loadString(lang.stories);
   final all = [...parseStories(jsonDecode(raw) as Map<String, dynamic>)];
+  // Flagship multi-chapter novels live in their own asset per language.
+  if (code == 'es') {
+    final novelRaw =
+        await rootBundle.loadString('assets/stories/es-novela-faro.json');
+    all.addAll(parseStories(jsonDecode(novelRaw) as Map<String, dynamic>));
+  }
   final ingested = storyFromApproved(
     ref.watch(approvedContentProvider),
     languageCode: code,
@@ -114,16 +120,24 @@ final speechEngineProvider =
     StateProvider<SpeechEngine>((ref) => SpeechEngine.piper);
 final speechSpeedProvider = StateProvider<double>((ref) => 1.0);
 
+/// Singletons: Piper holds a downloaded model + engines, the platform
+/// service holds STT state — both must survive engine switches.
+final platformSpeechProvider = Provider<PlatformSpeechService>(
+  (ref) => PlatformSpeechService(),
+);
+final piperSpeechProvider = Provider<PiperSpeechService>(
+  (ref) => PiperSpeechService(ref.watch(platformSpeechProvider)),
+);
+
 /// Speech (TTS/STT). The concrete engine is chosen behind this seam, so the
-/// UI never depends on it. Piper (scaffolded, falls back to the platform
-/// engine until a model is bundled) or Android TTS directly. A
-/// NoopSpeechService is bound in tests; kept alive so STT state persists.
+/// UI never depends on it: Piper (real offline-neural synthesis via
+/// sherpa_onnx; model downloaded on first use) or the device TTS. A
+/// NoopSpeechService is bound in tests.
 final speechServiceProvider = Provider<SpeechService>((ref) {
-  final platform = PlatformSpeechService();
   final engine = ref.watch(speechEngineProvider);
   return switch (engine) {
-    SpeechEngine.piper => PiperSpeechService(platform),
-    _ => platform,
+    SpeechEngine.piper => ref.watch(piperSpeechProvider),
+    _ => ref.watch(platformSpeechProvider),
   };
 });
 

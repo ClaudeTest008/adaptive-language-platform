@@ -321,6 +321,20 @@ class _LanguageStoryReaderScreenState
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  if (story.hasChapters) ...[
+                                    Text(
+                                      'Capítulo ${story.chapterOf(i) + 1} · '
+                                      '${story.chapterTitles[story.chapterOf(i)]}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelLarge
+                                          ?.copyWith(
+                                            color: scheme.primary,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
+                                    const SizedBox(height: AppSpace.md),
+                                  ],
                                   if (_mode != _ReaderMode.english)
                                     Text(
                                       p.text,

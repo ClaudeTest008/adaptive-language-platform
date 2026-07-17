@@ -9,6 +9,32 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-17: Phase 15 final — **real Piper offline-neural TTS + flagship
+  graded novel**. Piper now actually speaks: `PiperSpeechService` runs
+  Piper VITS voices on-device through sherpa_onnx (ONNX runtime; free,
+  open source, no API keys). The es-ES voice model
+  (`vits-piper-es_ES-davefx-medium`, 63 MB ONNX + espeak-ng data) is
+  downloaded on first use from the sherpa-onnx releases (progress bar in
+  Voice Settings), extracted (pure-Dart tar.bz2) and cached in app
+  documents — never bundled in git. Sentence-chunked synthesis → WAV →
+  audioplayers playback, with generation-token cancellation for instant
+  barge-in. Piper is the DEFAULT engine; device TTS remains a selectable
+  fallback in Voice Settings (learner's choice — never a silent
+  substitute). Verified on emulator via logcat: model downloaded
+  (63,149,192 bytes on device), `[PIPER] gen#4 chunk0 samples=39680
+  sr=22050` synthesis lines, chunk gaps matching audio duration
+  (playback), "Piper voice ready" status card. **Flagship novel:** "La
+  casa del faro" — an original graded A2 novella (7 chapters, 42 pages,
+  ~2,700 Spanish words + full English translation): recurring characters
+  (María, Don Andrés, Lucía), natural dialogue, chapter cliffhangers, an
+  emotional arc, optional end-of-book quiz. `Story` gains chapters
+  (`chapterTitles`/`chapterStarts`, pages flow continuously — reading is
+  never interrupted; completion card only after the final page); the
+  reader shows a "Capítulo N · title" header; library cards show chapter
+  counts. Verified on device: library card "17 min · 7 chapters", reader
+  at 1/42 with the chapter header and Piper narration playing. 204 tests
+  green.
+
 - 2026-07-17: Phase 15 — premium-voice architecture + immersive reading UX
   (UX only; core/providers-of-record untouched). **Speech-engine selection**
   behind the seam: `speechEngineProvider` picks Piper (offline neural,

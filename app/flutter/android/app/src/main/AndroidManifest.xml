@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Speaking practice + tutor voice input (speech_to_text). -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <!-- Piper neural-voice model download (first use only). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="adaptive_language_platform"
         android:name="${applicationName}"

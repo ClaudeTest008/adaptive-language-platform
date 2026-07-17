@@ -18,6 +18,7 @@ import '../ai/chat_model.dart';
 import '../infrastructure/demo_tutor_model.dart';
 import '../infrastructure/language_repositories.dart';
 import '../infrastructure/platform_speech_service.dart';
+import '../language/conversation.dart';
 import '../language/curriculum.dart';
 import '../language/entities.dart';
 import '../language/exercises.dart';
@@ -225,6 +226,22 @@ class LanguageLearnerController extends Notifier<LanguageLearnerState> {
     await ref.read(misconceptionRepositoryProvider).save(misconceptions);
     await ref.read(languageSignalsRepositoryProvider).save(signals);
     return detected;
+  }
+
+  /// Records one conversation turn: moves `conversationAbility` on the
+  /// scenario concept's lineage. Signal-only — a conversational turn is
+  /// production evidence, not a graded right/wrong answer.
+  Future<void> recordConversationTurn({
+    required String conceptId,
+    required double quality,
+  }) async {
+    await _initFuture;
+    final node = ref.read(curriculumProvider).value?.graph[conceptId];
+    final ids = node?.lineageConceptIds ?? [conceptId];
+    final signals =
+        state.signals.afterConversationTurn(conceptIds: ids, quality: quality);
+    state = state.copyWith(signals: signals);
+    await ref.read(languageSignalsRepositoryProvider).save(signals);
   }
 
   /// Records a pronunciation attempt on [node] ([score] 0..1). Updates
@@ -572,7 +589,11 @@ final languageTutorProvider = Provider<LanguageTutor>(
 /// Fresh tutor context from live learner state. [focusConceptId] targets
 /// one concept (Teacher/Grammar modes); default focus = the top
 /// misconception's concept, so "repair first" is the tutor's opening too.
-TutorContext? assembleTutorContext(Ref ref, {String? focusConceptId}) {
+TutorContext? assembleTutorContext(
+  Ref ref, {
+  String? focusConceptId,
+  String? scenarioConceptId,
+}) {
   final curriculum = ref.read(curriculumProvider).value;
   if (curriculum == null) return null;
   final learner = ref.read(languageLearnerProvider);
@@ -585,6 +606,7 @@ TutorContext? assembleTutorContext(Ref ref, {String? focusConceptId}) {
     learningTraits: learner.traits,
     focusConceptId:
         focusConceptId ?? learner.misconceptions.all.firstOrNull?.conceptId,
+    scenarioConceptId: scenarioConceptId,
   );
 }
 
@@ -622,8 +644,27 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
   }
 
   /// Starts a session: assembles fresh context and asks the tutor to open.
+  /// Conversation/Immersion pick a scenario weighted to weak concepts.
   Future<void> start(TutorMode mode, {String? focusConceptId}) async {
-    final context = assembleTutorContext(ref, focusConceptId: focusConceptId);
+    String? scenarioId;
+    if (mode == TutorMode.conversation || mode == TutorMode.immersion) {
+      final curriculum = ref.read(curriculumProvider).value;
+      final learner = ref.read(languageLearnerProvider);
+      if (curriculum != null) {
+        scenarioId = pickScenarioConceptId(
+          curriculum.graph,
+          weakConceptIds: {
+            for (final w in learner.conceptMastery.entries)
+              if (w.value < 0.6) w.key,
+          },
+        );
+      }
+    }
+    final context = assembleTutorContext(
+      ref,
+      focusConceptId: focusConceptId,
+      scenarioConceptId: scenarioId,
+    );
     if (context == null) return;
     state = TutorSessionState(mode: mode, context: context, busy: true);
     final reply = await ref.read(languageTutorProvider).respond(
@@ -638,6 +679,18 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
     final s = state;
     if (s == null || s.busy || message.trim().isEmpty) return;
     state = s.copyWith(transcript: [...s.transcript, (false, message)], busy: true);
+
+    // Conversation/Immersion: the learner's turn is production — score it
+    // and move the conversationAbility signal on the scenario concept.
+    if ((s.mode == TutorMode.conversation || s.mode == TutorMode.immersion) &&
+        s.context.scenarioConceptId != null) {
+      final quality = conversationTurnQuality(message, s.context.targetVocab);
+      await ref.read(languageLearnerProvider.notifier).recordConversationTurn(
+        conceptId: s.context.scenarioConceptId!,
+        quality: quality,
+      );
+    }
+
     final history = [
       for (final (isTutor, text) in s.transcript)
         AiMessage(isTutor ? AiRole.assistant : AiRole.user, text),

@@ -5,6 +5,13 @@
 
 ## Completed
 
+- Phase 5 — Conversation Engine + voice naturalness (2026-07-17, ADR-0023):
+  - Scenario-driven multi-turn dialogue for Conversation + Immersion: `TutorContext` carries scenario + weak-concept `targetVocab`; `pickScenarioConceptId` weights scenarios toward weak concepts; the tutor reacts to the learner's last message, recasts errors in-reply (e.g. soy cansado → tengo sueño), weaves target vocab, progresses the scene, ends with a follow-up.
+  - `conversationAbility` signal: `afterConversationTurn` EWMA + `conversationTurnQuality` (length + target-vocab use); recorded per learner turn on the scenario concept (signal-only; core untouched).
+  - Wired: Conversation plan block launches a Conversation session; DemoTutorModel rewritten for contextual multi-turn replies; enriched scenario data ("At the café", "Making plans", "At the meetup").
+  - Voice: sentence-chunked speech with breaths, question-pitch lift, full volume, warmer defaults, on top of enhanced-voice selection.
+  - Verified: `flutter analyze` clean; 165 tests green (11 new); Android emulator — Conversation opened with weak-weighted scenario + vocab, gentle recast of a live "soy cansado" turn.
+
 - Phase 4 — Daily Personalized Lesson Engine + content/voice polish (2026-07-17, ADR-0022):
   - `buildDailyLesson` replaces the preview heuristics: weighted, time-budgeted blocks from misconception repair (first), spaced-repetition due concepts, weakest skills, low pronunciation confidence, a concept-overlapping story, and a conversation tail. Learning DNA traits shape the weights (repeatsMistakes→repair, benefitsFromRepetition→review, strugglesUnderTimePressure→fewer/longer). Each block carries a plain-language reason + a launchable `LessonActivity`.
   - Tappable Today's-Plan blocks launch the right activity (practice / Speaking tab drill / story reader / Tutor tab). Engine stays pure — provider computes due concepts from core `ConceptStats`; core untouched.
@@ -87,7 +94,7 @@ Note: inherited domain code still uses exam vocabulary (questions, exams, topics
 
 ## Next
 
-- Phase 5 — Conversation engine (real dialogue state + vocabulary adaptation), then Phase 6 speech (real phoneme scoring). Also: tutor history persistence, minutes selector from goals, `nextReviewAt` scheduling once sessions carry timestamps. See ROADMAP.md.
+- Phase 6 — Speech & pronunciation (real phoneme scoring, listening-recognition signal). Also: feed `conversationAbility` into the lesson engine, tutor history persistence, minutes selector from goals, `nextReviewAt` scheduling once sessions carry timestamps. See ROADMAP.md.
 
 ## Local Dev
 

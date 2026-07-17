@@ -46,12 +46,14 @@ Master plan for the Adaptive Language Platform. Phases are sequential; each ends
 - ✅ Tests: determinism, budget, repair-first, spaced-repetition, pronunciation, DNA shaping, story overlap (8 new; 155 total).
 - ⏳ Remaining: real `nextReviewAt` scheduling once sessions carry timestamps (Phase 8); minutes selector from learner goals.
 
-## Phase 5 — Conversation Engine
+## Phase 5 — Conversation Engine ✅ (2026-07-17, ADR-0023)
 
-- Conversation simulation exercises; dialogue state, vocabulary adaptation to learner level.
-- Conversation ability signal into the adaptive engine.
-- Schema: conversations.
-- Tests: conversation flow contracts.
+- ✅ Scenario-driven multi-turn dialogue for Conversation + Immersion modes; vocabulary steered to weak concepts; tutor reacts to the learner, recasts errors, progresses the scene, ends with a follow-up.
+- ✅ `conversationAbility` signal via `afterConversationTurn` + `conversationTurnQuality`; recorded per learner turn on the scenario concept.
+- ✅ Wired: Conversation plan block launches a Conversation session; enriched scenario data.
+- ✅ Voice naturalness: sentence-chunked speech with breaths, question-pitch lift, full volume, warmer defaults + enhanced-voice selection.
+- ✅ Tests: scenario selection, context/vocab assembly, turn quality, signal, contextual demo dialogue (11 new; 165 total).
+- ⏳ Remaining: feed `conversationAbility` into the lesson engine; A2+ scenarios; real neural prosody (cloud speech, Phase 6).
 
 ## Phase 6 — Speech & Pronunciation (foundation delivered early 2026-07-16, ADR-0020)
 

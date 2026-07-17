@@ -38,14 +38,46 @@ class PlatformSpeechService implements SpeechService {
       await _tts.setLanguage(langCode);
       await _pickWarmVoice(langCode);
       // Slightly slower than default for learners; a touch above neutral
-      // pitch reads as warmer and more expressive.
-      await _tts.setSpeechRate(rate ?? 0.44);
-      await _tts.setPitch(pitch ?? 1.05);
+      // pitch, full volume — warmer and more expressive.
+      await _tts.setSpeechRate(rate ?? 0.46);
+      await _tts.setPitch(pitch ?? 1.06);
+      await _tts.setVolume(1.0);
       await _tts.awaitSpeakCompletion(true);
-      await _tts.speak(text);
+      // Speak sentence by sentence with a short breath between clauses —
+      // the natural rhythm a single long utterance lacks. Questions get a
+      // hair more lift so intonation rises.
+      final sentences = _sentences(text);
+      for (final (i, s) in sentences.indexed) {
+        if (s.trim().isEmpty) continue;
+        if (s.contains('?') || s.contains('¿')) {
+          await _tts.setPitch((pitch ?? 1.06) + 0.06);
+        } else {
+          await _tts.setPitch(pitch ?? 1.06);
+        }
+        await _tts.speak(s.trim());
+        if (i < sentences.length - 1) {
+          await Future<void>.delayed(const Duration(milliseconds: 220));
+        }
+      }
     } catch (_) {
       // No TTS engine on this device — silently skip.
     }
+  }
+
+  /// Splits into sentence-ish chunks on . ! ? … ¿ ¡ while keeping the
+  /// punctuation, so each chunk carries its own intonation.
+  List<String> _sentences(String text) {
+    final out = <String>[];
+    final buf = StringBuffer();
+    for (final ch in text.split('')) {
+      buf.write(ch);
+      if ('.!?…'.contains(ch)) {
+        out.add(buf.toString());
+        buf.clear();
+      }
+    }
+    if (buf.isNotEmpty) out.add(buf.toString());
+    return out.isEmpty ? [text] : out;
   }
 
   /// Picks the most natural available voice for [langCode] once: prefers

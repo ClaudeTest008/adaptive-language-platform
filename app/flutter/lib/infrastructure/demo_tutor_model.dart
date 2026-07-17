@@ -24,15 +24,16 @@ class DemoTutorModel implements AiChatModel {
         .content;
     final user = messages.lastWhere((m) => m.role == AiRole.user).content;
     final turns = messages.where((m) => m.role == AiRole.assistant).length;
+    final opening = turns == 0 || user == 'Start the session.';
     final c = _Context.parse(system);
 
     return switch (c.mode) {
       'teacher' => _teacher(c),
-      'conversation' => _conversation(c, turns),
+      'conversation' => _conversation(c, turns, user, opening),
       'coach' => _coach(c),
       'socratic' => _socratic(c, turns),
       'grammar' => _grammar(c),
-      'immersion' => _immersion(c, turns),
+      'immersion' => _immersion(c, turns, user, opening),
       _ => "Let's begin. You said: \"$user\" — tell me what you'd like to "
           'work on today.',
     };
@@ -68,20 +69,69 @@ class DemoTutorModel implements AiChatModel {
     return b.toString().trim();
   }
 
-  String _conversation(_Context c, int turns) {
-    final vocab = c.family.isNotEmpty ? c.family.first : c.weakest;
-    if (c.language == 'es') {
-      return turns == 0
-          ? '¡Hola! Estamos en un restaurante. Yo soy el camarero. '
-                '¿${_cap(vocab ?? "tener hambre")}? ¿Qué quieres comer?'
-          : 'Muy bien. ¿Y para beber? (In a real conversation I keep '
-                'adapting to your level.)';
+  /// Multi-turn, contextual conversation: react to the learner's last
+  /// message, weave a target-vocab phrase, progress the scenario, ask a
+  /// natural follow-up. Warm, never a lecture.
+  String _conversation(_Context c, int turns, String user, bool opening) {
+    final vocab = c.targetVocab;
+    final es = c.language == 'es';
+    if (opening) {
+      final scene = c.scenario ?? (es
+          ? 'Estamos en un café pequeño.'
+          : "We're meeting for the first time.");
+      final v = vocab.isNotEmpty ? vocab.first : (es ? 'tener hambre' : 'hello');
+      return es
+          ? '¡Hola! $scene Yo soy tu compañero de conversación. '
+                'Para empezar: ¿tú tienes hambre? Piensa en «$v».'
+          : "Hi! $scene I'll be your conversation partner. "
+                'To start — how are you today? Try using "$v".';
     }
-    return turns == 0
-        ? "Hi! Let's chat. We are meeting for the first time — "
-              'what is your name, and how are you today?'
-        : 'Nice! Tell me more — what do you do every day? '
-              '(Remember: every sentence needs its subject.)';
+    // React to what they said, use vocab, ask a follow-up. Progress the
+    // scene by turn.
+    final beat = _beat(turns, es);
+    final react = es ? _reactEs(user) : _reactEn(user);
+    final v = vocab.isEmpty
+        ? ''
+        : (es ? ' Prueba con «${vocab[turns % vocab.length]}».'
+              : ' Try "${vocab[turns % vocab.length]}".');
+    return '$react $beat$v';
+  }
+
+  String _beat(int turns, bool es) {
+    final esBeats = [
+      '¿Y qué te gustaría comer hoy?',
+      'Muy bien. ¿Tienes sed también?',
+      '¡Perfecto! ¿Prefieres algo caliente o frío?',
+      'Genial. ¿Algo más para ti?',
+    ];
+    final enBeats = [
+      'What do you like to do on weekends?',
+      'Nice — where are you from?',
+      'Good! And what did you do yesterday?',
+      'Great. What are your plans for today?',
+    ];
+    final beats = es ? esBeats : enBeats;
+    return beats[(turns - 1).clamp(0, beats.length - 1)];
+  }
+
+  String _reactEs(String user) {
+    final u = user.trim();
+    if (u.isEmpty) return 'Vale.';
+    if (u.toLowerCase().contains('soy cansad')) {
+      return '¡Ah! Recuerda: en español decimos «tengo sueño» o «estoy '
+          'cansado», no «soy cansado». Bien dicho igualmente.';
+    }
+    return '¡Muy bien, te entiendo!';
+  }
+
+  String _reactEn(String user) {
+    final u = user.trim();
+    if (u.isEmpty) return 'Okay.';
+    if (RegExp(r'^(is |are )', caseSensitive: false).hasMatch(u)) {
+      return 'Nice — just remember to start with the subject, like '
+          '"It is…". I understood you, though!';
+    }
+    return 'Great, I hear you!';
   }
 
   String _coach(_Context c) {
@@ -135,23 +185,28 @@ class DemoTutorModel implements AiChatModel {
         : b.toString().trim();
   }
 
-  String _immersion(_Context c, int turns) {
-    if (c.language == 'es') {
-      final family = c.family.isNotEmpty
-          ? c.family.join(', ')
-          : 'tener hambre, tener sueño';
-      return turns == 0
-          ? '¡Hola! Hoy practicamos: $family. Yo tengo hambre. ¿Tú también?'
-          : '¡Muy bien! Otra vez: yo tengo frío. ¿Tú tienes frío o calor?';
+  /// Target-language-only, still contextual and progressing.
+  String _immersion(_Context c, int turns, String user, bool opening) {
+    final es = c.language == 'es';
+    final vocab = c.targetVocab;
+    if (es) {
+      if (opening) {
+        final v = vocab.isNotEmpty ? vocab.first : 'tener hambre';
+        return '¡Hola! Vamos a hablar en español. Yo tengo hambre. '
+            '¿Y tú? Usa «$v».';
+      }
+      final v = vocab.isEmpty ? 'tener sueño' : vocab[turns % vocab.length];
+      return '¡Muy bien, te entiendo! Ahora dime: ¿tú tienes frío o calor '
+          'hoy? Puedes usar «$v».';
     }
-    return turns == 0
-        ? 'Hello! Today we practice greetings. I am your tutor. '
-              'How are you today?'
-        : 'Great! Now ask me a question — remember the subject!';
+    if (opening) {
+      final v = vocab.isNotEmpty ? vocab.first : 'hello';
+      return "Hello! Let's speak only in English today. How are you? "
+          'Use "$v".';
+    }
+    return 'Good, I understand you! Now, what do you like to eat? '
+        'Tell me in a full sentence.';
   }
-
-  static String _cap(String s) =>
-      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 }
 
 /// Minimal parse of the tutor system prompt — the same fields a vendor
@@ -167,6 +222,8 @@ class _Context {
     this.weakest,
     this.skills,
     this.goal,
+    this.scenario,
+    this.targetVocab = const [],
   });
 
   final String mode;
@@ -178,6 +235,12 @@ class _Context {
   final String? weakest;
   final String? skills;
   final String? goal;
+
+  /// Conversation scenario description (from the prompt).
+  final String? scenario;
+
+  /// Target-language phrases the tutor should weave in.
+  final List<String> targetVocab;
 
   static _Context parse(String system) {
     String? line(String prefix) {
@@ -193,6 +256,8 @@ class _Context {
     final misconceptionRaw = line('Known misconception');
     final familyRaw = line('Pattern family: ');
     final weakRaw = line('Weak concepts (weakest first): ');
+    final scenarioRaw = line('Scenario: ');
+    final vocabRaw = line('Target vocabulary to weave in: ');
 
     return _Context(
       mode: line('MODE: ') ?? 'teacher',
@@ -215,6 +280,13 @@ class _Context {
       weakest: weakRaw?.split(';').first.trim(),
       skills: line('Skill mastery: ')?.replaceAll(RegExp(r'\.$'), ''),
       goal: line('Goals: ')?.replaceAll(RegExp(r'\.$'), ''),
+      scenario: scenarioRaw,
+      targetVocab: vocabRaw == null
+          ? const []
+          : [
+              for (final v in vocabRaw.replaceAll(RegExp(r'\.$'), '').split(','))
+                if (v.trim().isNotEmpty) v.trim(),
+            ],
     );
   }
 }

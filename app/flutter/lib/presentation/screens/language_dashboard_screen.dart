@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../language/entities.dart';
 import '../../language/lesson.dart';
+import '../../language/tutor.dart';
 import '../language_providers.dart';
 import 'home_shell.dart';
 
@@ -616,6 +617,11 @@ void _launchBlock(BuildContext context, WidgetRef ref, LessonBlock b) {
         context.push('/story/${Uri.encodeComponent(b.storyId!)}');
       }
     case LessonActivity.tutor:
+      // A conversation block drops straight into a Conversation session;
+      // other tutor blocks land on the mode selector.
+      if (b.kind == LessonBlockKind.conversation) {
+        ref.read(tutorSessionProvider.notifier).start(TutorMode.conversation);
+      }
       ref.read(homeTabProvider.notifier).state = 3;
   }
 }

@@ -9,15 +9,18 @@
 ## Backlog
 
 - Real vendor adapters (AnthropicChatModel/OpenAiChatModel/...) behind `tutorModelProvider` — blocked on API keys.
-- Phase 5: conversation engine (dialogue state + vocabulary adaptation); Phase 6: real phoneme scoring; Phases 7–8: content ingestion, production. See ROADMAP.md.
+- Phase 6: real phoneme scoring; Phases 7–8: content ingestion, production. See ROADMAP.md.
+- Feed `conversationAbility` into the daily lesson engine (weight a conversation block when it's low); A2+ conversation scenarios.
 - Grow curriculum seeds beyond A1 slices (A2+, more domains) — data-only; enlarges exercise pool + tutor material + story queue.
-- Real phoneme-level pronunciation scoring (speech models) replacing token-overlap proxy; listening-recognition signal (ADR-0020 remainder).
+- Real phoneme-level pronunciation scoring (speech models) replacing token-overlap proxy; listening-recognition signal (ADR-0020 remainder); real neural prosody via cloud speech.
 - Lesson engine follow-ups: minutes selector from learner goals (drive `availableMinutesProvider`); real `nextReviewAt` scheduling once sessions carry timestamps (Phase 8).
 - Grow story seeds (more stories per language/level, A2+ mini-adventures).
 - Rewrite `docs/product/` for the language product — incremental, as phases touch them.
 - Remove demo seed once real learner accounts persist language state (Firestore swap, Phase 8).
 
 ## Done
+
+- [x] Phase 5 — Conversation Engine (scenario-driven multi-turn dialogue for Conversation/Immersion, weak-weighted scenario + target-vocab steering, reacts/recasts/progresses/follows-up, `conversationAbility` signal per turn), enriched scenarios, sentence-chunked prosodic TTS, ADR-0023; 165 tests green; emulator-verified (recast of a live "soy cansado" turn) (2026-07-17).
 
 - [x] Phase 4 — Daily Lesson Engine (`buildDailyLesson`: weighted time-budgeted blocks from DNA + spaced repetition + weak areas + pronunciation + stories; per-block reason + launchable activity; tappable plan blocks), enriched narrative stories, warmer TTS (rate/pitch/voice), ADR-0022; 155 tests green; emulator verified (2026-07-17).
 - [x] Content & Voice — short stories (data + level-matched reader with TTS), speaking practice (graph drills + pronunciation scoring → signals + core AnswerEvent), tutor voice (speak bubbles, auto-speak toggle, mic dictation), provider-blind speech seam, bottom-nav shell replacing the FAB, ADR-0020/0021; 147 tests green; Android emulator verified (2026-07-16).

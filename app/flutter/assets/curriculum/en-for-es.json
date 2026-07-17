@@ -30,8 +30,8 @@
       "lemma": "actually", "translations": { "es": "en realidad" }, "frequencyRank": 980 },
 
     { "tier": "skill", "slug": "conversation", "name": "Conversation", "parent": "en:a1" },
-    { "tier": "conversation", "slug": "introductions", "name": "Introducing yourself", "parent": "en:a1:conversation",
-      "scenario": "Learner introduces themselves at a meetup; partner uses A1 vocabulary, present simple only.",
+    { "tier": "conversation", "slug": "introductions", "name": "At the meetup", "parent": "en:a1:conversation",
+      "scenario": "It's a rainy evening at a language meetup. A friendly stranger wants to get to know you — introduce yourself, say where you're from and what you do, using present simple with clear subjects.",
       "prerequisites": ["en:a1:vocabulary:everyday:greetings", "en:a1:grammar:verbs:present-simple"] }
   ],
   "relations": [

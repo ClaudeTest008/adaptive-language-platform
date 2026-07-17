@@ -111,6 +111,20 @@ class LanguageConceptSignals {
       usageFrequency: usageFrequency + 1,
     );
   }
+
+  /// Applies one conversation turn ([quality] 0..1 — how well the learner
+  /// held up: reply length, target-vocabulary use). EWMA conversation
+  /// ability; a turn is production, so usage counts.
+  LanguageConceptSignals afterConversationTurn(double quality) {
+    const alpha = 0.35;
+    final q = quality.clamp(0.0, 1.0);
+    return copyWith(
+      conversationAbility: conversationAbility == null
+          ? q
+          : conversationAbility! * (1 - alpha) + q * alpha,
+      usageFrequency: usageFrequency + 1,
+    );
+  }
 }
 
 /// Per-learner signal state: concept id → signals. Immutable.
@@ -149,6 +163,18 @@ class LanguageSignalsStore {
     final next = Map<String, LanguageConceptSignals>.of(byConcept);
     for (final id in conceptIds) {
       next[id] = this[id].afterPronunciation(score);
+    }
+    return LanguageSignalsStore(next);
+  }
+
+  /// Records a conversation turn against the scenario's concepts.
+  LanguageSignalsStore afterConversationTurn({
+    required List<String> conceptIds,
+    required double quality,
+  }) {
+    final next = Map<String, LanguageConceptSignals>.of(byConcept);
+    for (final id in conceptIds) {
+      next[id] = this[id].afterConversationTurn(quality);
     }
     return LanguageSignalsStore(next);
   }

@@ -54,9 +54,12 @@
       "lemma": "embarazada", "translations": { "en": "pregnant" }, "frequencyRank": 3890 },
 
     { "tier": "skill", "slug": "conversation", "name": "Conversation", "parent": "es:a1" },
-    { "tier": "conversation", "slug": "ordering-food", "name": "Ordering food", "parent": "es:a1:conversation",
-      "scenario": "Learner orders a meal at a restaurant; waiter uses A1 vocabulary and present tense only.",
+    { "tier": "conversation", "slug": "ordering-food", "name": "At the café", "parent": "es:a1:conversation",
+      "scenario": "You walk into a warm little café in Seville at lunchtime. The friendly waiter wants to know if you're hungry or thirsty and what you'd like — order a meal using present-tense verbs and food words.",
       "prerequisites": ["es:a1:vocabulary:food:restaurant", "es:a1:grammar:verbs:present-tense"] },
+    { "tier": "conversation", "slug": "morning-plans", "name": "Making plans", "parent": "es:a1:conversation",
+      "scenario": "A new friend calls you in the morning to plan the day. Talk about how you feel (tener/estar), what you want to do, and where you'd like to meet.",
+      "prerequisites": ["es:a1:grammar:verbs:states:tener-states"] },
 
     { "tier": "skill", "slug": "culture", "name": "Culture", "parent": "es:a1" },
     { "tier": "topic", "slug": "meal-times", "name": "Spanish meal times", "parent": "es:a1:culture" }

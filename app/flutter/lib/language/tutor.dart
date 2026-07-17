@@ -50,6 +50,10 @@ class TutorContext {
     this.focusConcept,
     this.focusRelations = const [],
     this.focusFamily = const [],
+    this.scenarioConceptId,
+    this.scenarioName,
+    this.scenario,
+    this.targetVocab = const [],
   });
 
   final String languageName;
@@ -78,6 +82,19 @@ class TutorContext {
 
   /// Children of the focus concept (pattern family).
   final List<LanguageNode> focusFamily;
+
+  // ── Conversation / Immersion state (ADR-0023) ──
+
+  /// The scenario concept driving a conversation (a ConversationNode).
+  final String? scenarioConceptId;
+  final String? scenarioName;
+
+  /// Human scenario description ("Ordering food at a restaurant…").
+  final String? scenario;
+
+  /// Target-language phrases to weave into the dialogue, drawn from the
+  /// learner's weak concepts so conversation practice hits where it hurts.
+  final List<String> targetVocab;
 }
 
 /// Assembles a [TutorContext] from the live learner state. Pure.
@@ -89,6 +106,7 @@ TutorContext buildTutorContext({
   List<String> goals = const [],
   List<String> learningTraits = const [],
   String? focusConceptId,
+  String? scenarioConceptId,
   int maxWeakConcepts = 5,
   int maxMisconceptions = 3,
 }) {
@@ -109,6 +127,8 @@ TutorContext buildTutorContext({
   final weakTop = weak.take(maxWeakConcepts).toList();
 
   final focus = focusConceptId == null ? null : graph[focusConceptId];
+  final scenario =
+      scenarioConceptId == null ? null : graph[scenarioConceptId];
 
   return TutorContext(
     languageName: curriculum.languageName,
@@ -131,7 +151,31 @@ TutorContext buildTutorContext({
             for (final n in graph.nodes.values)
               if (n.parent?.conceptId == focus.conceptId) n,
           ],
+    scenarioConceptId: scenarioConceptId,
+    scenarioName: scenario?.name,
+    scenario: scenario is ConversationNode ? scenario.scenario : null,
+    targetVocab: _targetVocab(graph, weakTop),
   );
+}
+
+/// Target-language phrases to steer a conversation toward: the spoken
+/// forms (phrases, lemmas, example sentences) hanging off the learner's
+/// weak concepts. Deterministic, capped.
+List<String> _targetVocab(LanguageKnowledgeGraph graph, List<WeakConcept> weak) {
+  final out = <String>[];
+  for (final w in weak) {
+    for (final n in graph.nodes.values) {
+      if (!n.conceptId.startsWith(w.conceptId)) continue;
+      final text = switch (n) {
+        PhraseNode p => p.text,
+        VocabularyConceptNode v => v.lemma,
+        ExampleSentenceNode s => s.text,
+        _ => null,
+      };
+      if (text != null && !out.contains(text)) out.add(text);
+    }
+  }
+  return out.take(6).toList();
 }
 
 // ─────────────────────────────────────────────── prompts per mode ──
@@ -171,10 +215,12 @@ const _dialoguePlans = {
       '(3) give two example sentences, (4) end each turn with ONE short '
       'comprehension check question.',
   TutorMode.conversation:
-      'Session flow: stay inside a everyday scenario, one or two short '
-      'target-language sentences per turn, always end with a question. '
-      'Prefer vocabulary from the learner\'s weak concepts so practice '
-      'hits where it matters. Recast errors in your reply, never lecture.',
+      'Session flow, every turn: (1) REACT warmly to what the learner just '
+      'said — echo a detail so they feel heard; (2) if they made an error, '
+      'model the correct form naturally in your own reply, never stop to '
+      'lecture; (3) weave in ONE target-vocabulary phrase; (4) move the '
+      'scenario forward a small step; (5) end with ONE natural follow-up '
+      'question. Keep it to two or three short sentences. Be encouraging.',
   TutorMode.coach:
       'Session flow: (1) acknowledge progress using the skill percentages, '
       '(2) name the single weakest skill, (3) propose a concrete plan for '
@@ -188,10 +234,11 @@ const _dialoguePlans = {
       'the native-language structure that interferes, (3) give minimal '
       'pairs from the pattern family, (4) one transformation drill.',
   TutorMode.immersion:
-      'Session flow: reply ONLY in the target language. Short sentences at '
-      'the learner\'s level, using pattern-family vocabulary. One question '
-      'per turn. If the learner uses their native language, continue in '
-      'the target language anyway.',
+      'Session flow: reply ONLY in the target language. React to what the '
+      'learner said, weave in one target-vocabulary phrase, move the '
+      'scenario forward, and end with one question. Short sentences at the '
+      'learner\'s level. If the learner uses their native language, gently '
+      'continue in the target language anyway.',
 };
 
 /// System prompt = persona + dialogue plan + serialized learner context +
@@ -229,6 +276,12 @@ String tutorSystemPrompt(TutorMode mode, TutorContext ctx) {
   if (ctx.goals.isNotEmpty) b.writeln('Goals: ${ctx.goals.join('; ')}.');
   if (ctx.learningTraits.isNotEmpty) {
     b.writeln('Learning style: ${ctx.learningTraits.join(', ')}.');
+  }
+  if (ctx.scenario != null) {
+    b.writeln('Scenario: ${ctx.scenarioName} — ${ctx.scenario}');
+  }
+  if (ctx.targetVocab.isNotEmpty) {
+    b.writeln('Target vocabulary to weave in: ${ctx.targetVocab.join(', ')}.');
   }
   final focus = ctx.focusConcept;
   if (focus != null) {

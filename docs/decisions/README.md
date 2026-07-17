@@ -28,3 +28,4 @@ ADRs 0001–0013 are inherited from the exam-platform lineage and remain binding
 | [0020](0020-stories-speaking-voice.md) | Short stories (data), speaking practice (pronunciation → signals), tutor voice; speech behind a provider-blind seam | Accepted |
 | [0021](0021-bottom-nav-shell.md) | Bottom NavigationBar shell (Lab/Stories/Speaking/Tutor); FAB removed | Accepted |
 | [0022](0022-daily-lesson-engine.md) | Daily lesson engine: weighted time-budgeted blocks from DNA + spaced repetition + weak areas + pronunciation + stories; per-block reason + launchable activity | Accepted |
+| [0023](0023-conversation-engine.md) | Conversation engine: scenario-driven multi-turn dialogue, target-vocab steering, conversationAbility signal; sentence-chunked prosodic TTS | Accepted |

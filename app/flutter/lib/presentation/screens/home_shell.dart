@@ -42,7 +42,7 @@ class HomeShell extends ConsumerWidget {
           NavigationDestination(
             icon: Icon(Icons.auto_stories_outlined),
             selectedIcon: Icon(Icons.auto_stories),
-            label: 'Stories',
+            label: 'Library',
           ),
           NavigationDestination(
             icon: Icon(Icons.mic_none_outlined),

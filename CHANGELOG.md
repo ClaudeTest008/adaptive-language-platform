@@ -9,6 +9,21 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Changed
 
+- 2026-07-17: Phase 12 (premium UX) — home, reading, voice (UX only; no
+  providers/core touched). Warm light theme: pure-white surfaces shifted to
+  soft warm grays (calmer for long reading). **Compact dashboard**: a
+  greeting header with language + CEFR pills + a "Continue learning"
+  button, then collapsible sections — Today's plan (open by default),
+  Skill mastery, Teacher notes and a new Reading recommendation (collapsed,
+  smooth ExpansionTile animation) — so the home scans at a glance. Story
+  reader gains a full **audiobook player** (play / pause / stop / previous
+  / next paragraph + 0.8×/1.0×/1.2×/1.5× speed; Stop always halts at once;
+  audio stops on page turn). Tutor mic now **barges in** — tapping it cuts
+  off the AI's speech immediately. Reading Library: Stories renamed to
+  "Reading Library" (nav + screen), plus a new public-domain classic
+  (Lazarillo de Tormes, B1) with glossary + quiz. Speech seam gains a
+  best-effort `pause()`. 201 tests green; emulator-verified light + dark.
+
 - 2026-07-17: Phase 11 — experience overhaul (UX only; core/providers
   untouched). Stories rewritten as real multi-sentence **narratives**
   (3–4 sentence pages instead of one-line phrases) across all ES stories.

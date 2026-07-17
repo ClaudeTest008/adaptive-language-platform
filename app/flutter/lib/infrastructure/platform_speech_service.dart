@@ -141,6 +141,19 @@ class PlatformSpeechService implements SpeechService {
   }
 
   @override
+  Future<void> pause() async {
+    // Best-effort: flutter_tts pause support varies by engine; fall back to
+    // a hard stop so playback always halts immediately.
+    try {
+      await _tts.pause();
+    } catch (_) {
+      try {
+        await _tts.stop();
+      } catch (_) {}
+    }
+  }
+
+  @override
   Future<String?> listen({String langCode = 'es-ES'}) async {
     try {
       if (!_sttInitTried) {

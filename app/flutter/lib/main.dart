@@ -17,15 +17,28 @@ class App extends ConsumerWidget {
     // Immersion palette: deep teal seed → teal/blue/green M3 scheme.
     const seed = Color(0xFF00897B);
     ThemeData themed(Brightness brightness) {
-      final scheme = ColorScheme.fromSeed(
+      var scheme = ColorScheme.fromSeed(
         seedColor: seed,
         brightness: brightness,
       );
+      // Warm the light theme: pure white is harsh over long reading
+      // sessions, so shift the neutral surfaces toward a soft warm gray.
+      if (brightness == Brightness.light) {
+        scheme = scheme.copyWith(
+          surface: const Color(0xFFF6F4F1),
+          surfaceContainerLowest: const Color(0xFFFFFFFF),
+          surfaceContainerLow: const Color(0xFFF1EEE9),
+          surfaceContainer: const Color(0xFFECE8E2),
+          surfaceContainerHigh: const Color(0xFFE6E1DA),
+          surfaceContainerHighest: const Color(0xFFE0DAD2),
+        );
+      }
       final baseText = Typography.material2021(colorScheme: scheme)
           .black
           .apply(bodyColor: scheme.onSurface, displayColor: scheme.onSurface);
       return ThemeData(
         colorScheme: scheme,
+        scaffoldBackgroundColor: scheme.surface,
         // Refined typography: tighter, more confident headings; roomier
         // body line-height for a calm, premium read.
         textTheme: baseText.copyWith(

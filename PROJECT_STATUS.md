@@ -5,6 +5,15 @@
 
 ## Completed
 
+- Phase 12 premium UX — home / reading / voice (2026-07-17, UX only, branch `feature/phase12-premium-ux-ai-experience`, includes Phase 11):
+  - Warm light theme (soft warm-gray surfaces vs harsh white).
+  - Compact dashboard: greeting header + language/CEFR pills + Continue-learning button, then collapsible sections (Today's plan open by default; Skill mastery / Teacher notes / Reading recommendation collapsed, animated ExpansionTile).
+  - Story reader audiobook player: play/pause/stop/prev/next paragraph + 0.8×–1.5× speed; Stop halts immediately; audio stops on page turn. Speech seam gains `pause()`.
+  - Tutor mic barge-in (tap interrupts AI speech instantly).
+  - Reading Library (renamed from Stories) + new public-domain classic Lazarillo de Tormes (B1) w/ glossary + quiz.
+  - 201 tests green; analyze clean; emulator-verified (warm dashboard, collapsible sections, reader audio bar) light + dark; core zero-diff.
+  - Known limits (honest): audiobook `pause` is best-effort (engine-dependent; Stop always works); the full press-and-hold voice-conversation loop with Listening/Processing/Speaking states is not built (barge-in stop + status label only); tutor personality still light; category taxonomy (Classics/Modern/etc.) shown as CEFR-level sections, not separate shelves; Platero y Yo omitted (still in copyright).
+
 - Phase 11 — experience overhaul (2026-07-17, UX only, branch `feature/phase11-experience-overhaul`, includes Phase 12):
   - Stories rewritten as multi-sentence **narratives** (3–4 sentences/page); reader **redesigned** — swipeable PageView with smooth transitions, large book-like target text, translation demoted to secondary muted body, slim animated progress + "n/N" counter, generous whitespace over the atmospheric backdrop (fewer containers).
   - Voice: `spokenText` strips bullets + emoji too; TTS slightly slower + longer breaths (warmer). Speaking feedback = warm coaching lines by score band + count-up score animation.

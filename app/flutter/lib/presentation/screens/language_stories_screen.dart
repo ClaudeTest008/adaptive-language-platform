@@ -21,7 +21,7 @@ class LanguageStoriesScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: const Text('Stories'),
+        title: const Text('Reading Library'),
       ),
       body: AtmosphericBackground(
         child: storiesAsync.when(

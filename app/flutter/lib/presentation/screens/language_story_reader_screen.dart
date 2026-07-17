@@ -22,6 +22,8 @@ class _LanguageStoryReaderScreenState
     extends ConsumerState<LanguageStoryReaderScreen> {
   int _phrase = 0;
   bool _showQuiz = false;
+  bool _playing = false;
+  double _speed = 1.0;
   final PageController _pageController = PageController();
 
   @override
@@ -29,6 +31,28 @@ class _LanguageStoryReaderScreenState
     _pageController.dispose();
     ref.read(speechServiceProvider).stop();
     super.dispose();
+  }
+
+  /// Absolute TTS rate for the chosen playback speed (1.0x ≈ natural).
+  double get _rate => (0.44 * _speed).clamp(0.2, 0.9);
+
+  Future<void> _playParagraph(String text, String bcp47) async {
+    final speech = ref.read(speechServiceProvider);
+    await speech.stop();
+    setState(() => _playing = true);
+    await speech.speak(text, langCode: bcp47, rate: _rate);
+    if (mounted) setState(() => _playing = false);
+  }
+
+  Future<void> _stopAudio() async {
+    await ref.read(speechServiceProvider).stop();
+    if (mounted) setState(() => _playing = false);
+  }
+
+  void _cycleSpeed() {
+    const speeds = [0.8, 1.0, 1.2, 1.5];
+    final next = speeds[(speeds.indexOf(_speed) + 1) % speeds.length];
+    setState(() => _speed = next);
   }
 
   /// Key-words glossary as a bottom sheet.
@@ -186,7 +210,13 @@ class _LanguageStoryReaderScreenState
                         child: PageView.builder(
                           controller: _pageController,
                           itemCount: story.phrases.length,
-                          onPageChanged: (i) => setState(() => _phrase = i),
+                          onPageChanged: (i) {
+                            ref.read(speechServiceProvider).stop();
+                            setState(() {
+                              _phrase = i;
+                              _playing = false;
+                            });
+                          },
                           itemBuilder: (context, i) {
                             final p = story.phrases[i];
                             return SingleChildScrollView(
@@ -209,15 +239,9 @@ class _LanguageStoryReaderScreenState
                                     ),
                                   ),
                                   const SizedBox(height: AppSpace.xl),
-                                  Align(
-                                    child: TextButton.icon(
-                                      icon: const Icon(Icons.volume_up_rounded),
-                                      label: const Text('Listen'),
-                                      onPressed: () => speech.speak(
-                                        p.text,
-                                        langCode: bcp47,
-                                      ),
-                                    ),
+                                  Divider(
+                                    color: scheme.outlineVariant
+                                        .withValues(alpha: 0.5),
                                   ),
                                   const SizedBox(height: AppSpace.lg),
                                   Text(
@@ -237,6 +261,86 @@ class _LanguageStoryReaderScreenState
                           },
                         ),
                       ),
+                      // Audiobook player: play / pause / stop, paragraph
+                      // skip, and playback speed. Stop always halts at once.
+                      if (speech.available)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpace.xl,
+                            0,
+                            AppSpace.xl,
+                            AppSpace.md,
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpace.xs,
+                              vertical: AppSpace.xs,
+                            ),
+                            decoration: BoxDecoration(
+                              color: scheme.surfaceContainerHigh,
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.pill),
+                            ),
+                            child: Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.skip_previous_rounded),
+                                  tooltip: 'Previous paragraph',
+                                  onPressed: _phrase == 0
+                                      ? null
+                                      : () => _pageController.previousPage(
+                                            duration: const Duration(
+                                                milliseconds: 320),
+                                            curve: AppMotion.curve,
+                                          ),
+                                ),
+                                IconButton.filled(
+                                  icon: Icon(
+                                    _playing
+                                        ? Icons.pause_rounded
+                                        : Icons.play_arrow_rounded,
+                                  ),
+                                  tooltip: _playing ? 'Pause' : 'Play',
+                                  onPressed: () {
+                                    if (_playing) {
+                                      ref
+                                          .read(speechServiceProvider)
+                                          .pause();
+                                      setState(() => _playing = false);
+                                    } else {
+                                      _playParagraph(
+                                        story.phrases[_phrase].text,
+                                        bcp47,
+                                      );
+                                    }
+                                  },
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.stop_rounded),
+                                  tooltip: 'Stop',
+                                  onPressed: _stopAudio,
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.skip_next_rounded),
+                                  tooltip: 'Next paragraph',
+                                  onPressed: isLast
+                                      ? null
+                                      : () => _pageController.nextPage(
+                                            duration: const Duration(
+                                                milliseconds: 320),
+                                            curve: AppMotion.curve,
+                                          ),
+                                ),
+                                const Spacer(),
+                                TextButton(
+                                  onPressed: _cycleSpeed,
+                                  child: Text('${_speed}x'),
+                                ),
+                                const SizedBox(width: AppSpace.xs),
+                              ],
+                            ),
+                          ),
+                        ),
                       // Reading controls.
                       Padding(
                         padding: const EdgeInsets.fromLTRB(

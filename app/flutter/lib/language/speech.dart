@@ -18,6 +18,10 @@ abstract class SpeechService {
   /// Stops any in-progress speech.
   Future<void> stop();
 
+  /// Pauses in-progress speech, best-effort (some engines only support
+  /// stop). Playback resumes by calling [speak] again.
+  Future<void> pause();
+
   /// Listens for one utterance and returns the transcript, or null if
   /// nothing was recognized / permission denied / unsupported.
   Future<String?> listen({String langCode = 'es-ES'});
@@ -92,6 +96,9 @@ class NoopSpeechService implements SpeechService {
 
   @override
   Future<void> stop() async {}
+
+  @override
+  Future<void> pause() async {}
 
   @override
   Future<String?> listen({String langCode = 'es-ES'}) async =>

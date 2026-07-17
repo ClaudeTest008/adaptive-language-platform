@@ -82,50 +82,51 @@ class LanguageDashboardScreen extends ConsumerWidget {
               const SizedBox(height: AppSpace.md),
               const FadeInUp(delayMs: 80, child: _TutorHeroCard()),
               const SizedBox(height: AppSpace.lg),
-              FadeInUp(
+              const FadeInUp(
                 delayMs: 140,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _SectionHeader(
-                      icon: Icons.today,
-                      title: "Today's plan",
-                      subtitle: 'Personalized · misconception repair first',
-                    ),
-                    const _LessonPreviewCard(),
-                    const SizedBox(height: AppSpace.sm),
-                    const _PracticeCta(),
-                  ],
+                child: _ExpandableSection(
+                  icon: Icons.today,
+                  title: "Today's plan",
+                  subtitle: 'Repair first',
+                  initiallyExpanded: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _LessonPreviewCard(),
+                      SizedBox(height: AppSpace.sm),
+                      _PracticeCta(),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: AppSpace.lg),
-              FadeInUp(
+              const SizedBox(height: AppSpace.md),
+              const FadeInUp(
                 delayMs: 200,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _SectionHeader(
-                      icon: Icons.insights,
-                      title: 'Skill mastery',
-                      subtitle: 'Each skill tracked independently',
-                    ),
-                    const _SkillMasteryCard(),
-                  ],
+                child: _ExpandableSection(
+                  icon: Icons.insights,
+                  title: 'Skill mastery',
+                  subtitle: '10 skills',
+                  child: _SkillMasteryCard(),
                 ),
               ),
-              const SizedBox(height: AppSpace.lg),
-              FadeInUp(
+              const SizedBox(height: AppSpace.md),
+              const FadeInUp(
                 delayMs: 260,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _SectionHeader(
-                      icon: Icons.school,
-                      title: 'Teacher notes',
-                      subtitle: 'Interference from your native language',
-                    ),
-                    const _TeacherNotesCard(),
-                  ],
+                child: _ExpandableSection(
+                  icon: Icons.school,
+                  title: 'Teacher notes',
+                  subtitle: 'Native-language interference',
+                  child: _TeacherNotesCard(),
+                ),
+              ),
+              const SizedBox(height: AppSpace.md),
+              const FadeInUp(
+                delayMs: 320,
+                child: _ExpandableSection(
+                  icon: Icons.menu_book_outlined,
+                  title: 'Reading recommendation',
+                  subtitle: 'Matched to your level',
+                  child: _ReadingRecommendation(),
                 ),
               ),
               const SizedBox(height: AppSpace.xl),
@@ -212,32 +213,57 @@ class _HeaderCard extends StatelessWidget {
         )
         .flag;
     return GradientHero(
-      child: Row(
+      padding: const EdgeInsets.all(AppSpace.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(flag, style: const TextStyle(fontSize: 40)),
-          const SizedBox(width: AppSpace.lg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  languageName,
-                  style: text.headlineSmall?.copyWith(
-                    color: scheme.onPrimaryContainer,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: AppSpace.sm),
-                Wrap(
-                  spacing: AppSpace.sm,
-                  runSpacing: AppSpace.xs,
+          Row(
+            children: [
+              Text(flag, style: const TextStyle(fontSize: 34)),
+              const SizedBox(width: AppSpace.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const GlassPill(label: 'A1 · CEFR'),
-                    GlassPill(label: '$answered answers'),
-                    GlassPill(label: '${(accuracy * 100).round()}% correct'),
+                    Text(
+                      'Welcome back',
+                      style: text.bodySmall?.copyWith(
+                        color: scheme.onPrimaryContainer
+                            .withValues(alpha: 0.8),
+                      ),
+                    ),
+                    Text(
+                      languageName,
+                      style: text.titleLarge?.copyWith(
+                        color: scheme.onPrimaryContainer,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ],
                 ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpace.md),
+          Wrap(
+            spacing: AppSpace.sm,
+            runSpacing: AppSpace.xs,
+            children: [
+              const GlassPill(label: 'A1 · CEFR'),
+              GlassPill(label: '$answered answers'),
+              GlassPill(label: '${(accuracy * 100).round()}% correct'),
+            ],
+          ),
+          const SizedBox(height: AppSpace.md),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.tonalIcon(
+              onPressed: () => context.push(
+                '/language/practice',
+                extra: const <String>[],
+              ),
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: const Text('Continue learning'),
             ),
           ),
         ],
@@ -331,36 +357,120 @@ class _PracticeCta extends ConsumerWidget {
 }
 
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
+/// Collapsible dashboard section — a premium ExpansionTile so the learner
+/// scans the home at a glance and opens only what they need. Smoothly
+/// animates open/closed (built-in).
+class _ExpandableSection extends StatelessWidget {
+  const _ExpandableSection({
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.child,
+    this.initiallyExpanded = false,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
+  final Widget child;
+  final bool initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+    return Material(
+      color: scheme.surfaceContainerLow,
+      elevation: 1,
+      shadowColor: scheme.shadow.withValues(alpha: 0.18),
+      surfaceTintColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      clipBehavior: Clip.antiAlias,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: initiallyExpanded,
+          leading: CircleAvatar(
+            radius: 18,
+            backgroundColor: scheme.primaryContainer,
+            child: Icon(icon, size: 18, color: scheme.onPrimaryContainer),
+          ),
+          title: Text(
+            title,
+            style: text.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          subtitle: Text(
+            subtitle,
+            style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+          childrenPadding: const EdgeInsets.fromLTRB(
+            AppSpace.lg,
+            0,
+            AppSpace.lg,
+            AppSpace.lg,
+          ),
+          expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [child],
+        ),
+      ),
+    );
+  }
+}
+
+/// Top story for the learner's level, with a one-tap read.
+class _ReadingRecommendation extends ConsumerWidget {
+  const _ReadingRecommendation();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final stories = ref.watch(storiesProvider).value ?? const [];
+    if (stories.isEmpty) {
+      return Text(
+        'No stories for your level yet.',
+        style: Theme.of(context).textTheme.bodyMedium,
+      );
+    }
+    final s = stories.first;
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppRadius.input),
+      onTap: () => context.push('/story/${Uri.encodeComponent(s.id)}'),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: scheme.primary),
-          const SizedBox(width: 8),
-          Text(title, style: text.titleMedium),
-          const SizedBox(width: 8),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [scheme.tertiaryContainer, scheme.primaryContainer],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.menu_book, color: scheme.onTertiaryContainer),
+          ),
+          const SizedBox(width: AppSpace.md),
           Expanded(
-            child: Text(
-              subtitle,
-              style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  s.title,
+                  style: Theme.of(context).textTheme.titleSmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  '${s.level.name.toUpperCase()} · ${s.phrases.length} pages',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
             ),
           ),
+          const Icon(Icons.chevron_right),
         ],
       ),
     );

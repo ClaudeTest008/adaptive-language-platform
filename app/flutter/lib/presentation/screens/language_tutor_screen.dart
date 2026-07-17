@@ -396,6 +396,9 @@ class _SessionState extends ConsumerState<_Session> {
 
   Future<void> _dictate() async {
     if (_listening) return;
+    // Barge-in: if the tutor is speaking, cut it off the instant the
+    // learner taps the mic — never make them wait for the AI to finish.
+    await ref.read(speechServiceProvider).stop();
     setState(() => _listening = true);
     final heard = await ref
         .read(speechServiceProvider)

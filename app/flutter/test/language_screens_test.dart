@@ -69,14 +69,20 @@ void main() {
       150,
     );
 
-    // Independent per-skill mastery bars.
+    // Independent per-skill mastery bars — section collapses by default,
+    // so expand it first (premium compact dashboard, Phase 12 UX).
     await tester.scrollUntilVisible(find.text('Skill mastery'), 150);
+    await tester.tap(find.text('Skill mastery'));
+    await _settle(tester);
     await tester.scrollUntilVisible(find.text('Vocabulary'), 120);
     expect(find.text('Vocabulary'), findsOneWidget);
     expect(find.text('Grammar'), findsOneWidget);
 
     // Teacher notes: tener misconception with explanation + occurrences.
     await tester.scrollUntilVisible(find.text('Teacher notes'), 150);
+    await tester.tap(find.text('Teacher notes'));
+    await _settle(tester);
+    await tester.scrollUntilVisible(find.text('2×').first, 150);
     expect(find.text('2×'), findsWidgets);
     expect(
       find.textContaining('tener', findRichText: true),
@@ -125,6 +131,9 @@ void main() {
     await tester.tap(find.text('Spanish').last);
     await _settle(tester);
     await tester.scrollUntilVisible(find.text('Teacher notes'), 150);
+    await tester.tap(find.text('Teacher notes'));
+    await _settle(tester);
+    await tester.scrollUntilVisible(find.text('2×').first, 150);
     expect(find.text('2×'), findsWidgets);
     expect(find.text('4×'), findsNothing);
   });

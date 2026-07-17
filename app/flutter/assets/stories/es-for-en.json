@@ -214,6 +214,36 @@
         { "prompt": "¿Qué pasa cuando don Quijote ataca?",
           "options": ["Gana la lucha", "El viento lo tira al suelo", "Los gigantes huyen"], "answer": 1 }
       ]
+    },
+    {
+      "id": "es-b1-lazarillo",
+      "title": "Lazarillo de Tormes: la primera lección",
+      "level": "b1",
+      "topics": ["classic", "literature", "picaresque"],
+      "vocabulary": [
+        { "word": "el ciego", "meaning": "the blind man" },
+        { "word": "el amo", "meaning": "the master" },
+        { "word": "el toro de piedra", "meaning": "the stone bull" },
+        { "word": "listo", "meaning": "clever" },
+        { "word": "la lección", "meaning": "the lesson" },
+        { "word": "espabilar", "meaning": "to wise up" }
+      ],
+      "phrases": [
+        { "text": "Lázaro es un niño pobre que sirve a un ciego astuto. El ciego es su primer amo y no tiene ni un poco de paciencia. Juntos viajan de pueblo en pueblo, buscando comida y unas monedas.",
+          "translation": "Lázaro is a poor boy who serves a cunning blind man. The blind man is his first master and has not an ounce of patience. Together they travel from town to town, looking for food and a few coins." },
+        { "text": "A la salida de Salamanca, hay un toro de piedra junto al puente. —Acerca la oreja al toro y oirás un gran ruido —dice el ciego con una sonrisa. El niño, inocente, apoya la cabeza en la piedra para escuchar.",
+          "translation": "At the edge of Salamanca, there is a stone bull by the bridge. \"Put your ear to the bull and you will hear a great noise,\" says the blind man with a smile. The boy, innocent, rests his head on the stone to listen." },
+        { "text": "Entonces el ciego empuja su cabeza con fuerza contra el toro. —¡Aprende! —le grita—. El criado de un ciego debe ser más listo que el diablo. Con la cabeza dolorida, Lázaro entiende por fin su primera y dura lección: en este mundo, debe espabilar solo.",
+          "translation": "Then the blind man shoves his head hard against the bull. \"Learn!\" he shouts at him. \"A blind man's servant must be cleverer than the devil.\" With his head aching, Lázaro finally understands his first and harsh lesson: in this world, he must wise up on his own." }
+      ],
+      "questions": [
+        { "prompt": "¿Quién es el primer amo de Lázaro?",
+          "options": ["Un rey", "Un ciego astuto", "Un camarero"], "answer": 1 },
+        { "prompt": "¿Qué le hace el ciego junto al toro de piedra?",
+          "options": ["Le da comida", "Le empuja la cabeza contra la piedra", "Le regala monedas"], "answer": 1 },
+        { "prompt": "¿Cuál es la lección que aprende Lázaro?",
+          "options": ["Debe espabilar solo", "Debe confiar en todos", "Debe volver a casa"], "answer": 0 }
+      ]
     }
   ]
 }

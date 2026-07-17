@@ -18,12 +18,18 @@ class LanguageStoryReaderScreen extends ConsumerStatefulWidget {
       _LanguageStoryReaderScreenState();
 }
 
+/// Kindle-style reading mode: show the target language, both, or the
+/// translation only. The translation always stays visually secondary.
+enum _ReaderMode { both, spanish, english }
+
 class _LanguageStoryReaderScreenState
     extends ConsumerState<LanguageStoryReaderScreen> {
   int _phrase = 0;
   bool _showQuiz = false;
   bool _playing = false;
+  bool _bookmarked = false;
   double _speed = 1.0;
+  _ReaderMode _mode = _ReaderMode.both;
   final PageController _pageController = PageController();
 
   @override
@@ -138,6 +144,13 @@ class _LanguageStoryReaderScreenState
         backgroundColor: Colors.transparent,
         title: Text(story.title),
         actions: [
+          IconButton(
+            icon: Icon(
+              _bookmarked ? Icons.bookmark : Icons.bookmark_border,
+            ),
+            tooltip: 'Bookmark',
+            onPressed: () => setState(() => _bookmarked = !_bookmarked),
+          ),
           if (story.vocabulary.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.menu_book_outlined),
@@ -204,6 +217,38 @@ class _LanguageStoryReaderScreenState
                           ],
                         ),
                       ),
+                      // Kindle-style display toggle.
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpace.xl,
+                          AppSpace.md,
+                          AppSpace.xl,
+                          0,
+                        ),
+                        child: SegmentedButton<_ReaderMode>(
+                          showSelectedIcon: false,
+                          style: const ButtonStyle(
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          segments: const [
+                            ButtonSegment(
+                              value: _ReaderMode.spanish,
+                              label: Text('Español'),
+                            ),
+                            ButtonSegment(
+                              value: _ReaderMode.both,
+                              label: Text('Both'),
+                            ),
+                            ButtonSegment(
+                              value: _ReaderMode.english,
+                              label: Text('English'),
+                            ),
+                          ],
+                          selected: {_mode},
+                          onSelectionChanged: (s) =>
+                              setState(() => _mode = s.first),
+                        ),
+                      ),
                       // Swipeable story pages — book-like reading with the
                       // target language large and the translation secondary.
                       Expanded(
@@ -229,22 +274,26 @@ class _LanguageStoryReaderScreenState
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    p.text,
-                                    style: const TextStyle(
-                                      fontSize: 25,
-                                      height: 1.55,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: -0.2,
+                                  if (_mode != _ReaderMode.english)
+                                    Text(
+                                      p.text,
+                                      style: const TextStyle(
+                                        fontSize: 25,
+                                        height: 1.55,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: -0.2,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: AppSpace.xl),
-                                  Divider(
-                                    color: scheme.outlineVariant
-                                        .withValues(alpha: 0.5),
-                                  ),
-                                  const SizedBox(height: AppSpace.lg),
-                                  Text(
+                                  if (_mode == _ReaderMode.both) ...[
+                                    const SizedBox(height: AppSpace.xl),
+                                    Divider(
+                                      color: scheme.outlineVariant
+                                          .withValues(alpha: 0.5),
+                                    ),
+                                    const SizedBox(height: AppSpace.lg),
+                                  ],
+                                  if (_mode != _ReaderMode.spanish)
+                                    Text(
                                     p.translation,
                                     style: Theme.of(context)
                                         .textTheme

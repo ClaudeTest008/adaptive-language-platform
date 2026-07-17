@@ -124,9 +124,38 @@ class LanguageDashboardScreen extends ConsumerWidget {
                 delayMs: 320,
                 child: _ExpandableSection(
                   icon: Icons.menu_book_outlined,
-                  title: 'Reading recommendation',
+                  title: 'Reading',
                   subtitle: 'Matched to your level',
                   child: _ReadingRecommendation(),
+                ),
+              ),
+              const SizedBox(height: AppSpace.md),
+              const FadeInUp(
+                delayMs: 360,
+                child: _ExpandableSection(
+                  icon: Icons.mic_none_outlined,
+                  title: 'Speaking',
+                  subtitle: 'Pronunciation drills',
+                  child: _LaunchTile(
+                    label: 'Start speaking practice',
+                    icon: Icons.record_voice_over,
+                    tab: 2,
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpace.md),
+              const FadeInUp(
+                delayMs: 400,
+                child: _ExpandableSection(
+                  icon: Icons.forum_outlined,
+                  title: 'Conversation',
+                  subtitle: 'Talk with your AI tutor',
+                  child: _LaunchTile(
+                    label: 'Start a conversation',
+                    icon: Icons.forum,
+                    tab: 3,
+                    conversation: true,
+                  ),
                 ),
               ),
               const SizedBox(height: AppSpace.xl),
@@ -412,6 +441,44 @@ class _ExpandableSection extends StatelessWidget {
           expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
           children: [child],
         ),
+      ),
+    );
+  }
+}
+
+/// Full-width launcher inside a dashboard section — jumps to a home tab,
+/// optionally starting a tutor conversation first.
+class _LaunchTile extends ConsumerWidget {
+  const _LaunchTile({
+    required this.label,
+    required this.icon,
+    required this.tab,
+    this.conversation = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final int tab;
+  final bool conversation;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.tonalIcon(
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: AppSpace.md),
+        ),
+        icon: Icon(icon),
+        label: Text(label),
+        onPressed: () {
+          if (conversation) {
+            ref
+                .read(tutorSessionProvider.notifier)
+                .start(TutorMode.conversation);
+          }
+          ref.read(homeTabProvider.notifier).state = tab;
+        },
       ),
     );
   }

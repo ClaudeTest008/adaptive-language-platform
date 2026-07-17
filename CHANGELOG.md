@@ -7,6 +7,23 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
+### Added
+
+- 2026-07-17: Phase 13 — conversational AI + Kindle-style reading (UX only;
+  no providers/core). **Voice conversation state machine** in the tutor:
+  Idle → Listening → Processing → Speaking → Error, shown as a live status
+  pill; the mic is now **press-and-hold** (hold to talk, release to send)
+  with **barge-in** — pressing it cuts off the AI's speech instantly and
+  returns to Listening (ChatGPT-Voice feel). **Speech-engine abstraction**:
+  a `SpeechEngine` descriptor on the `SpeechService` seam (Demo / Android
+  Neural / iOS Enhanced / Cloud) so a neural/cloud provider can be swapped
+  in with no UI changes. **Reader** gains a Kindle-style Español / Both /
+  English display toggle (translation stays secondary) and a bookmark
+  action. **Home** adds collapsed Speaking and Conversation sections with
+  one-tap launchers. **Library** cards show the author and an estimated
+  reading time; added `Story.author` + `readingMinutes`. 201 tests green;
+  emulator-verified (reader toggle, Listening state) light + dark.
+
 ### Changed
 
 - 2026-07-17: Phase 12 (premium UX) — home, reading, voice (UX only; no

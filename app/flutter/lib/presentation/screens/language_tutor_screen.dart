@@ -364,9 +364,14 @@ class _ModeSelector extends ConsumerWidget {
   }
 }
 
+/// Voice-conversation state machine (Phase 13). Idle → Listening (mic held)
+/// → Processing (released, tutor thinking) → Speaking (reply spoken).
+/// Pressing the mic while Speaking barges in and returns to Listening.
+enum _ConvState { idle, listening, processing, speaking, error }
+
 /// Session view with voice (ADR-0020): speak-aloud tutor replies, a
 /// "Voice replies" toggle that auto-speaks each new tutor turn, and a
-/// microphone that dictates the learner's reply.
+/// press-and-hold microphone that runs a real voice conversation.
 class _Session extends ConsumerStatefulWidget {
   const _Session({
     required this.session,
@@ -384,28 +389,84 @@ class _Session extends ConsumerStatefulWidget {
 
 class _SessionState extends ConsumerState<_Session> {
   bool _voiceOn = false;
-  bool _listening = false;
+  _ConvState _conv = _ConvState.idle;
   int _spokenCount = 0;
 
-  void _speak(String text) {
-    ref.read(speechServiceProvider).speak(
-      text,
-      langCode: ref.read(languageBcp47Provider),
-    );
+  Future<void> _speak(String text) async {
+    final speech = ref.read(speechServiceProvider);
+    if (mounted) setState(() => _conv = _ConvState.speaking);
+    await speech.speak(text, langCode: ref.read(languageBcp47Provider));
+    // Only fall back to idle if nothing else changed the state meanwhile
+    // (e.g. the learner already barged in with the mic).
+    if (mounted && _conv == _ConvState.speaking) {
+      setState(() => _conv = _ConvState.idle);
+    }
   }
 
-  Future<void> _dictate() async {
-    if (_listening) return;
-    // Barge-in: if the tutor is speaking, cut it off the instant the
-    // learner taps the mic — never make them wait for the AI to finish.
-    await ref.read(speechServiceProvider).stop();
-    setState(() => _listening = true);
-    final heard = await ref
-        .read(speechServiceProvider)
-        .listen(langCode: ref.read(languageBcp47Provider));
+  /// Press-and-hold conversation. Hold → Listening; release → Processing →
+  /// the tutor replies and speaks (Speaking). Pressing the mic at any time
+  /// barges in: any AI speech is cut off instantly and we go back to
+  /// Listening — the ChatGPT-Voice feel.
+  Future<void> _holdStart() async {
+    final speech = ref.read(speechServiceProvider);
+    await speech.stop(); // barge-in
     if (!mounted) return;
-    setState(() => _listening = false);
-    if (heard != null && heard.isNotEmpty) widget.input.text = heard;
+    setState(() => _conv = _ConvState.listening);
+    final heard =
+        await speech.listen(langCode: ref.read(languageBcp47Provider));
+    if (!mounted) return;
+    if (heard == null || heard.trim().isEmpty) {
+      setState(() => _conv = _ConvState.error);
+      await Future<void>.delayed(const Duration(milliseconds: 1000));
+      if (mounted && _conv == _ConvState.error) {
+        setState(() => _conv = _ConvState.idle);
+      }
+      return;
+    }
+    setState(() {
+      _conv = _ConvState.processing;
+      _voiceOn = true; // speak the reply back during a voice conversation
+    });
+    widget.onSend(heard);
+  }
+
+  /// Release finalizes the utterance so listen() resolves at once.
+  void _holdEnd() {
+    if (_conv == _ConvState.listening) {
+      ref.read(speechServiceProvider).stop();
+    }
+  }
+
+  /// A quick tap while the tutor is speaking = immediate barge-in stop.
+  void _tapMic() {
+    if (_conv == _ConvState.speaking) {
+      ref.read(speechServiceProvider).stop();
+      setState(() => _conv = _ConvState.idle);
+    }
+  }
+
+  static ({String label, Color Function(ColorScheme) color})? _statusFor(
+    _ConvState s,
+  ) {
+    return switch (s) {
+      _ConvState.listening => (
+          label: 'Listening…',
+          color: (c) => c.error,
+        ),
+      _ConvState.processing => (
+          label: 'Processing…',
+          color: (c) => c.tertiary,
+        ),
+      _ConvState.speaking => (
+          label: 'Speaking…  ·  tap the mic to interrupt',
+          color: (c) => c.primary,
+        ),
+      _ConvState.error => (
+          label: "Didn't catch that — hold the mic and try again",
+          color: (c) => c.error,
+        ),
+      _ConvState.idle => null,
+    };
   }
 
   @override
@@ -485,40 +546,134 @@ class _SessionState extends ConsumerState<_Session> {
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-            child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                if (speech.available) ...[
-                  IconButton.filledTonal(
-                    icon: Icon(_listening ? Icons.hearing : Icons.mic),
-                    tooltip: 'Speak your reply',
-                    onPressed: session.busy || _listening ? null : _dictate,
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Expanded(
-                  child: TextField(
-                    controller: widget.input,
-                    enabled: !session.busy,
-                    textInputAction: TextInputAction.send,
-                    // No floating selection toolbar over the chat.
-                    contextMenuBuilder: (_, _) => const SizedBox.shrink(),
-                    decoration: const InputDecoration(
-                      hintText: 'Reply to your tutor…',
-                    ),
-                    onSubmitted: widget.onSend,
+                // Conversation status pill — fades in on state change.
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 220),
+                  curve: AppMotion.curve,
+                  child: Builder(
+                    builder: (context) {
+                      final scheme = Theme.of(context).colorScheme;
+                      final status = _statusFor(_conv);
+                      if (status == null) return const SizedBox.shrink();
+                      final c = status.color(scheme);
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpace.sm),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.md,
+                            vertical: AppSpace.xs,
+                          ),
+                          decoration: BoxDecoration(
+                            color: c.withValues(alpha: 0.12),
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.pill),
+                          ),
+                          child: Text(
+                            status.label,
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelLarge
+                                ?.copyWith(color: c),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-                const SizedBox(width: 8),
-                IconButton.filled(
-                  icon: const Icon(Icons.send),
-                  onPressed:
-                      session.busy ? null : () => widget.onSend(widget.input.text),
+                Row(
+                  children: [
+                    if (speech.available) ...[
+                      _HoldMic(
+                        state: _conv,
+                        onHoldStart: _holdStart,
+                        onHoldEnd: _holdEnd,
+                        onTap: _tapMic,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(
+                      child: TextField(
+                        controller: widget.input,
+                        enabled: !session.busy,
+                        textInputAction: TextInputAction.send,
+                        // No floating selection toolbar over the chat.
+                        contextMenuBuilder: (_, _) =>
+                            const SizedBox.shrink(),
+                        decoration: const InputDecoration(
+                          hintText: 'Hold the mic to talk, or type…',
+                        ),
+                        onSubmitted: widget.onSend,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filled(
+                      icon: const Icon(Icons.send),
+                      onPressed: session.busy
+                          ? null
+                          : () => widget.onSend(widget.input.text),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Press-and-hold conversation mic: colour + icon reflect the live
+/// conversation state, and it pulses gently while listening.
+class _HoldMic extends StatelessWidget {
+  const _HoldMic({
+    required this.state,
+    required this.onHoldStart,
+    required this.onHoldEnd,
+    required this.onTap,
+  });
+
+  final _ConvState state;
+  final VoidCallback onHoldStart;
+  final VoidCallback onHoldEnd;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final (bg, icon) = switch (state) {
+      _ConvState.listening => (scheme.error, Icons.graphic_eq_rounded),
+      _ConvState.processing => (scheme.tertiary, Icons.more_horiz_rounded),
+      _ConvState.speaking => (scheme.primary, Icons.volume_up_rounded),
+      _ConvState.error => (scheme.error, Icons.mic_off_rounded),
+      _ConvState.idle => (scheme.primary, Icons.mic_rounded),
+    };
+    return GestureDetector(
+      onTap: onTap,
+      onLongPressStart: (_) => onHoldStart(),
+      onLongPressEnd: (_) => onHoldEnd(),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: bg,
+          shape: BoxShape.circle,
+          boxShadow: state == _ConvState.listening
+              ? [
+                  BoxShadow(
+                    color: bg.withValues(alpha: 0.5),
+                    blurRadius: 16,
+                    spreadRadius: 2,
+                  ),
+                ]
+              : null,
+        ),
+        child: Icon(icon, color: scheme.onPrimary, size: 22),
+      ),
     );
   }
 }

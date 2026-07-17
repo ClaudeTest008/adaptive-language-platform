@@ -129,7 +129,15 @@ class _StoryCard extends StatelessWidget {
                   children: [
                     Text(story.title,
                         style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 4),
+                    if (story.author.isNotEmpty)
+                      Text(
+                        story.author,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                              fontStyle: FontStyle.italic,
+                            ),
+                      ),
+                    const SizedBox(height: 6),
                     Wrap(
                       spacing: 6,
                       runSpacing: 4,
@@ -140,7 +148,8 @@ class _StoryCard extends StatelessWidget {
                         ),
                         Chip(
                           visualDensity: VisualDensity.compact,
-                          label: Text('${story.phrases.length} phrases'),
+                          avatar: const Icon(Icons.schedule, size: 14),
+                          label: Text('${story.readingMinutes} min'),
                         ),
                         if (story.questions.isNotEmpty)
                           Chip(

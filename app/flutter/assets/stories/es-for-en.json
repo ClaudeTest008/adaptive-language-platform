@@ -123,6 +123,7 @@
     },
     {
       "id": "es-a1-liebre-tortuga",
+      "author": "Esopo",
       "title": "La liebre y la tortuga",
       "level": "a1",
       "topics": ["fable", "animals", "classic"],
@@ -155,6 +156,7 @@
     },
     {
       "id": "es-a2-llorona",
+      "author": "Leyenda popular",
       "title": "La leyenda de la Llorona",
       "level": "a2",
       "topics": ["legend", "culture", "classic"],
@@ -187,6 +189,7 @@
     },
     {
       "id": "es-b1-quijote-molinos",
+      "author": "Miguel de Cervantes",
       "title": "Don Quijote y los molinos de viento",
       "level": "b1",
       "topics": ["classic", "literature", "don-quijote"],
@@ -217,6 +220,7 @@
     },
     {
       "id": "es-b1-lazarillo",
+      "author": "Anónimo",
       "title": "Lazarillo de Tormes: la primera lección",
       "level": "b1",
       "topics": ["classic", "literature", "picaresque"],

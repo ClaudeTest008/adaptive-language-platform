@@ -5,6 +5,15 @@
 
 ## Completed
 
+- Phase 13 — conversational AI + Kindle reading (2026-07-17, UX only, branch `feature/phase13-conversational-ai`, includes Phases 11–12):
+  - Tutor **voice conversation state machine** (Idle/Listening/Processing/Speaking/Error) with a live status pill; **press-and-hold** mic (hold-to-talk, release-to-send) and **barge-in** (mic press cuts off AI speech → back to Listening).
+  - **Speech-engine abstraction**: `SpeechEngine` descriptor on the seam (Demo/Android Neural/iOS Enhanced/Cloud) — UI depends on the abstraction; a neural/cloud provider swaps in behind the same `speechServiceProvider`.
+  - Reader: Kindle-style **Español / Both / English** display toggle (translation stays secondary) + **bookmark** action (on top of the audiobook player from Phase 12).
+  - Home: collapsed **Speaking** + **Conversation** sections with one-tap launchers.
+  - Library: cards show **author** + **estimated reading time** (`Story.author`, `Story.readingMinutes`).
+  - 201 tests green; analyze clean; emulator-verified (reader Español/Both/English toggle + bookmark + audio player; tutor press-hold → red "Listening…" state) light + dark; core zero-diff.
+  - Known limits (honest): the full **Reading Companion** (ask-in-book overlay) is **not built**; the Library is richer cards + CEFR sections, not the full shelf taxonomy (Continue Reading / Recently Read / Bookmarks with persistent progress — persistence needs a store, out of scope); reader panes don't scroll independently (single scroll); STT can't be exercised on the emulator (no mic) so the Listening→Processing→Speaking round-trip is verified by the state UI + code, not live transcription; tutor personality still light; audiobook `pause` best-effort.
+
 - Phase 12 premium UX — home / reading / voice (2026-07-17, UX only, branch `feature/phase12-premium-ux-ai-experience`, includes Phase 11):
   - Warm light theme (soft warm-gray surfaces vs harsh white).
   - Compact dashboard: greeting header + language/CEFR pills + Continue-learning button, then collapsible sections (Today's plan open by default; Skill mastery / Teacher notes / Reading recommendation collapsed, animated ExpansionTile).

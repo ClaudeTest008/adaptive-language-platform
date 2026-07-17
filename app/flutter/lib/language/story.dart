@@ -53,6 +53,7 @@ class Story {
     required this.title,
     required this.level,
     required this.phrases,
+    this.author = '',
     this.topics = const [],
     this.vocabulary = const [],
     this.questions = const [],
@@ -62,7 +63,17 @@ class Story {
   final String title;
   final CefrLevel level;
   final List<StoryPhrase> phrases;
+
+  /// Original author, for classics (empty for anonymous/original tales).
+  final String author;
   final List<String> topics;
+
+  /// Rough reading time in minutes from the target-language word count
+  /// (~130 wpm for a learner), floored at 1.
+  int get readingMinutes {
+    final words = phrases.fold(0, (n, p) => n + p.text.split(' ').length);
+    return (words / 130).ceil().clamp(1, 99);
+  }
 
   /// Key words worth highlighting while reading (optional).
   final List<StoryVocab> vocabulary;
@@ -84,6 +95,7 @@ List<Story> parseStories(Map<String, dynamic> json) => [
     Story(
       id: (raw as Map<String, dynamic>)['id'] as String,
       title: raw['title'] as String,
+      author: raw['author'] as String? ?? '',
       level: CefrLevel.values.byName(raw['level'] as String),
       topics: [...(raw['topics'] as List? ?? const []).cast<String>()],
       phrases: [

@@ -4,7 +4,26 @@
 /// Language logic never touches a plugin.
 library;
 
+/// Which speech engine backs a [SpeechService]. The UI depends on the
+/// abstraction, never a concrete engine — so on-device flutter_tts today can
+/// be swapped for a neural/cloud provider (Android Neural, iOS Enhanced,
+/// Cloud TTS, ElevenLabs, OpenAI Realtime) behind the same seam, with no
+/// screen changes. Only the `speechServiceProvider` binding moves.
+enum SpeechEngine {
+  demo('Demo'),
+  androidNeural('Android Neural'),
+  iosEnhanced('iOS Enhanced'),
+  cloud('Cloud TTS');
+
+  const SpeechEngine(this.label);
+
+  final String label;
+}
+
 abstract class SpeechService {
+  /// The engine currently backing this service (for UI hints / diagnostics).
+  SpeechEngine get engine;
+
   /// Text-to-speech, best-effort. [langCode] is a BCP-47 tag ('es-ES').
   /// [rate] (0..1, ~0.45 natural) and [pitch] (0.5..2, ~1.05 warm)
   /// override the service defaults per utterance.
@@ -81,6 +100,9 @@ class NoopSpeechService implements SpeechService {
   String? scriptedTranscript;
 
   final List<String> spoken = [];
+
+  @override
+  SpeechEngine get engine => SpeechEngine.demo;
 
   @override
   bool get available => scriptedTranscript != null;

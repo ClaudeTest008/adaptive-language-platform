@@ -27,6 +27,9 @@ class PlatformSpeechService implements SpeechService {
   @override
   bool get available => true;
 
+  @override
+  SpeechEngine get engine => SpeechEngine.androidNeural;
+
   /// Per-language base prosody. Spanish reads clearer a touch slower with
   /// slightly higher pitch; English sits a hair faster.
   static const _prosody = {

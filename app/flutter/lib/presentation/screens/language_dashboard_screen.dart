@@ -66,8 +66,6 @@ class LanguageDashboardScreen extends ConsumerWidget {
               const _LessonPreviewCard(),
               const SizedBox(height: 8),
               const _PracticeCta(),
-              const SizedBox(height: 8),
-              const _StoryRecommendation(),
               const SizedBox(height: 16),
               _SectionHeader(
                 icon: Icons.insights,
@@ -314,7 +312,7 @@ class _PracticeCta extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final blocks = ref.watch(lessonPreviewProvider);
+    final blocks = ref.watch(dailyLessonProvider);
     final repair = blocks
         .where((b) => b.kind == LessonBlockKind.repair)
         .firstOrNull;
@@ -338,32 +336,6 @@ class _PracticeCta extends ConsumerWidget {
   }
 }
 
-/// Story recommendation inside Today's plan — reading at the learner's
-/// level, one tap into the reader.
-class _StoryRecommendation extends ConsumerWidget {
-  const _StoryRecommendation();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final story = ref.watch(storiesProvider).value?.firstOrNull;
-    if (story == null) return const SizedBox.shrink();
-    final scheme = Theme.of(context).colorScheme;
-    return Card(
-      color: scheme.tertiaryContainer,
-      child: ListTile(
-        leading: Icon(Icons.auto_stories, color: scheme.onTertiaryContainer),
-        title: Text('Read: ${story.title}',
-            style: TextStyle(color: scheme.onTertiaryContainer)),
-        subtitle: Text(
-          '${story.level.name.toUpperCase()} · ${story.phrases.length} phrases · tap to read & listen',
-          style: TextStyle(color: scheme.onTertiaryContainer),
-        ),
-        trailing: Icon(Icons.chevron_right, color: scheme.onTertiaryContainer),
-        onTap: () => context.push('/story/${Uri.encodeComponent(story.id)}'),
-      ),
-    );
-  }
-}
 
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({
@@ -616,19 +588,44 @@ class _Pill extends StatelessWidget {
   }
 }
 
+const _lessonKindIcons = {
+  LessonBlockKind.repair: Icons.build_circle,
+  LessonBlockKind.review: Icons.refresh,
+  LessonBlockKind.grammar: Icons.account_tree,
+  LessonBlockKind.vocabulary: Icons.style,
+  LessonBlockKind.pronunciation: Icons.mic,
+  LessonBlockKind.story: Icons.auto_stories,
+  LessonBlockKind.conversation: Icons.forum,
+  LessonBlockKind.practice: Icons.fitness_center,
+};
+
+/// Launches the activity a plan block points to.
+void _launchBlock(BuildContext context, WidgetRef ref, LessonBlock b) {
+  switch (b.activity) {
+    case LessonActivity.practice:
+      if (b.conceptIds.isNotEmpty) {
+        context.push('/language/practice', extra: b.conceptIds);
+      }
+    case LessonActivity.speaking:
+      ref.read(speakingProvider.notifier)
+        ..reset()
+        ..start(focusConceptIds: b.conceptIds);
+      ref.read(homeTabProvider.notifier).state = 2;
+    case LessonActivity.story:
+      if (b.storyId != null) {
+        context.push('/story/${Uri.encodeComponent(b.storyId!)}');
+      }
+    case LessonActivity.tutor:
+      ref.read(homeTabProvider.notifier).state = 3;
+  }
+}
+
 class _LessonPreviewCard extends ConsumerWidget {
   const _LessonPreviewCard();
 
-  static const _kindIcons = {
-    LessonBlockKind.repair: Icons.build_circle,
-    LessonBlockKind.review: Icons.refresh,
-    LessonBlockKind.practice: Icons.fitness_center,
-    LessonBlockKind.conversation: Icons.forum,
-  };
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final blocks = ref.watch(lessonPreviewProvider);
+    final blocks = ref.watch(dailyLessonProvider);
     final scheme = Theme.of(context).colorScheme;
     if (blocks.isEmpty) return const SizedBox.shrink();
     final total = blocks.fold(0, (sum, b) => sum + b.minutes);
@@ -639,23 +636,18 @@ class _LessonPreviewCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '$total minutes today',
+              '$total minutes today · tap a block to start',
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 12),
             for (final (i, b) in blocks.indexed) ...[
               InkWell(
                 borderRadius: BorderRadius.circular(12),
-                // Tapping a block starts practice focused on its concepts.
-                onTap: b.conceptIds.isEmpty
-                    ? null
-                    : () => context.push(
-                        '/language/practice',
-                        extra: b.conceptIds,
-                      ),
+                onTap: () => _launchBlock(context, ref, b),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CircleAvatar(
                         radius: 16,
@@ -663,7 +655,7 @@ class _LessonPreviewCard extends ConsumerWidget {
                             ? scheme.errorContainer
                             : scheme.primaryContainer,
                         child: Icon(
-                          _kindIcons[b.kind],
+                          _lessonKindIcons[b.kind],
                           size: 18,
                           color: b.kind == LessonBlockKind.repair
                               ? scheme.onErrorContainer
@@ -676,23 +668,22 @@ class _LessonPreviewCard extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              b.title,
+                              '${b.title}  ·  ${b.minutes} min',
                               style: Theme.of(context).textTheme.bodyMedium,
                             ),
                             Text(
-                              '${b.minutes} min · ${b.kind.name}',
+                              b.reason,
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(color: scheme.onSurfaceVariant),
                             ),
                           ],
                         ),
                       ),
-                      if (b.conceptIds.isNotEmpty)
-                        Icon(
-                          Icons.chevron_right,
-                          size: 18,
-                          color: scheme.onSurfaceVariant,
-                        ),
+                      Icon(
+                        Icons.chevron_right,
+                        size: 18,
+                        color: scheme.onSurfaceVariant,
+                      ),
                     ],
                   ),
                 ),

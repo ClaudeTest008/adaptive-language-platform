@@ -6,7 +6,14 @@ library;
 
 abstract class SpeechService {
   /// Text-to-speech, best-effort. [langCode] is a BCP-47 tag ('es-ES').
-  Future<void> speak(String text, {String langCode = 'es-ES'});
+  /// [rate] (0..1, ~0.45 natural) and [pitch] (0.5..2, ~1.05 warm)
+  /// override the service defaults per utterance.
+  Future<void> speak(
+    String text, {
+    String langCode = 'es-ES',
+    double? rate,
+    double? pitch,
+  });
 
   /// Stops any in-progress speech.
   Future<void> stop();
@@ -33,7 +40,12 @@ class NoopSpeechService implements SpeechService {
   bool get available => scriptedTranscript != null;
 
   @override
-  Future<void> speak(String text, {String langCode = 'es-ES'}) async =>
+  Future<void> speak(
+    String text, {
+    String langCode = 'es-ES',
+    double? rate,
+    double? pitch,
+  }) async =>
       spoken.add(text);
 
   @override

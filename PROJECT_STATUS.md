@@ -5,6 +5,13 @@
 
 ## Completed
 
+- Phase 4 — Daily Personalized Lesson Engine + content/voice polish (2026-07-17, ADR-0022):
+  - `buildDailyLesson` replaces the preview heuristics: weighted, time-budgeted blocks from misconception repair (first), spaced-repetition due concepts, weakest skills, low pronunciation confidence, a concept-overlapping story, and a conversation tail. Learning DNA traits shape the weights (repeatsMistakes→repair, benefitsFromRepetition→review, strugglesUnderTimePressure→fewer/longer). Each block carries a plain-language reason + a launchable `LessonActivity`.
+  - Tappable Today's-Plan blocks launch the right activity (practice / Speaking tab drill / story reader / Tutor tab). Engine stays pure — provider computes due concepts from core `ConceptStats`; core untouched.
+  - Enriched stories: narrative mini-adventures ("El secreto del camarero", "La mañana de Pedro", "The first hello") with larger readable phrase chunks (≥6 words) and dual display.
+  - Warmer TTS: SpeechService gains rate/pitch params; the adapter picks an enhanced/neural voice per language and uses a warmer default rate/pitch.
+  - Verified: `flutter analyze` clean; 155 tests green (8 new lesson-engine + enriched-story tests); Android emulator run.
+
 - Content & Voice — stories, speaking, tutor voice, nav shell (2026-07-16, ADR-0020/0021):
   - Short Stories: `lib/language/story.dart` + `assets/stories/` seeds (level-matched, phrase-by-phrase reader with target/translation + per-phrase and whole-story text-to-speech); Stories tab; Today's-Plan story recommendation.
   - Speaking practice: `lib/language/speaking.dart` (graph-derived drills, accent-folded token-overlap scoring); hear-the-target TTS, tap-to-speak mic, score → `pronunciationConfidence` signal + a real core AnswerEvent (mastery/DNA move); Speaking tab.
@@ -80,7 +87,7 @@ Note: inherited domain code still uses exam vocabulary (questions, exams, topics
 
 ## Next
 
-- Deeper Phase 3 (dialogue logic per mode), then Phase 4 — daily lesson engine. See ROADMAP.md.
+- Phase 5 — Conversation engine (real dialogue state + vocabulary adaptation), then Phase 6 speech (real phoneme scoring). Also: tutor history persistence, minutes selector from goals, `nextReviewAt` scheduling once sessions carry timestamps. See ROADMAP.md.
 
 ## Local Dev
 

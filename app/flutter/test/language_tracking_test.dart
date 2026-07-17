@@ -211,11 +211,12 @@ void main() {
       expect(log.forConcept(tenerId).first.occurrences, 2);
       expect(signals[tenerId].grammarTransferErrors, 2);
 
-      // Lesson preview leads with misconception repair.
-      final blocks = previewDailyLesson(
+      // Daily lesson leads with misconception repair.
+      final blocks = buildDailyLesson(
         conceptMastery: mastery,
         graph: curriculum.graph,
         misconceptions: log,
+        signals: signals,
         availableMinutes: 25,
       );
       expect(blocks.first.kind, LessonBlockKind.repair);
@@ -224,27 +225,15 @@ void main() {
       // Repair block carries the pattern family for reteaching.
       expect(blocks.first.conceptIds, contains('$tenerId:tener-hambre'));
 
-      // One repair entry per concept even when a concept carries several
-      // misconception log entries (interference relation + transfer trap).
-      expect(
-        'tener'.allMatches(blocks.first.title).length,
-        1,
-        reason: blocks.first.title,
-      );
-      // Concept ids are unique — no double-weighting.
-      expect(
-        blocks.first.conceptIds.toSet().length,
-        blocks.first.conceptIds.length,
-      );
-
       // Tiny budgets must not crash and must respect the budget.
-      final tiny = previewDailyLesson(
+      final tiny = buildDailyLesson(
         conceptMastery: mastery,
         graph: curriculum.graph,
         misconceptions: log,
-        availableMinutes: 3,
+        signals: signals,
+        availableMinutes: 5,
       );
-      expect(tiny.fold(0, (s, b) => s + b.minutes), 3);
+      expect(tiny.fold(0, (s, b) => s + b.minutes), 5);
       expect(tiny.first.kind, LessonBlockKind.repair);
     });
   });

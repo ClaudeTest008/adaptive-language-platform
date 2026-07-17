@@ -20,17 +20,68 @@ class PlatformSpeechService implements SpeechService {
   bool _sttReady = false;
   bool _sttInitTried = false;
 
+  /// Warmer-than-default voice already chosen for a language (cached).
+  final Map<String, Map<String, String>> _voiceByLang = {};
+  final Set<String> _voicePicked = {};
+
   @override
   bool get available => true;
 
   @override
-  Future<void> speak(String text, {String langCode = 'es-ES'}) async {
+  Future<void> speak(
+    String text, {
+    String langCode = 'es-ES',
+    double? rate,
+    double? pitch,
+  }) async {
     try {
       await _tts.setLanguage(langCode);
-      await _tts.setSpeechRate(0.45);
+      await _pickWarmVoice(langCode);
+      // Slightly slower than default for learners; a touch above neutral
+      // pitch reads as warmer and more expressive.
+      await _tts.setSpeechRate(rate ?? 0.44);
+      await _tts.setPitch(pitch ?? 1.05);
+      await _tts.awaitSpeakCompletion(true);
       await _tts.speak(text);
     } catch (_) {
       // No TTS engine on this device — silently skip.
+    }
+  }
+
+  /// Picks the most natural available voice for [langCode] once: prefers
+  /// enhanced/neural/network voices, else any voice for the locale.
+  Future<void> _pickWarmVoice(String langCode) async {
+    if (_voicePicked.contains(langCode)) {
+      final v = _voiceByLang[langCode];
+      if (v != null) await _tts.setVoice(v);
+      return;
+    }
+    _voicePicked.add(langCode);
+    try {
+      final raw = await _tts.getVoices;
+      if (raw is! List) return;
+      final base = langCode.split('-').first.toLowerCase();
+      final voices = [
+        for (final v in raw)
+          if (v is Map)
+            {
+              'name': '${v['name'] ?? ''}',
+              'locale': '${v['locale'] ?? ''}',
+            },
+      ].where((v) => v['locale']!.toLowerCase().startsWith(base)).toList();
+      if (voices.isEmpty) return;
+      bool warm(Map<String, String> v) {
+        final n = v['name']!.toLowerCase();
+        return n.contains('enhanced') ||
+            n.contains('neural') ||
+            n.contains('network') ||
+            n.contains('premium');
+      }
+      final chosen = voices.firstWhere(warm, orElse: () => voices.first);
+      _voiceByLang[langCode] = chosen;
+      await _tts.setVoice(chosen);
+    } catch (_) {
+      // getVoices unsupported (e.g. some web engines) — keep the default.
     }
   }
 

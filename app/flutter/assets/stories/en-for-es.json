@@ -2,18 +2,25 @@
   "stories": [
     {
       "id": "en-a1-meetup",
-      "title": "At the meetup",
+      "title": "The first hello",
       "level": "a1",
       "topics": ["greetings", "introductions"],
       "phrases": [
-        { "text": "Hello! How are you?", "translation": "¡Hola! ¿Cómo estás?",
+        { "text": "It is a rainy Tuesday, and Ana arrives early at the language meetup.",
+          "translation": "Es un martes lluvioso, y Ana llega temprano al encuentro de idiomas.",
           "conceptIds": ["en:a1:vocabulary:everyday:greetings"] },
-        { "text": "She speaks Spanish and English.", "translation": "Ella habla español e inglés.",
+        { "text": "A tall man smiles and says, \"Hello! How are you today?\"",
+          "translation": "Un hombre alto sonríe y dice: «¡Hola! ¿Cómo estás hoy?»",
+          "conceptIds": ["en:a1:vocabulary:everyday:greetings"] },
+        { "text": "\"I am well, thank you,\" Ana answers. \"She speaks Spanish and English.\"",
+          "translation": "«Estoy bien, gracias», responde Ana. «Ella habla español e inglés.»",
           "conceptIds": ["en:a1:grammar:verbs:present-simple:third-person-s"] },
-        { "text": "It is raining today.", "translation": "Hoy está lloviendo.",
+        { "text": "\"It is raining hard outside,\" he says, \"but it is warm in here.\"",
+          "translation": "«Está lloviendo fuerte afuera», dice él, «pero aquí hace calor.»",
           "conceptIds": ["en:a1:grammar:verbs:present-simple:subject-required"] },
-        { "text": "I am happy to meet you.", "translation": "Me alegra conocerte.",
-          "conceptIds": ["en:a1:vocabulary:everyday:greetings"] }
+        { "text": "They talk for an hour, and Ana forgets all about the rain.",
+          "translation": "Hablan durante una hora, y Ana se olvida de la lluvia.",
+          "conceptIds": ["en:a1:conversation:introductions"] }
       ]
     }
   ]

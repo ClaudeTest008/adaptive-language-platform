@@ -61,10 +61,14 @@ void main() {
     await tester.scrollUntilVisible(find.text("Today's plan"), 150);
     await tester.pump();
     expect(find.textContaining('Repair:'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('25 minutes today'), 150);
+    await tester.scrollUntilVisible(
+      find.textContaining('minutes today'),
+      150,
+    );
 
     // Independent per-skill mastery bars.
     await tester.scrollUntilVisible(find.text('Skill mastery'), 150);
+    await tester.scrollUntilVisible(find.text('Vocabulary'), 120);
     expect(find.text('Vocabulary'), findsOneWidget);
     expect(find.text('Grammar'), findsOneWidget);
 

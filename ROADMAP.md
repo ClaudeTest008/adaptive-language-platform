@@ -38,12 +38,13 @@ Master plan for the Adaptive Language Platform. Phases are sequential; each ends
 - ✅ Dialogue depth (ADR-0018 addendum): per-mode `Session flow` dialogue plans in prompts, mode-true DemoTutorModel strategies (multi-turn aware), immersion language-purity validation (native-stopword gate), live Learning DNA in every TutorContext; typing indicator + avatar chat bubbles; interactive Today's Plan (blocks launch focused practice); exercise-type interleaving.
 - ⏳ Remaining (deeper Phase 3): tutor history persistence (schema drafted), session summaries feeding Learning DNA, real vendor adapters (API keys).
 
-## Phase 4 — Daily Personalized Lesson Engine
+## Phase 4 — Daily Personalized Lesson Engine ✅ (2026-07-17, ADR-0022)
 
-- Daily plan generated from mastery, weak areas, review schedule, goals, available time, past performance.
-- Time-budgeted plans across skills (e.g. 10 min vocabulary review, 15 min grammar repair, 10 min conversation, 5 min pronunciation).
-- Schema: lesson plans.
-- Tests: daily lesson generation (determinism, time budgets, weak-area priority).
+- ✅ `buildDailyLesson` generates the plan from mastery, weak areas, spaced-repetition due concepts, pronunciation confidence, Learning DNA traits, available time and recent accuracy.
+- ✅ Weighted, time-budgeted blocks across activities (repair, review, grammar/vocab, pronunciation, story, conversation); repair first; each block carries a reason + a launchable activity (practice/speaking/story/tutor).
+- ✅ Tappable plan blocks launch the right activity; enriched narrative stories; warmer TTS (rate/pitch/voice selection).
+- ✅ Tests: determinism, budget, repair-first, spaced-repetition, pronunciation, DNA shaping, story overlap (8 new; 155 total).
+- ⏳ Remaining: real `nextReviewAt` scheduling once sessions carry timestamps (Phase 8); minutes selector from learner goals.
 
 ## Phase 5 — Conversation Engine
 

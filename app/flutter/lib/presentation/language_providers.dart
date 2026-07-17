@@ -672,14 +672,33 @@ final languageSkillMasteryProvider = Provider<Map<LanguageSkill, double>>((
   return skillMastery(st.conceptMastery, curriculum.graph);
 });
 
-/// Today's lesson preview, misconception repair first.
-final lessonPreviewProvider = Provider<List<LessonBlock>>((ref) {
+/// Today's personalized plan (ADR-0022): misconception repair first, then
+/// spaced-repetition reviews, weak skills, pronunciation, story, talk —
+/// budgeted by available time and shaped by Learning DNA.
+final dailyLessonProvider = Provider<List<LessonBlock>>((ref) {
   final st = ref.watch(languageLearnerProvider);
   final curriculum = ref.watch(curriculumProvider).value;
   if (curriculum == null) return const [];
-  return previewDailyLesson(
+  // Spaced-repetition: concepts the core scheduler says are due now.
+  // Demo mode has no wall clock in seeds, so treat lapsed concepts (a
+  // review the engine has flagged) as due too.
+  final now = DateTime(2026, 7, 17, 8);
+  final due = <String>{
+    for (final e in st.model.concepts.entries)
+      if (e.value.isDue(now) || e.value.lapses > 0) e.key,
+  };
+  return buildDailyLesson(
     conceptMastery: st.conceptMastery,
     graph: curriculum.graph,
     misconceptions: st.misconceptions,
+    signals: st.signals,
+    dueConceptIds: due,
+    traits: st.traits,
+    stories: ref.watch(storiesProvider).value ?? const [],
+    recentAccuracy: st.model.overallAccuracy,
+    availableMinutes: ref.watch(availableMinutesProvider),
   );
 });
+
+/// Minutes the learner has today (goal-derived; a selector could set it).
+final availableMinutesProvider = Provider<int>((ref) => 25);

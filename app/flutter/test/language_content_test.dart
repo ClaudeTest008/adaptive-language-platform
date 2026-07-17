@@ -31,11 +31,11 @@ void main() {
       expect(stories, isNotEmpty);
       final restaurant = stories.firstWhere((s) => s.id == 'es-a1-restaurante');
       expect(restaurant.level, CefrLevel.a1);
-      expect(restaurant.phrases.first.text, 'María tiene hambre.');
+      expect(restaurant.phrases.first.text, contains('María tiene mucha hambre'));
       expect(restaurant.phrases.first.translation, isNotEmpty);
       expect(restaurant.phrases.first.conceptIds, contains(tenerId));
       // fullText joins every phrase for whole-story listening.
-      expect(restaurant.fullText, contains('María tiene hambre'));
+      expect(restaurant.fullText, contains('María tiene mucha hambre'));
       expect(restaurant.fullText, contains('contenta'));
       // Concept coverage feeds recommendation.
       expect(restaurant.conceptIds, contains(tenerId));

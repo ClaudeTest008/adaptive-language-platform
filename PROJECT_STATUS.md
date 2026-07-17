@@ -5,6 +5,14 @@
 
 ## Completed
 
+- Phase 7 — Content Ingestion + input cleanup (2026-07-17, ADR-0025):
+  - Language content extractor (`lib/language/ingestion.dart`): pasted target-language text → review candidates (vocabulary, phrases, example sentences, idioms, cultural notes) + CEFR difficulty + topics, mapped to curriculum concept ids where recognized. Deterministic.
+  - Human review queue (`ContentReviewLog` + repository seam, in-memory demo) — approve/reject; nothing enters the curriculum unreviewed.
+  - Admin Content Studio (`/content`, gated by `authState.isAdmin`, reachable from the Lab app bar): paste or "Use sample" → extract → preview grouped by kind with mapped/new status and per-candidate approve/reject.
+  - Input cleanup: practice unfocuses on submit and on advancing, so the system keyboard never lingers as a "floating bar"; it reopens only on field tap. Voice/mic already bottom-docked.
+  - Four new narrative stories (2×A1, 2×A2: market, park, morning train, birthday fiesta).
+  - Verified: `flutter analyze` clean; 186 tests green (10 new); Android emulator — Content Studio extracts 34 candidates (A1, topics, vocab + phrases with review actions) from the sample passage.
+
 - Phase 6 — Speech & Pronunciation depth + premium UI (2026-07-17, ADR-0024):
   - Phoneme-aware pronunciation scoring (`scorePronunciationDetailed`): per-word alignment + normalized edit distance over phonetically-folded forms (silent h, b/v, y/ll, qu/k, z/c→s, accents); near misses get partial credit; per-word ✓/✗ feedback in the speaking screen.
   - Listening recognition exercise (`ExerciseType.listening`): hear a spoken word (hidden audio), pick which word it was; auto-plays + "Play again"; new `listeningRecognition` signal via `recordAnswer(listening: true)`.
@@ -102,7 +110,7 @@ Note: inherited domain code still uses exam vocabulary (questions, exams, topics
 
 ## Next
 
-- Phase 7 — Content ingestion for language resources (adapt Content Studio pipeline). Also: cloud phoneme/prosody speech models, tutor history persistence, minutes selector from goals, `nextReviewAt` scheduling once sessions carry timestamps. See ROADMAP.md.
+- Phase 8 — Production deployment (Firebase integration, Firestore repository swap, RC checklists). Also: merge approved content candidates into live curriculum/stories, AI extractor over the review queue, cloud speech models, tutor history persistence. See ROADMAP.md.
 
 ## Local Dev
 

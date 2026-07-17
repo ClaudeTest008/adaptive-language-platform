@@ -63,13 +63,13 @@ Master plan for the Adaptive Language Platform. Phases are sequential; each ends
 - ✅ `pronunciationConfidence` + `conversationAbility` signals now **weight the daily lesson** (speaking/conversation blocks grow when weak).
 - ⏳ Remaining: real cloud phoneme/prosody models; pronunciation-attempt persistence (schema drafted, Phase 8).
 
-## Phase 7 — Content Ingestion for Language Resources
+## Phase 7 — Content Ingestion for Language Resources ✅ (2026-07-17, ADR-0025)
 
-- Adapt Content Studio + ingestion pipeline (ADR-0011) for language resources: textbooks, novels, articles, podcasts, videos, transcripts, grammar books, course material.
-- Extraction: vocabulary, grammar patterns, example sentences, expressions, idioms, difficulty level, topics, cultural references.
-- Review queue unchanged: all extracted content is a candidate until human approval.
-- Schema: content sources.
-- Tests: content extraction contracts.
+- ✅ Language content extractor (`ingestLanguageText`): pasted text → review candidates across vocabulary, phrases, example sentences, idioms, cultural notes; difficulty + topics; mapped to curriculum concept ids where recognized.
+- ✅ Human review queue (`ContentReviewLog`/repository seam) — nothing enters the curriculum without approval.
+- ✅ Admin Content Studio (`/content`, admin-gated): paste/sample → extract → preview + approve/reject.
+- ✅ Keyboard cleanup (unfocus on submit/advance); four new narrative stories (A1/A2).
+- ⏳ Remaining: merge approved candidates into live curriculum/stories (Phase 8 persistence); AI extractor over the same queue; binary-format (PDF/DOCX/audio) ingestion; content-source schema.
 
 ## Phase 8 — Production Deployment
 

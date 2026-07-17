@@ -16,12 +16,14 @@ import '../adaptive/engine.dart';
 import '../adaptive/model.dart' as adaptive;
 import '../ai/chat_model.dart';
 import '../infrastructure/demo_tutor_model.dart';
+import '../infrastructure/language_content_repository.dart';
 import '../infrastructure/language_repositories.dart';
 import '../infrastructure/platform_speech_service.dart';
 import '../language/conversation.dart';
 import '../language/curriculum.dart';
 import '../language/entities.dart';
 import '../language/exercises.dart';
+import '../language/ingestion.dart';
 import '../language/lesson.dart';
 import '../language/misconceptions.dart';
 import '../language/signals.dart';
@@ -80,6 +82,65 @@ final storiesProvider = FutureProvider<List<Story>>((ref) async {
 final speechServiceProvider = Provider<SpeechService>(
   (ref) => PlatformSpeechService(),
 );
+
+// ---------- content ingestion (ADR-0025) ----------
+
+final contentReviewRepositoryProvider = Provider<ContentReviewRepository>(
+  (ref) => InMemoryContentReviewRepository(),
+);
+
+/// Admin content studio: paste target-language text, extract review
+/// candidates, approve/reject. State = (ingestion result, review log).
+class ContentStudioState {
+  const ContentStudioState({this.result, this.review = const ContentReviewLog()});
+
+  final IngestionResult? result;
+  final ContentReviewLog review;
+
+  ContentStudioState copyWith({
+    IngestionResult? result,
+    ContentReviewLog? review,
+  }) => ContentStudioState(
+    result: result ?? this.result,
+    review: review ?? this.review,
+  );
+}
+
+class ContentStudioController extends Notifier<ContentStudioState> {
+  @override
+  ContentStudioState build() => const ContentStudioState();
+
+  /// Extracts candidates from [text] for the selected language.
+  void ingest(String text) {
+    final curriculum = ref.read(curriculumProvider).value;
+    if (curriculum == null || text.trim().isEmpty) return;
+    state = ContentStudioState(
+      result: ingestLanguageText(
+        text,
+        graph: curriculum.graph,
+        languageCode: curriculum.languageCode,
+      ),
+      review: const ContentReviewLog(),
+    );
+  }
+
+  Future<void> approve(String id) async {
+    state = state.copyWith(review: state.review.approve(id));
+    await ref.read(contentReviewRepositoryProvider).save(state.review);
+  }
+
+  Future<void> reject(String id) async {
+    state = state.copyWith(review: state.review.reject(id));
+    await ref.read(contentReviewRepositoryProvider).save(state.review);
+  }
+
+  void clear() => state = const ContentStudioState();
+}
+
+final contentStudioProvider =
+    NotifierProvider<ContentStudioController, ContentStudioState>(
+      ContentStudioController.new,
+    );
 
 final misconceptionRepositoryProvider = Provider<MisconceptionRepository>(
   (ref) => InMemoryMisconceptionRepository(),

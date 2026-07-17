@@ -9,7 +9,8 @@
 ## Backlog
 
 - Real vendor adapters (AnthropicChatModel/OpenAiChatModel/...) behind `tutorModelProvider` — blocked on API keys.
-- Phase 7: content ingestion (adapt Content Studio pipeline for language resources); Phase 8: production. See ROADMAP.md.
+- Phase 8: production (Firebase integration, Firestore swap, RC checklists). See ROADMAP.md.
+- Content ingestion follow-ups: merge approved candidates into live curriculum/stories (needs persistence); AI extractor feeding the same review queue; binary-format (PDF/DOCX/audio) ingestion; content-source schema.
 - A2+ conversation scenarios; grow curriculum seeds beyond A1 (data-only; enlarges exercises + stories + drills).
 - Cloud phoneme/prosody speech models (replace the on-device edit-distance approximation + flutter_tts prosody with a neural provider behind the SpeechService seam).
 - Lesson engine follow-ups: minutes selector from learner goals (drive `availableMinutesProvider`); real `nextReviewAt` scheduling once sessions carry timestamps (Phase 8).
@@ -18,6 +19,8 @@
 - Remove demo seed once real learner accounts persist language state (Firestore swap, Phase 8).
 
 ## Done
+
+- [x] Phase 7 — Content ingestion (`ingestLanguageText` → vocab/phrase/sentence/idiom/culture candidates mapped to concepts, review queue, admin Content Studio at `/content`), keyboard cleanup (unfocus on submit/advance), 4 new stories, ADR-0025; 186 tests green; emulator-verified (2026-07-17).
 
 - [x] Phase 6 — Speech & Pronunciation depth: phoneme-aware pronunciation scoring + per-word feedback, listening-recognition exercise + signal, speech-signal-weighted daily lessons, per-language prosodic TTS, premium UI (pill nav, filled inputs), ADR-0024; 176 tests green; emulator-verified (2026-07-17).
 

@@ -35,10 +35,17 @@ class _LanguagePracticeScreenState
     super.dispose();
   }
 
-  void _submit(String given) =>
-      ref.read(languagePracticeProvider.notifier).submit(given);
+  void _submit(String given) {
+    // Close the keyboard as soon as an answer is submitted so feedback and
+    // the Next button aren't hidden behind it.
+    FocusManager.instance.primaryFocus?.unfocus();
+    ref.read(languagePracticeProvider.notifier).submit(given);
+  }
 
   void _next() {
+    // Dismiss the keyboard so it never lingers over the next item — it
+    // reopens only when the learner taps a text field again.
+    FocusManager.instance.primaryFocus?.unfocus();
     _textController.clear();
     _built.clear();
     ref.read(languagePracticeProvider.notifier).next();

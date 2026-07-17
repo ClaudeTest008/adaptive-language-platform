@@ -83,6 +83,10 @@ Pure-Dart module `lib/adaptive/` — no Flutter, no Firebase. Learner model (per
 
 Language extension (Phase 2, additive only): recall difficulty, pronunciation confidence, grammar-transfer errors, vocabulary/usage frequency, conversation ability, retention decay. Misconceptions tracked separately from mistakes.
 
+## Content Ingestion (ADR-0025)
+
+`ingestLanguageText` (`lib/language/ingestion.dart`, pure Dart) turns pasted target-language text into `ContentCandidate`s across five kinds (vocabulary, phrases, example sentences, idioms, cultural notes) with an estimated CEFR difficulty and topics, mapping each to a curriculum concept id where the word/phrase is recognized in the graph. A `ContentReviewLog` (+ repository seam) holds the approve/reject queue — nothing enters the curriculum unreviewed, mirroring ADR-0011's QuestionCandidate discipline. The admin-only Content Studio (`/content`, gated by `authState.isAdmin`) drives paste → extract → review. Approved-candidate merge into live curriculum/stories lands with Firestore persistence (Phase 8); an AI extractor can later feed the same queue over the `AiChatModel` seam.
+
 ## Speech & Pronunciation (ADR-0020/0024)
 
 Speaking drills are scored by `scorePronunciationDetailed` (`lib/language/speaking.dart`): each target word aligns to its closest recognized word and scores by normalized Levenshtein over phonetically-folded forms (silent h, b/v, y/ll, qu/k, z/c→s, doubled letters, accents), yielding partial credit + per-word feedback (`PronWord`). Listening recognition is an exercise type (`ExerciseType.listening`, hidden `audio` spoken by the seam, pick-the-word) feeding a `listeningRecognition` signal. `buildDailyLesson` reads mean `pronunciationConfidence`/`conversationAbility` and weights the speaking/conversation blocks when they're low. TTS (`PlatformSpeechService`) chunks on clauses with punctuation-sized breaths and per-language / per-clause prosody. All over the unchanged `SpeechService` seam; core untouched.

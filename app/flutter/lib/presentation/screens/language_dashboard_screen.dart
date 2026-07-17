@@ -6,6 +6,7 @@ import '../../language/entities.dart';
 import '../../language/lesson.dart';
 import '../../language/tutor.dart';
 import '../language_providers.dart';
+import '../providers.dart';
 import 'home_shell.dart';
 
 /// Language Lab — the app's home (ADR-0019). Everything the vision
@@ -37,6 +38,12 @@ class LanguageDashboardScreen extends ConsumerWidget {
         title: const Text('Language Lab'),
         actions: [
           const _LanguageMenu(),
+          if (ref.watch(authStateProvider).value?.isAdmin ?? false)
+            IconButton(
+              icon: const Icon(Icons.library_add_outlined),
+              tooltip: 'Content Studio',
+              onPressed: () => context.push('/content'),
+            ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'Settings',

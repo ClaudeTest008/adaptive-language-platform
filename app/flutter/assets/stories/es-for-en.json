@@ -1,6 +1,98 @@
 {
   "stories": [
     {
+      "id": "es-a1-mercado",
+      "title": "El mercado de los sábados",
+      "level": "a1",
+      "topics": ["food", "shopping", "vocabulary"],
+      "phrases": [
+        { "text": "Todos los sábados, Lucía va al mercado con su abuela.",
+          "translation": "Every Saturday, Lucía goes to the market with her grandmother.",
+          "conceptIds": ["es:a1:grammar:verbs:present-tense:ar-verbs"] },
+        { "text": "—Quiero una manzana roja y grande —dice Lucía.",
+          "translation": "\"I want a big red apple,\" says Lucía.",
+          "conceptIds": ["es:a1:vocabulary:food:fruit:manzana"] },
+        { "text": "La abuela habla con el vendedor y sonríe mucho.",
+          "translation": "The grandmother talks with the seller and smiles a lot.",
+          "conceptIds": ["es:a1:grammar:verbs:present-tense:ar-verbs:hablar"] },
+        { "text": "Lucía tiene hambre y quiere comer ahora mismo.",
+          "translation": "Lucía is hungry and wants to eat right now.",
+          "conceptIds": ["es:a1:grammar:verbs:states:tener-states"] },
+        { "text": "—Primero pagamos, y después comemos —dice la abuela.",
+          "translation": "\"First we pay, then we eat,\" says the grandmother.",
+          "conceptIds": ["es:a1:vocabulary:food:restaurant"] }
+      ]
+    },
+    {
+      "id": "es-a1-parque",
+      "title": "Una tarde en el parque",
+      "level": "a1",
+      "topics": ["daily-life", "weather", "states"],
+      "phrases": [
+        { "text": "Hace sol, pero Diego tiene frío bajo los árboles.",
+          "translation": "It's sunny, but Diego is cold under the trees.",
+          "conceptIds": ["es:a1:grammar:verbs:states:tener-states"] },
+        { "text": "Su amiga Sara no tiene miedo de los perros grandes.",
+          "translation": "His friend Sara is not afraid of big dogs.",
+          "conceptIds": ["es:a1:grammar:verbs:states:tener-states"] },
+        { "text": "Los dos hablan de la escuela y de sus planes.",
+          "translation": "The two talk about school and their plans.",
+          "conceptIds": ["es:a1:grammar:verbs:present-tense:ar-verbs:hablar"] },
+        { "text": "Cuando el cielo está gris, deciden volver a casa.",
+          "translation": "When the sky is gray, they decide to go home.",
+          "conceptIds": ["es:a1:grammar:verbs:states:ser-estar"] },
+        { "text": "En el camino, los dos hablan de volver mañana.",
+          "translation": "On the way, the two talk about coming back tomorrow.",
+          "conceptIds": ["es:a1:grammar:verbs:present-tense:ar-verbs:hablar"] }
+      ]
+    },
+    {
+      "id": "es-a2-viaje",
+      "title": "El tren de la mañana",
+      "level": "a2",
+      "topics": ["travel", "daily-life"],
+      "phrases": [
+        { "text": "Marcos llega tarde a la estación y tiene mucha prisa.",
+          "translation": "Marcos arrives late at the station and is in a big hurry.",
+          "conceptIds": ["es:a1:grammar:verbs:states:tener-states"] },
+        { "text": "El tren de las ocho ya está en el andén número tres.",
+          "translation": "The eight o'clock train is already at platform number three.",
+          "conceptIds": ["es:a1:grammar:verbs:states:ser-estar"] },
+        { "text": "Una mujer amable le habla y le indica su asiento.",
+          "translation": "A kind woman speaks to him and shows him his seat.",
+          "conceptIds": ["es:a1:grammar:verbs:present-tense:ar-verbs:hablar"] },
+        { "text": "Durante el viaje, Marcos tiene sueño y cierra los ojos.",
+          "translation": "During the trip, Marcos is sleepy and closes his eyes.",
+          "conceptIds": ["es:a1:grammar:verbs:states:tener-states"] },
+        { "text": "Cuando despierta, la ciudad grande ya está muy cerca.",
+          "translation": "When he wakes up, the big city is already very close.",
+          "conceptIds": ["es:a1:grammar:verbs:states:ser-estar"] }
+      ]
+    },
+    {
+      "id": "es-a2-fiesta",
+      "title": "La fiesta de cumpleaños",
+      "level": "a2",
+      "topics": ["culture", "food", "celebration"],
+      "phrases": [
+        { "text": "Es sábado por la noche y toda la familia está en casa de Ana.",
+          "translation": "It's Saturday night and the whole family is at Ana's house.",
+          "conceptIds": ["es:a1:grammar:verbs:states:ser-estar"] },
+        { "text": "En España, las fiestas empiezan tarde y terminan muy tarde.",
+          "translation": "In Spain, parties start late and end very late.",
+          "conceptIds": ["es:a1:culture:meal-times"] },
+        { "text": "Todos tienen hambre, así que comen tapas y una gran paella.",
+          "translation": "Everyone is hungry, so they eat tapas and a big paella.",
+          "conceptIds": ["es:a1:grammar:verbs:states:tener-states"] },
+        { "text": "Ana habla con sus primos y abre muchos regalos bonitos.",
+          "translation": "Ana talks with her cousins and opens many nice gifts.",
+          "conceptIds": ["es:a1:grammar:verbs:present-tense:ar-verbs:hablar"] },
+        { "text": "A medianoche, todos cantan y Ana está muy contenta.",
+          "translation": "At midnight, everyone sings and Ana is very happy.",
+          "conceptIds": ["es:a1:grammar:verbs:states:ser-estar"] }
+      ]
+    },
+    {
       "id": "es-a1-restaurante",
       "title": "El secreto del camarero",
       "level": "a1",

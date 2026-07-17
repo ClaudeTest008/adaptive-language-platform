@@ -6,6 +6,7 @@ import 'package:adaptive_exam_platform/language/speech.dart';
 import 'package:adaptive_exam_platform/presentation/language_providers.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_concept_screen.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_dashboard_screen.dart';
+import 'package:adaptive_exam_platform/presentation/screens/language_content_screen.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_practice_screen.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_tutor_screen.dart';
 import 'package:flutter/material.dart';
@@ -213,4 +214,25 @@ void main() {
   // controller flow with a fake recognizer). They are verified visually
   // on the Android emulator; widget tests over real-async asset I/O are
   // flaky under the shared test binding, so they live at the unit level.
+
+  testWidgets('content studio extracts and reviews from a passage', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_app(curriculum, const LanguageContentScreen()));
+    await _settle(tester); // let the overridden curriculum future resolve
+
+    expect(find.text('Content Studio'), findsOneWidget);
+    // The sample button ingests without needing keyboard input.
+    await tester.tap(find.text('Use sample'));
+    await tester.pump();
+
+    // Extracted sections appear with a mapped-to-curriculum summary.
+    expect(find.textContaining('candidates'), findsOneWidget);
+    expect(find.text('Vocabulary (12)'), findsWidgets);
+
+    // Approve the first candidate → its status flips.
+    await tester.tap(find.byIcon(Icons.check_circle).first);
+    await tester.pump();
+    expect(find.text('Approved'), findsWidgets);
+  });
 }

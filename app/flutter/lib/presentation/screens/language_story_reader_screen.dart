@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../language/story.dart';
 import '../language_providers.dart';
+import '../reading_state.dart';
 import '../ui.dart';
 
 /// Story reader (ADR-0020): one bite-sized phrase on screen at a time,
@@ -24,13 +25,14 @@ enum _ReaderMode { both, spanish, english }
 
 class _LanguageStoryReaderScreenState
     extends ConsumerState<LanguageStoryReaderScreen> {
-  int _phrase = 0;
+  late int _phrase = lastReadingPage(widget.storyId);
   bool _showQuiz = false;
   bool _playing = false;
-  bool _bookmarked = false;
+  late bool _bookmarked = isBookmarked(widget.storyId);
   double _speed = 1.0;
   _ReaderMode _mode = _ReaderMode.both;
-  final PageController _pageController = PageController();
+  late final PageController _pageController =
+      PageController(initialPage: _phrase);
 
   @override
   void dispose() {
@@ -149,7 +151,10 @@ class _LanguageStoryReaderScreenState
               _bookmarked ? Icons.bookmark : Icons.bookmark_border,
             ),
             tooltip: 'Bookmark',
-            onPressed: () => setState(() => _bookmarked = !_bookmarked),
+            onPressed: () {
+              toggleBookmark(widget.storyId);
+              setState(() => _bookmarked = isBookmarked(widget.storyId));
+            },
           ),
           if (story.vocabulary.isNotEmpty)
             IconButton(
@@ -257,6 +262,7 @@ class _LanguageStoryReaderScreenState
                           itemCount: story.phrases.length,
                           onPageChanged: (i) {
                             ref.read(speechServiceProvider).stop();
+                            saveReadingPage(widget.storyId, i);
                             setState(() {
                               _phrase = i;
                               _playing = false;

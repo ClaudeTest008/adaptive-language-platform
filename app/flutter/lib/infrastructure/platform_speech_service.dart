@@ -20,6 +20,11 @@ class PlatformSpeechService implements SpeechService {
   bool _sttReady = false;
   bool _sttInitTried = false;
 
+  /// Bumped on every stop()/pause(). The clause loop in speak() checks it
+  /// before each clause and bails the instant it is superseded — so a
+  /// barge-in cancels the WHOLE utterance, not just the current clause.
+  int _speakGen = 0;
+
   /// Warmer-than-default voice already chosen for a language (cached).
   final Map<String, Map<String, String>> _voiceByLang = {};
   final Set<String> _voicePicked = {};
@@ -44,6 +49,7 @@ class PlatformSpeechService implements SpeechService {
     double? rate,
     double? pitch,
   }) async {
+    final myGen = ++_speakGen;
     try {
       final base = _prosody[langCode.split('-').first.toLowerCase()] ??
           (rate: 0.46, pitch: 1.06);
@@ -59,6 +65,8 @@ class PlatformSpeechService implements SpeechService {
       // first so the engine never voices '*' or '`'.
       final clauses = _clauses(spokenText(text));
       for (final (i, c) in clauses.indexed) {
+        // Barge-in: stop()/pause() bumped the generation → abort the rest.
+        if (myGen != _speakGen) return;
         final s = c.trim();
         if (s.isEmpty) continue;
         final isQuestion = s.contains('?') || s.contains('¿');
@@ -137,6 +145,7 @@ class PlatformSpeechService implements SpeechService {
 
   @override
   Future<void> stop() async {
+    _speakGen++; // cancel any in-flight clause loop (barge-in)
     try {
       await _tts.stop();
       await _stt.stop();
@@ -145,6 +154,7 @@ class PlatformSpeechService implements SpeechService {
 
   @override
   Future<void> pause() async {
+    _speakGen++; // halt the clause loop too
     // Best-effort: flutter_tts pause support varies by engine; fall back to
     // a hard stop so playback always halts immediately.
     try {

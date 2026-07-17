@@ -59,6 +59,11 @@ String spokenText(String markdown) {
   var s = markdown;
   // [label](url) → label
   s = s.replaceAllMapped(RegExp(r'\[([^\]]+)\]\([^)]*\)'), (m) => m[1]!);
+  // Bare URLs / emails are never read aloud.
+  s = s.replaceAll(
+    RegExp(r'\b(?:https?://|www\.)\S+|\b\S+@\S+\.\S+', caseSensitive: false),
+    '',
+  );
   // Line-start markers: headings, blockquotes, bullets, numbered lists.
   s = s.replaceAll(
       RegExp(r'^[ \t]{0,3}([#>]+|[-+*]|\d+[.)])[ \t]+', multiLine: true), '');

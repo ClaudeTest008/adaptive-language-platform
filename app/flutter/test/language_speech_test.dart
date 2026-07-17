@@ -42,6 +42,12 @@ void main() {
       expect(spokenText('Espera... ya voy.'), 'Espera. ya voy.');
     });
 
+    test('never voices URLs, emails or bullet glyphs', () {
+      expect(spokenText('See https://x.com/y now.'), 'See now.');
+      expect(spokenText('mail me at a@b.com ok'), 'mail me at ok');
+      expect(spokenText('• uno • dos'), 'uno dos');
+    });
+
     test('drops list/heading markers and link URLs, collapses blank lines',
         () {
       expect(spokenText('# Title\n\n- one\n- two'), 'Title. one two');

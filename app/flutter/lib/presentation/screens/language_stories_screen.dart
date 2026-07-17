@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../language/entities.dart';
 import '../../language/story.dart';
 import '../language_providers.dart';
+import '../reading_state.dart';
 import '../ui.dart';
 
-/// Stories tab (ADR-0020): level-matched short stories. Reading feeds the
-/// same knowledge graph; a story recommends itself by the learner's CEFR
-/// level and how much it overlaps their weak concepts.
+/// Reading Library (Phase 14): a real book library — shelves of cover cards
+/// (Continue Reading, Spanish Classics, Beginner, Intermediate) rather than
+/// a flat story list. Each cover shows title, author, level, reading time,
+/// chapter count and in-session progress. Reading feeds the same knowledge
+/// graph as before; only the presentation changed.
 class LanguageStoriesScreen extends ConsumerWidget {
   const LanguageStoriesScreen({super.key});
 
@@ -25,146 +29,236 @@ class LanguageStoriesScreen extends ConsumerWidget {
       ),
       body: AtmosphericBackground(
         child: storiesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Could not load stories:\n$e')),
-        data: (stories) {
-          if (stories.isEmpty) {
-            return const Center(child: Text('No stories for your level yet.'));
-          }
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 720),
-              child: ListView(
-                padding: const EdgeInsets.all(AppSpace.lg),
-                children: [
-                  Text(
-                    'Short stories & classics, matched to your level. '
-                    'Read, listen, then check your understanding.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Could not load books:\n$e')),
+          data: (stories) => ValueListenableBuilder<int>(
+            valueListenable: readingRevision,
+            builder: (context, _, _) {
+            if (stories.isEmpty) {
+              return const Center(child: Text('No books for your level yet.'));
+            }
+            bool started(Story s) {
+              final last = readingLastPage[s.id];
+              return last != null && last > 0;
+            }
+
+            final continueReading = [
+              for (final s in stories)
+                if (started(s) && !_finished(s)) s,
+            ];
+            final classics = [for (final s in stories) if (s.author.isNotEmpty) s];
+            final beginner = [
+              for (final s in stories) if (s.level == CefrLevel.a1) s,
+            ];
+            final intermediate = [
+              for (final s in stories)
+                if (s.level == CefrLevel.a2 || s.level == CefrLevel.b1) s,
+            ];
+
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                    0,
+                    AppSpace.sm,
+                    0,
+                    AppSpace.xxl,
                   ),
-                  const SizedBox(height: AppSpace.lg),
-                  ..._groupedByLevel(context, stories),
-                ],
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpace.lg,
+                        0,
+                        AppSpace.lg,
+                        AppSpace.sm,
+                      ),
+                      child: Text(
+                        'Classic Spanish literature and graded readers, '
+                        'matched to your level.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                      ),
+                    ),
+                    if (continueReading.isNotEmpty)
+                      _Shelf(
+                        title: 'Continue reading',
+                        books: continueReading,
+                        showProgress: true,
+                      ),
+                    _Shelf(title: 'Spanish classics', books: classics),
+                    _Shelf(title: 'Beginner · A1', books: beginner),
+                    _Shelf(title: 'Intermediate · A2–B1', books: intermediate),
+                  ],
+                ),
               ),
+            );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  static bool _finished(Story s) {
+    final last = readingLastPage[s.id];
+    return last != null && last >= s.phrases.length - 1;
+  }
+}
+
+/// A horizontally-scrolling shelf of book covers.
+class _Shelf extends StatelessWidget {
+  const _Shelf({
+    required this.title,
+    required this.books,
+    this.showProgress = false,
+  });
+
+  final String title;
+  final List<Story> books;
+  final bool showProgress;
+
+  @override
+  Widget build(BuildContext context) {
+    if (books.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.lg,
+            AppSpace.md,
+            AppSpace.lg,
+            AppSpace.sm,
+          ),
+          child: Text(
+            title,
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ),
+        SizedBox(
+          height: 262,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg),
+            itemCount: books.length,
+            separatorBuilder: (_, _) => const SizedBox(width: AppSpace.md),
+            itemBuilder: (context, i) => FadeInUp(
+              delayMs: i * 45,
+              child: _BookCover(story: books[i], showProgress: showProgress),
             ),
-          );
-        },
-      ),
-      ),
+          ),
+        ),
+      ],
     );
   }
 }
 
-/// Stories grouped under CEFR-level section headers, easiest first — a
-/// clearer hierarchy than one long flat list.
-List<Widget> _groupedByLevel(BuildContext context, List<Story> stories) {
-  final out = <Widget>[];
-  String? currentLevel;
-  var i = 0;
-  for (final s in stories) {
-    final lvl = s.level.name.toUpperCase();
-    if (lvl != currentLevel) {
-      currentLevel = lvl;
-      out.add(
-        Padding(
-          padding: EdgeInsets.only(
-            top: out.isEmpty ? 0 : AppSpace.md,
-            bottom: AppSpace.sm,
-          ),
-          child: Text(
-            'Level $lvl',
-            style: Theme.of(context)
-                .textTheme
-                .titleSmall
-                ?.copyWith(color: Theme.of(context).colorScheme.primary),
-          ),
-        ),
-      );
-    }
-    out.add(FadeInUp(delayMs: (i++) * 50, child: _StoryCard(story: s)));
-  }
-  return out;
-}
-
-class _StoryCard extends StatelessWidget {
-  const _StoryCard({required this.story});
+/// A single book: a gradient placeholder cover with the title and level,
+/// then author, reading time / chapters and (optionally) a progress bar.
+class _BookCover extends StatelessWidget {
+  const _BookCover({required this.story, this.showProgress = false});
 
   final Story story;
+  final bool showProgress;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppSpace.md),
+    final text = Theme.of(context).textTheme;
+    final last = readingLastPage[story.id];
+    final progress =
+        last == null ? 0.0 : ((last + 1) / story.phrases.length).clamp(0.0, 1.0);
+    return SizedBox(
+      width: 152,
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        onTap: () =>
-            context.push('/story/${Uri.encodeComponent(story.id)}'),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpace.lg),
-          child: Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      scheme.tertiaryContainer,
-                      scheme.primaryContainer,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+        borderRadius: BorderRadius.circular(AppRadius.input),
+        onTap: () => context.push('/story/${Uri.encodeComponent(story.id)}'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Cover art (placeholder gradient) with title + level badge.
+            Container(
+              height: 168,
+              width: 152,
+              padding: const EdgeInsets.all(AppSpace.md),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                gradient: LinearGradient(
+                  colors: [scheme.primary, scheme.tertiary],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: scheme.shadow.withValues(alpha: 0.22),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
                   ),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(Icons.menu_book, color: scheme.onTertiaryContainer),
+                ],
               ),
-              const SizedBox(width: AppSpace.lg),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(story.title,
-                        style: Theme.of(context).textTheme.titleMedium),
-                    if (story.author.isNotEmpty)
-                      Text(
-                        story.author,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: scheme.onSurfaceVariant,
-                              fontStyle: FontStyle.italic,
-                            ),
-                      ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: [
-                        Chip(
-                          visualDensity: VisualDensity.compact,
-                          label: Text(story.level.name.toUpperCase()),
-                        ),
-                        Chip(
-                          visualDensity: VisualDensity.compact,
-                          avatar: const Icon(Icons.schedule, size: 14),
-                          label: Text('${story.readingMinutes} min'),
-                        ),
-                        if (story.questions.isNotEmpty)
-                          Chip(
-                            visualDensity: VisualDensity.compact,
-                            avatar: const Icon(Icons.quiz_outlined, size: 14),
-                            label: const Text('Quiz'),
-                          ),
-                      ],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.sm,
+                      vertical: 2,
                     ),
-                  ],
+                    decoration: BoxDecoration(
+                      color: scheme.onPrimary.withValues(alpha: 0.22),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                    ),
+                    child: Text(
+                      story.level.name.toUpperCase(),
+                      style: text.labelSmall?.copyWith(color: scheme.onPrimary),
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    story.title,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: text.titleSmall?.copyWith(
+                      color: scheme.onPrimary,
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpace.sm),
+            Text(
+              story.author.isEmpty ? 'Graded reader' : story.author,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: text.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '${story.readingMinutes} min · ${story.phrases.length} ch',
+              style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+            if (showProgress || progress > 0) ...[
+              const SizedBox(height: AppSpace.xs),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 4,
+                  backgroundColor: scheme.surfaceContainerHighest,
                 ),
               ),
-              const Icon(Icons.chevron_right),
             ],
-          ),
+          ],
         ),
       ),
     );

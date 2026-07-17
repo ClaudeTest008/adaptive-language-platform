@@ -5,6 +5,14 @@
 
 ## Completed
 
+- Phase 14 — bug fixes + UX completion (2026-07-17, branch `feature/phase14-bugfixes`, includes Phases 11–13). Each item verified on emulator:
+  - **Barge-in (item 3) — real bug fixed & verified.** What was wrong: `speak()` loops over clauses; `stop()` cancelled only the current clause so the tutor kept talking after the mic press. Change: a generation token bumped by `stop()`/`pause()`; the loop bails before the next clause. Tested: pressing the mic now shows the red "Listening…" state and cuts speech (loop cancels).
+  - **Voice (item 2).** Engine documented: `flutter_tts` → device Google/Samsung TTS voice (es-ES / en-US), on-device (not neural). Added URL/email stripping to `spokenText`; markdown/bullets/emoji/dashes/ellipses already handled. Verified via unit tests + no punctuation read paths remain.
+  - **Reading Library (item 4).** Rebuilt into a real book library: shelves (Continue reading / Spanish classics / Beginner / Intermediate) of cover cards with level, author, reading time, chapter count, progress. Verified on device (screenshots).
+  - **Reader resume + bookmarks (item 5).** New session store (`reading_state.dart`); reader opens at the last page and keeps bookmarks; a reactive `readingRevision` refreshes the Continue-reading shelf. Verified: reopening a book resumed at 2/3; the Continue-reading shelf showed a 66% progress bar.
+  - **Keyboard (item 1) — documented honestly, not app-fixable.** The floating pill is **Gboard's floating-keyboard mode** (a system keyboard setting), not app UI; the app's text inputs are normal bottom-anchored fields. Cannot be removed from Flutter; user can dock Gboard on the device.
+  - 202 tests green; analyze clean; core zero-diff.
+
 - Phase 13 — conversational AI + Kindle reading (2026-07-17, UX only, branch `feature/phase13-conversational-ai`, includes Phases 11–12):
   - Tutor **voice conversation state machine** (Idle/Listening/Processing/Speaking/Error) with a live status pill; **press-and-hold** mic (hold-to-talk, release-to-send) and **barge-in** (mic press cuts off AI speech → back to Listening).
   - **Speech-engine abstraction**: `SpeechEngine` descriptor on the seam (Demo/Android Neural/iOS Enhanced/Cloud) — UI depends on the abstraction; a neural/cloud provider swaps in behind the same `speechServiceProvider`.

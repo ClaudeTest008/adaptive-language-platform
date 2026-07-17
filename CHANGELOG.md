@@ -7,6 +7,26 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
+### Fixed
+
+- 2026-07-17: Phase 14 — bug fixes + UX completion (verified on device).
+  **Barge-in bug** (real): `PlatformSpeechService.speak` speaks clause by
+  clause; `stop()` killed only the current clause and the loop kept going,
+  so the tutor talked on after the mic was pressed. Added a generation
+  token — `stop()`/`pause()` bump it and the loop aborts before the next
+  clause, so a barge-in cancels the whole utterance. **Voice**: engine is
+  `flutter_tts` (Android → the device Google/Samsung TTS voice); added
+  stripping of bare **URLs and emails** to `spokenText` (markdown, bullets,
+  emoji, dashes, ellipses were already stripped). **Reading Library** is now
+  a real book library — horizontal shelves (Continue reading · Spanish
+  classics · Beginner · Intermediate) of cover cards showing level, author,
+  reading time, chapter count and in-session progress. **Reader** resumes
+  from the last page read and keeps session bookmarks (new in-memory
+  `reading_state`; a reactive `readingRevision` refreshes the Continue-
+  reading shelf). **Keyboard**: confirmed the floating pill is **Gboard's
+  floating-keyboard mode** (system keyboard), not app UI — the app's inputs
+  are normal bottom fields; not app-fixable. 202 tests green.
+
 ### Added
 
 - 2026-07-17: Phase 13 — conversational AI + Kindle-style reading (UX only;

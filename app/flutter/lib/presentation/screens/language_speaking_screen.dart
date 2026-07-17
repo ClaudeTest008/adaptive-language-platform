@@ -245,6 +245,31 @@ class _Feedback extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text('Heard: "${session.transcript}"'),
             ),
+            if (session.words.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Word by word',
+                    style: Theme.of(context).textTheme.labelMedium),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final w in session.words)
+                    Chip(
+                      visualDensity: VisualDensity.compact,
+                      avatar: Icon(
+                        w.ok ? Icons.check : Icons.close,
+                        size: 16,
+                        color: w.ok ? Colors.green : scheme.error,
+                      ),
+                      label: Text(w.target),
+                    ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

@@ -112,6 +112,19 @@ class LanguageConceptSignals {
     );
   }
 
+  /// Applies one listening-recognition answer ([correct] from a listening
+  /// exercise). EWMA `listeningRecognition`, seeded by the first answer.
+  LanguageConceptSignals afterListening(bool correct) {
+    const alpha = 0.4;
+    final v = correct ? 1.0 : 0.0;
+    return copyWith(
+      listeningRecognition: listeningRecognition == null
+          ? v
+          : listeningRecognition! * (1 - alpha) + v * alpha,
+      usageFrequency: usageFrequency + 1,
+    );
+  }
+
   /// Applies one conversation turn ([quality] 0..1 — how well the learner
   /// held up: reply length, target-vocabulary use). EWMA conversation
   /// ability; a turn is production, so usage counts.
@@ -163,6 +176,18 @@ class LanguageSignalsStore {
     final next = Map<String, LanguageConceptSignals>.of(byConcept);
     for (final id in conceptIds) {
       next[id] = this[id].afterPronunciation(score);
+    }
+    return LanguageSignalsStore(next);
+  }
+
+  /// Records a listening-recognition answer against a concept's lineage.
+  LanguageSignalsStore afterListening({
+    required List<String> conceptIds,
+    required bool correct,
+  }) {
+    final next = Map<String, LanguageConceptSignals>.of(byConcept);
+    for (final id in conceptIds) {
+      next[id] = this[id].afterListening(correct);
     }
     return LanguageSignalsStore(next);
   }

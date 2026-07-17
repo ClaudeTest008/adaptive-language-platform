@@ -83,6 +83,10 @@ Pure-Dart module `lib/adaptive/` — no Flutter, no Firebase. Learner model (per
 
 Language extension (Phase 2, additive only): recall difficulty, pronunciation confidence, grammar-transfer errors, vocabulary/usage frequency, conversation ability, retention decay. Misconceptions tracked separately from mistakes.
 
+## Speech & Pronunciation (ADR-0020/0024)
+
+Speaking drills are scored by `scorePronunciationDetailed` (`lib/language/speaking.dart`): each target word aligns to its closest recognized word and scores by normalized Levenshtein over phonetically-folded forms (silent h, b/v, y/ll, qu/k, z/c→s, doubled letters, accents), yielding partial credit + per-word feedback (`PronWord`). Listening recognition is an exercise type (`ExerciseType.listening`, hidden `audio` spoken by the seam, pick-the-word) feeding a `listeningRecognition` signal. `buildDailyLesson` reads mean `pronunciationConfidence`/`conversationAbility` and weights the speaking/conversation blocks when they're low. TTS (`PlatformSpeechService`) chunks on clauses with punctuation-sized breaths and per-language / per-clause prosody. All over the unchanged `SpeechService` seam; core untouched.
+
 ## Conversation Engine (ADR-0023)
 
 Conversation and Immersion modes run scenario-driven multi-turn dialogue. `TutorContext` carries a scenario (a `ConversationNode`) and `targetVocab` — target-language phrases drawn from the learner's weak concepts; `pickScenarioConceptId` (`lib/language/conversation.dart`) weights the scenario toward weak areas. The tutor prompt instructs (and `DemoTutorModel` composes) replies that react to the learner's last message, recast errors in-reply, weave a target phrase, progress the scene, and end with a follow-up. Each learner turn is scored (`conversationTurnQuality`) and moves the `conversationAbility` signal on the scenario concept (signal-only; the core is untouched). Provider-blind over the same `AiChatModel` seam.

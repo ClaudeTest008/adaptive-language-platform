@@ -9,16 +9,17 @@
 ## Backlog
 
 - Real vendor adapters (AnthropicChatModel/OpenAiChatModel/...) behind `tutorModelProvider` — blocked on API keys.
-- Phase 6: real phoneme scoring; Phases 7–8: content ingestion, production. See ROADMAP.md.
-- Feed `conversationAbility` into the daily lesson engine (weight a conversation block when it's low); A2+ conversation scenarios.
-- Grow curriculum seeds beyond A1 slices (A2+, more domains) — data-only; enlarges exercise pool + tutor material + story queue.
-- Real phoneme-level pronunciation scoring (speech models) replacing token-overlap proxy; listening-recognition signal (ADR-0020 remainder); real neural prosody via cloud speech.
+- Phase 7: content ingestion (adapt Content Studio pipeline for language resources); Phase 8: production. See ROADMAP.md.
+- A2+ conversation scenarios; grow curriculum seeds beyond A1 (data-only; enlarges exercises + stories + drills).
+- Cloud phoneme/prosody speech models (replace the on-device edit-distance approximation + flutter_tts prosody with a neural provider behind the SpeechService seam).
 - Lesson engine follow-ups: minutes selector from learner goals (drive `availableMinutesProvider`); real `nextReviewAt` scheduling once sessions carry timestamps (Phase 8).
 - Grow story seeds (more stories per language/level, A2+ mini-adventures).
 - Rewrite `docs/product/` for the language product — incremental, as phases touch them.
 - Remove demo seed once real learner accounts persist language state (Firestore swap, Phase 8).
 
 ## Done
+
+- [x] Phase 6 — Speech & Pronunciation depth: phoneme-aware pronunciation scoring + per-word feedback, listening-recognition exercise + signal, speech-signal-weighted daily lessons, per-language prosodic TTS, premium UI (pill nav, filled inputs), ADR-0024; 176 tests green; emulator-verified (2026-07-17).
 
 - [x] Phase 5 — Conversation Engine (scenario-driven multi-turn dialogue for Conversation/Immersion, weak-weighted scenario + target-vocab steering, reacts/recasts/progresses/follows-up, `conversationAbility` signal per turn), enriched scenarios, sentence-chunked prosodic TTS, ADR-0023; 165 tests green; emulator-verified (recast of a live "soy cansado" turn) (2026-07-17).
 

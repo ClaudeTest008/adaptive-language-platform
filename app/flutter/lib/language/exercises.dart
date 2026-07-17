@@ -20,6 +20,7 @@ class ExerciseItem {
     required this.prompt,
     required this.answer,
     this.options = const [],
+    this.audio,
   });
 
   final String id;
@@ -34,6 +35,9 @@ class ExerciseItem {
 
   /// Multiple choice: the choices. Sentence building: the word bank.
   final List<String> options;
+
+  /// Listening exercises: target-language text to speak (never shown).
+  final String? audio;
 }
 
 /// Case-, spacing- and final-punctuation-insensitive comparison.
@@ -79,6 +83,7 @@ List<ExerciseItem> generateExercises(
 
   final items = <ExerciseItem>[
     for (final v in vocab) ..._vocabItems(v, vocab),
+    for (final v in vocab) ..._listeningItems(v, vocab),
     for (final p in phrases) ..._phraseItems(p),
     for (final s in sentences) ..._sentenceItems(s, sentences),
   ];
@@ -86,9 +91,21 @@ List<ExerciseItem> generateExercises(
   final focus = focusConceptIds.toSet();
   int rank(ExerciseItem e) =>
       e.node.lineageConceptIds.any(focus.contains) ? 0 : 1;
+  // Type priority so a concept leads with recognition (multiple choice)
+  // before its listening variant; the round-robin below still interleaves.
+  const typeOrder = {
+    ExerciseType.multipleChoice: 0,
+    ExerciseType.translation: 1,
+    ExerciseType.fillInBlank: 2,
+    ExerciseType.sentenceBuilding: 3,
+    ExerciseType.readingComprehension: 4,
+    ExerciseType.listening: 5,
+  };
   items.sort((a, b) {
     final byFocus = rank(a).compareTo(rank(b));
-    return byFocus != 0 ? byFocus : a.id.compareTo(b.id);
+    if (byFocus != 0) return byFocus;
+    final byType = (typeOrder[a.type] ?? 9).compareTo(typeOrder[b.type] ?? 9);
+    return byType != 0 ? byType : a.id.compareTo(b.id);
   });
   // Round-robin across types within each rank group so a session mixes
   // exercise forms instead of clustering all multiple-choice first.
@@ -132,6 +149,33 @@ List<ExerciseItem> _vocabItems(
       prompt: "What does '${v.lemma}' mean?",
       answer: translation,
       options: _shuffled([translation, ...distractors], 'opt:${v.conceptId}'),
+    ),
+  ];
+}
+
+/// Listening recognition: hear a target word, pick which word it was.
+/// The lemma is spoken (audio) but never shown as text.
+List<ExerciseItem> _listeningItems(
+  VocabularyConceptNode v,
+  List<VocabularyConceptNode> all,
+) {
+  final distractors = _shuffled(
+    [
+      for (final o in all)
+        if (o.conceptId != v.conceptId) o.lemma,
+    ],
+    'lis:${v.conceptId}',
+  ).take(3).toList();
+  if (distractors.isEmpty) return const [];
+  return [
+    ExerciseItem(
+      id: 'lis:${v.conceptId}',
+      type: ExerciseType.listening,
+      node: v,
+      prompt: 'Listen, then choose the word you heard.',
+      answer: v.lemma,
+      audio: v.lemma,
+      options: _shuffled([v.lemma, ...distractors], 'lisopt:${v.conceptId}'),
     ),
   ];
 }

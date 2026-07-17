@@ -55,12 +55,13 @@ Master plan for the Adaptive Language Platform. Phases are sequential; each ends
 - ✅ Tests: scenario selection, context/vocab assembly, turn quality, signal, contextual demo dialogue (11 new; 165 total).
 - ⏳ Remaining: feed `conversationAbility` into the lesson engine; A2+ scenarios; real neural prosody (cloud speech, Phase 6).
 
-## Phase 6 — Speech & Pronunciation (foundation delivered early 2026-07-16, ADR-0020)
+## Phase 6 — Speech & Pronunciation ✅ (2026-07-17, ADR-0020/0024)
 
-- ✅ Speaking practice + pronunciation scoring exercise (drills from the graph, accent-folded token-overlap score → `pronunciationConfidence`).
-- ✅ Speech provider seam (`SpeechService`, flutter_tts + speech_to_text adapter; vendor-independent like the chat-model seam).
-- ✅ Pronunciation confidence signal wired; also short-stories reading with TTS and tutor voice I/O.
-- ⏳ Remaining: real phoneme-level scoring (speech models) replacing token overlap; listening-recognition signal; pronunciation-attempt persistence (schema drafted).
+- ✅ Speaking practice + pronunciation scoring (Phase-2 foundation), now **phoneme-aware edit-distance scoring with per-word ✓/✗ feedback** (ADR-0024).
+- ✅ Speech provider seam (`SpeechService`, flutter_tts + speech_to_text adapter); prosodic clause-chunked TTS with per-language tuning.
+- ✅ **Listening recognition** exercise + `listeningRecognition` signal (hear a word, pick it).
+- ✅ `pronunciationConfidence` + `conversationAbility` signals now **weight the daily lesson** (speaking/conversation blocks grow when weak).
+- ⏳ Remaining: real cloud phoneme/prosody models; pronunciation-attempt persistence (schema drafted, Phase 8).
 
 ## Phase 7 — Content Ingestion for Language Resources
 

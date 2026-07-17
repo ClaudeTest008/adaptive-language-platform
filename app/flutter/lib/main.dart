@@ -38,11 +38,44 @@ class App extends ConsumerWidget {
         ),
         appBarTheme: AppBarTheme(
           centerTitle: false,
+          scrolledUnderElevation: 0,
           backgroundColor: scheme.surface,
           titleTextStyle: TextStyle(
             color: scheme.onSurface,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.2,
+          ),
+        ),
+        // Clean, premium bottom nav: pill indicator, labels only when
+        // selected, flat surface that blends with the page.
+        navigationBarTheme: NavigationBarThemeData(
+          height: 68,
+          elevation: 0,
+          backgroundColor: scheme.surface,
+          indicatorColor: scheme.primaryContainer,
+          labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+          iconTheme: WidgetStateProperty.resolveWith(
+            (states) => IconThemeData(
+              color: states.contains(WidgetState.selected)
+                  ? scheme.onPrimaryContainer
+                  : scheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: scheme.surfaceContainerHigh,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
           ),
         ),
       );

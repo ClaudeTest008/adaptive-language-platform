@@ -26,6 +26,9 @@ class _LanguagePracticeScreenState
   final _textController = TextEditingController();
   final _built = <String>[];
 
+  /// Index whose listening audio has already auto-played (play once).
+  int? _autoPlayed;
+
   @override
   void dispose() {
     _textController.dispose();
@@ -62,6 +65,17 @@ class _LanguagePracticeScreenState
     if (session.finished) return _Summary(session: session);
 
     final item = session.current;
+    // Auto-play a listening item's audio once when it appears.
+    if (item.type == ExerciseType.listening && _autoPlayed != session.index) {
+      _autoPlayed = session.index;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(speechServiceProvider).speak(
+          item.audio ?? item.answer,
+          langCode: ref.read(languageBcp47Provider),
+        );
+      });
+    }
     return Scaffold(
       appBar: AppBar(
         title: Text('Practice ${session.index + 1}/${session.items.length}'),
@@ -129,6 +143,49 @@ class _LanguagePracticeScreenState
   List<Widget> _inputFor(ExerciseItem item, LanguagePracticeState session) {
     final scheme = Theme.of(context).colorScheme;
     switch (item.type) {
+      case ExerciseType.listening:
+        return [
+          Center(
+            child: FilledButton.tonalIcon(
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
+                ),
+              ),
+              icon: const Icon(Icons.volume_up),
+              label: const Text('Play again'),
+              onPressed: () => ref.read(speechServiceProvider).speak(
+                item.audio ?? item.answer,
+                langCode: ref.read(languageBcp47Provider),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          for (final option in item.options)
+            Card(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              color: !session.answered
+                  ? null
+                  : checkAnswer(item, option)
+                  ? Colors.green.withValues(alpha: 0.15)
+                  : option == session.given
+                  ? scheme.errorContainer
+                  : null,
+              child: ListTile(
+                title: Text(option),
+                trailing: !session.answered
+                    ? null
+                    : checkAnswer(item, option)
+                    ? const Icon(Icons.check_circle, color: Colors.green)
+                    : option == session.given
+                    ? Icon(Icons.cancel, color: scheme.error)
+                    : null,
+                onTap: session.answered ? null : () => _submit(option),
+              ),
+            ),
+        ];
+
       case ExerciseType.multipleChoice:
       case ExerciseType.readingComprehension:
         return [
@@ -257,6 +314,7 @@ class _TypeChip extends StatelessWidget {
     ExerciseType.translation: ('Translation', Icons.translate),
     ExerciseType.sentenceBuilding: ('Sentence building', Icons.reorder),
     ExerciseType.readingComprehension: ('Reading', Icons.menu_book),
+    ExerciseType.listening: ('Listening', Icons.headphones),
   };
 
   @override

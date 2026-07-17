@@ -27,6 +27,13 @@ class PlatformSpeechService implements SpeechService {
   @override
   bool get available => true;
 
+  /// Per-language base prosody. Spanish reads clearer a touch slower with
+  /// slightly higher pitch; English sits a hair faster.
+  static const _prosody = {
+    'es': (rate: 0.45, pitch: 1.07),
+    'en': (rate: 0.48, pitch: 1.05),
+  };
+
   @override
   Future<void> speak(
     String text, {
@@ -35,28 +42,34 @@ class PlatformSpeechService implements SpeechService {
     double? pitch,
   }) async {
     try {
+      final base = _prosody[langCode.split('-').first.toLowerCase()] ??
+          (rate: 0.46, pitch: 1.06);
+      final baseRate = rate ?? base.rate;
+      final basePitch = pitch ?? base.pitch;
       await _tts.setLanguage(langCode);
       await _pickWarmVoice(langCode);
-      // Slightly slower than default for learners; a touch above neutral
-      // pitch, full volume — warmer and more expressive.
-      await _tts.setSpeechRate(rate ?? 0.46);
-      await _tts.setPitch(pitch ?? 1.06);
       await _tts.setVolume(1.0);
       await _tts.awaitSpeakCompletion(true);
-      // Speak sentence by sentence with a short breath between clauses —
-      // the natural rhythm a single long utterance lacks. Questions get a
-      // hair more lift so intonation rises.
-      final sentences = _sentences(text);
-      for (final (i, s) in sentences.indexed) {
-        if (s.trim().isEmpty) continue;
-        if (s.contains('?') || s.contains('¿')) {
-          await _tts.setPitch((pitch ?? 1.06) + 0.06);
-        } else {
-          await _tts.setPitch(pitch ?? 1.06);
-        }
-        await _tts.speak(s.trim());
-        if (i < sentences.length - 1) {
-          await Future<void>.delayed(const Duration(milliseconds: 220));
+      // Speak clause by clause with a short breath between — the natural
+      // rhythm a single long utterance lacks. Questions rise in pitch and
+      // slow slightly; exclamations lift a touch too.
+      final clauses = _clauses(text);
+      for (final (i, c) in clauses.indexed) {
+        final s = c.trim();
+        if (s.isEmpty) continue;
+        final isQuestion = s.contains('?') || s.contains('¿');
+        final isExclaim = s.contains('!') || s.contains('¡');
+        await _tts.setPitch(
+          basePitch + (isQuestion ? 0.08 : (isExclaim ? 0.05 : 0.0)),
+        );
+        await _tts.setSpeechRate(baseRate - (isQuestion ? 0.03 : 0.0));
+        await _tts.speak(s);
+        if (i < clauses.length - 1) {
+          // Longer breath after a sentence, shorter after a comma clause.
+          final end = s[s.length - 1];
+          await Future<void>.delayed(Duration(
+            milliseconds: '.!?…'.contains(end) ? 260 : 130,
+          ));
         }
       }
     } catch (_) {
@@ -64,14 +77,15 @@ class PlatformSpeechService implements SpeechService {
     }
   }
 
-  /// Splits into sentence-ish chunks on . ! ? … ¿ ¡ while keeping the
-  /// punctuation, so each chunk carries its own intonation.
-  List<String> _sentences(String text) {
+  /// Splits into clause chunks on sentence enders AND commas/semicolons/
+  /// colons, keeping the punctuation so each chunk carries its intonation
+  /// and gets its own breath.
+  List<String> _clauses(String text) {
     final out = <String>[];
     final buf = StringBuffer();
     for (final ch in text.split('')) {
       buf.write(ch);
-      if ('.!?…'.contains(ch)) {
+      if ('.!?…,;:'.contains(ch)) {
         out.add(buf.toString());
         buf.clear();
       }

@@ -5,6 +5,14 @@
 
 ## Completed
 
+- Phase 6 — Speech & Pronunciation depth + premium UI (2026-07-17, ADR-0024):
+  - Phoneme-aware pronunciation scoring (`scorePronunciationDetailed`): per-word alignment + normalized edit distance over phonetically-folded forms (silent h, b/v, y/ll, qu/k, z/c→s, accents); near misses get partial credit; per-word ✓/✗ feedback in the speaking screen.
+  - Listening recognition exercise (`ExerciseType.listening`): hear a spoken word (hidden audio), pick which word it was; auto-plays + "Play again"; new `listeningRecognition` signal via `recordAnswer(listening: true)`.
+  - `pronunciationConfidence` + `conversationAbility` now weight the daily lesson — speaking/conversation blocks grow when those signals are low.
+  - Voice: per-language prosody, clause-level chunking with punctuation-sized breaths, question rise/slow + exclamation lift.
+  - Premium UI: pill NavigationBar with select-only labels, flat app bars, rounded filled buttons + filled inputs; no floating elements; keyboard only on field focus.
+  - Verified: `flutter analyze` clean; 176 tests green (13 new); Android emulator — premium nav + cards, plan intact, speaking drill with prosodic TTS.
+
 - Phase 5 — Conversation Engine + voice naturalness (2026-07-17, ADR-0023):
   - Scenario-driven multi-turn dialogue for Conversation + Immersion: `TutorContext` carries scenario + weak-concept `targetVocab`; `pickScenarioConceptId` weights scenarios toward weak concepts; the tutor reacts to the learner's last message, recasts errors in-reply (e.g. soy cansado → tengo sueño), weaves target vocab, progresses the scene, ends with a follow-up.
   - `conversationAbility` signal: `afterConversationTurn` EWMA + `conversationTurnQuality` (length + target-vocab use); recorded per learner turn on the scenario concept (signal-only; core untouched).
@@ -94,7 +102,7 @@ Note: inherited domain code still uses exam vocabulary (questions, exams, topics
 
 ## Next
 
-- Phase 6 — Speech & pronunciation (real phoneme scoring, listening-recognition signal). Also: feed `conversationAbility` into the lesson engine, tutor history persistence, minutes selector from goals, `nextReviewAt` scheduling once sessions carry timestamps. See ROADMAP.md.
+- Phase 7 — Content ingestion for language resources (adapt Content Studio pipeline). Also: cloud phoneme/prosody speech models, tutor history persistence, minutes selector from goals, `nextReviewAt` scheduling once sessions carry timestamps. See ROADMAP.md.
 
 ## Local Dev
 

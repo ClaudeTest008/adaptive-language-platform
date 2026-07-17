@@ -75,6 +75,17 @@ List<LessonBlock> buildDailyLesson({
   final has = traits.toSet();
   final candidates = <_Candidate>[];
 
+  // Mean spoken/heard/conversational confidence over the tracked concepts
+  // (null signals treated as "unknown" = mid). Lower means weaker →
+  // heavier speaking / conversation blocks (ADR-0024).
+  final tracked = conceptMastery.keys.where((k) => graph[k] != null).toList();
+  double meanSignal(double? Function(String) pick) {
+    final vals = [for (final id in tracked) pick(id)].whereType<double>().toList();
+    return vals.isEmpty ? 0.6 : vals.reduce((a, b) => a + b) / vals.length;
+  }
+  final avgPron = meanSignal((id) => signals[id].pronunciationConfidence);
+  final avgConv = meanSignal((id) => signals[id].conversationAbility);
+
   // 1. Misconception repair — always first, always heaviest when present.
   final worst = <Misconception>[];
   for (final m in misconceptions.all) {
@@ -155,17 +166,22 @@ List<LessonBlock> buildDailyLesson({
         e.key,
   ];
   if (speakTargets.isNotEmpty) {
+    // Weaker spoken confidence → heavier speaking block.
+    final weight = (has.contains('fastResponder') ? 1.6 : 1.3) +
+        (1 - avgPron) * 1.5;
     candidates.add(_Candidate(
       LessonBlock(
         kind: LessonBlockKind.pronunciation,
         activity: LessonActivity.speaking,
         title: 'Pronunciation drills',
-        reason: 'Say it aloud — production locks in what recognition can\'t.',
+        reason: avgPron < 0.5
+            ? 'Your speaking confidence is low — say these aloud.'
+            : 'Say it aloud — production locks in what recognition can\'t.',
         minutes: 0,
         skill: LanguageSkill.pronunciation,
         conceptIds: speakTargets.take(6).toList(),
       ),
-      has.contains('fastResponder') ? 1.6 : 1.3,
+      weight,
     ));
   }
 
@@ -200,14 +216,17 @@ List<LessonBlock> buildDailyLesson({
           : LessonBlockKind.conversation,
       activity: LessonActivity.tutor,
       title: scenarios.isEmpty ? 'Free practice' : 'Conversation with your tutor',
-      reason: recentAccuracy >= 0.7
+      reason: avgConv < 0.5
+          ? 'Your conversation practice is thin — let\'s talk.'
+          : recentAccuracy >= 0.7
           ? 'You\'re on a roll — put it to use in real dialogue.'
           : 'Low-pressure conversation to consolidate the session.',
       minutes: 0,
       skill: LanguageSkill.conversation,
       conceptIds: scenarios,
     ),
-    1.0,
+    // Weaker conversation ability → heavier conversation block.
+    1.0 + (1 - avgConv) * 1.6,
   ));
 
   return _allocate(candidates, availableMinutes, has);

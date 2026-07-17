@@ -174,6 +174,7 @@ class LanguageLearnerController extends Notifier<LanguageLearnerState> {
     required bool correct,
     required double responseSeconds,
     DateTime? at,
+    bool listening = false,
   }) async {
     await _initFuture; // answers may arrive before _init completes
     final engine = _engine;
@@ -210,12 +211,19 @@ class LanguageLearnerController extends Notifier<LanguageLearnerState> {
     // Signals land on the answered concept plus any ancestor a
     // misconception was attributed to (so its transfer counters move).
     final transferIds = {for (final m in detected) m.conceptId};
-    final signals = state.signals.afterAnswer(
+    var signals = state.signals.afterAnswer(
       conceptIds: [node.conceptId, ...transferIds.difference({node.conceptId})],
       correct: correct,
       responseSeconds: responseSeconds,
       transferConceptIds: transferIds,
     );
+    // A listening exercise also moves listeningRecognition.
+    if (listening) {
+      signals = signals.afterListening(
+        conceptIds: node.lineageConceptIds,
+        correct: correct,
+      );
+    }
 
     state = state.copyWith(
       model: model,
@@ -429,6 +437,7 @@ class LanguagePracticeController extends Notifier<LanguagePracticeState?> {
           correct: correct,
           responseSeconds:
               DateTime.now().difference(s.shownAt).inMilliseconds / 1000,
+          listening: s.current.type == ExerciseType.listening,
         );
     state = s.copyWith(
       given: given,
@@ -468,6 +477,7 @@ class SpeakingState {
     required this.index,
     this.transcript,
     this.score,
+    this.words = const [],
     this.listening = false,
     this.finished = false,
   });
@@ -480,6 +490,9 @@ class SpeakingState {
 
   /// 0..1 score for the current drill (null before an attempt).
   final double? score;
+
+  /// Per-word pronunciation feedback for the current attempt.
+  final List<PronWord> words;
   final bool listening;
   final bool finished;
 
@@ -490,6 +503,7 @@ class SpeakingState {
     int? index,
     String? transcript,
     double? score,
+    List<PronWord>? words,
     bool clearAttempt = false,
     bool? listening,
     bool? finished,
@@ -498,6 +512,7 @@ class SpeakingState {
     index: index ?? this.index,
     transcript: clearAttempt ? null : (transcript ?? this.transcript),
     score: clearAttempt ? null : (score ?? this.score),
+    words: clearAttempt ? const [] : (words ?? this.words),
     listening: listening ?? this.listening,
     finished: finished ?? this.finished,
   );
@@ -544,15 +559,16 @@ class SpeakingController extends Notifier<SpeakingState?> {
       state = state?.copyWith(listening: false);
       return;
     }
-    final score = scorePronunciation(s.current.target, transcript);
+    final result = scorePronunciationDetailed(s.current.target, transcript);
     await ref.read(languageLearnerProvider.notifier).recordPronunciation(
       node: s.current.node,
-      score: score,
+      score: result.score,
     );
     state = state?.copyWith(
       listening: false,
       transcript: transcript,
-      score: score,
+      score: result.score,
+      words: result.words,
     );
   }
 

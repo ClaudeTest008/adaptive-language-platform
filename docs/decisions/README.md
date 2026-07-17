@@ -31,3 +31,4 @@ ADRs 0001–0013 are inherited from the exam-platform lineage and remain binding
 | [0023](0023-conversation-engine.md) | Conversation engine: scenario-driven multi-turn dialogue, target-vocab steering, conversationAbility signal; sentence-chunked prosodic TTS | Accepted |
 | [0024](0024-pronunciation-listening.md) | Phoneme-aware pronunciation scoring + per-word feedback, listening-recognition exercise + signal, speech-signal-weighted lessons, prosodic TTS, premium UI pass | Accepted |
 | [0025](0025-content-ingestion.md) | Language content ingestion: pasted-text extractor (vocab/phrases/sentences/idioms/culture) mapped to concepts, human review queue, admin Content Studio; keyboard cleanup | Accepted |
+| [0026](0026-content-merge-goals.md) | Approved content merges into live curriculum/stories; learner goals (minutes + target level) drive the lesson engine; production checklist | Accepted |

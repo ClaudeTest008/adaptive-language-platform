@@ -1,9 +1,16 @@
 # Project Status
 
-**Phase:** Phase 3 — AI Tutor Foundation (foundation complete; dialogue depth remaining)
-**Last updated:** 2026-07-16
+**Phase:** Phase 8 — Production Readiness (demo-mode slice complete; Firebase infra remaining)
+**Last updated:** 2026-07-17
 
 ## Completed
+
+- Phase 8 — Production Readiness demo slice (2026-07-17, ADR-0026):
+  - Ingestion loop closed: `lib/language/content_merge.dart` `mergeApprovedContent` attaches approved, unmapped vocabulary/phrases/idioms as new concept/phrase nodes under a synthesized `<lang>:<level>:vocabulary:ingested` domain — they generate exercises like any authored node and project onto the core unchanged; `storyFromApproved` turns approved sentences into a "From your content" story. Base curriculum never mutated.
+  - `approvedContentProvider` (durable, resets on language switch): Content Studio appends on approve / removes on reject; `curriculumProvider` and `storiesProvider` watch it, so approved items surface in practice, stories and the plan immediately. Review queue stays the only gate.
+  - Learner goals (`learnerGoalsProvider`: minutes/day + target CEFR level, in-memory): `availableMinutesProvider` reads the goal (Daily Lesson Engine budgets to it), `storiesProvider` caps at the target level, tutor goal string reflects it. `/goals` screen (minutes slider + level chips) reachable from the Lab app bar.
+  - `PRODUCTION_CHECKLIST.md` — pre-launch tracker (persistence swap, real speech/AI providers, iOS parity, analytics).
+  - Verified: `flutter analyze` clean; 195 tests green (9 new); Android emulator — set goals (25→50 min) re-budgets Today's plan to 50 min; target level surfaces A2 stories.
 
 - Phase 7 — Content Ingestion + input cleanup (2026-07-17, ADR-0025):
   - Language content extractor (`lib/language/ingestion.dart`): pasted target-language text → review candidates (vocabulary, phrases, example sentences, idioms, cultural notes) + CEFR difficulty + topics, mapped to curriculum concept ids where recognized. Deterministic.
@@ -92,7 +99,7 @@
 
 ## In Progress
 
-- Phase 3 remainder: tutor history persistence + session summaries feeding Learning DNA; real vendor adapters (blocked on API keys).
+- Phase 8 infra (blocked on Firebase keys): Firestore repository swap behind the existing seams, real speech/AI vendor adapters, analytics + crash reporting, iOS/web parity, onboarding, package rename. See `PRODUCTION_CHECKLIST.md`.
 
 ## Inherited at Fork Point (commit 3b597b2 lineage)
 
@@ -110,7 +117,7 @@ Note: inherited domain code still uses exam vocabulary (questions, exams, topics
 
 ## Next
 
-- Phase 8 — Production deployment (Firebase integration, Firestore repository swap, RC checklists). Also: merge approved content candidates into live curriculum/stories, AI extractor over the review queue, cloud speech models, tutor history persistence. See ROADMAP.md.
+- Phase 8 infra: Firebase integration + Firestore repository swap (schema drafted, seams ready), real speech/AI/analytics providers, iOS/web parity, package rename. Also: AI extractor over the review queue, cloud speech models, tutor history persistence. See ROADMAP.md + PRODUCTION_CHECKLIST.md.
 
 ## Local Dev
 

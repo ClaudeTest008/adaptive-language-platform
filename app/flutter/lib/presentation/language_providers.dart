@@ -20,6 +20,7 @@ import '../infrastructure/language_content_repository.dart';
 import '../infrastructure/language_repositories.dart';
 import '../infrastructure/platform_speech_service.dart';
 import '../language/conversation.dart';
+import '../language/content_merge.dart';
 import '../language/curriculum.dart';
 import '../language/entities.dart';
 import '../language/exercises.dart';
@@ -57,24 +58,52 @@ final languageBcp47Provider = Provider<String>((ref) {
   return availableLanguages.firstWhere((l) => l.code == code).bcp47;
 });
 
+/// Approved Content-Studio candidates for the selected language (ADR-0026).
+/// Resets on language switch; the Content Studio appends to it on approve.
+class ApprovedContentController extends Notifier<List<ContentCandidate>> {
+  @override
+  List<ContentCandidate> build() {
+    ref.watch(selectedLanguageProvider);
+    return const [];
+  }
+
+  void add(ContentCandidate c) {
+    if (state.any((e) => e.id == c.id)) return;
+    state = [...state, c];
+  }
+
+  void remove(String id) => state = [for (final c in state) if (c.id != id) c];
+}
+
+final approvedContentProvider =
+    NotifierProvider<ApprovedContentController, List<ContentCandidate>>(
+      ApprovedContentController.new,
+    );
+
 final curriculumProvider = FutureProvider<Curriculum>((ref) async {
   final code = ref.watch(selectedLanguageProvider);
   final lang = availableLanguages.firstWhere((l) => l.code == code);
   final raw = await rootBundle.loadString(lang.asset);
-  return parseCurriculum(jsonDecode(raw) as Map<String, dynamic>);
+  final base = parseCurriculum(jsonDecode(raw) as Map<String, dynamic>);
+  // Fold in approved ingested content (ADR-0026).
+  return mergeApprovedContent(base, ref.watch(approvedContentProvider));
 });
 
-/// Stories for the selected language, level-filtered for this learner.
+/// Stories for the selected language, capped at the learner's goal level,
+/// plus any story synthesized from approved ingested sentences.
 final storiesProvider = FutureProvider<List<Story>>((ref) async {
   final code = ref.watch(selectedLanguageProvider);
   final lang = availableLanguages.firstWhere((l) => l.code == code);
   final raw = await rootBundle.loadString(lang.stories);
-  final all = parseStories(jsonDecode(raw) as Map<String, dynamic>);
-  final mastery = ref.watch(languageLearnerProvider).conceptMastery;
-  final avg = mastery.isEmpty
-      ? 1.0
-      : mastery.values.reduce((a, b) => a + b) / mastery.length;
-  return storiesForLevel(all, recommendedLevel(CefrLevel.a1, averageMastery: avg));
+  final all = [...parseStories(jsonDecode(raw) as Map<String, dynamic>)];
+  final ingested = storyFromApproved(
+    ref.watch(approvedContentProvider),
+    languageCode: code,
+    level: CefrLevel.a1,
+  );
+  if (ingested != null) all.insert(0, ingested);
+  final target = ref.watch(learnerGoalsProvider).targetLevel;
+  return storiesForLevel(all, target);
 });
 
 /// Speech (TTS/STT) — platform adapter; a NoopSpeechService is bound in
@@ -126,11 +155,15 @@ class ContentStudioController extends Notifier<ContentStudioState> {
 
   Future<void> approve(String id) async {
     state = state.copyWith(review: state.review.approve(id));
+    // Merge the approved candidate into the live curriculum/stories.
+    final c = state.result?.candidates.where((c) => c.id == id).firstOrNull;
+    if (c != null) ref.read(approvedContentProvider.notifier).add(c);
     await ref.read(contentReviewRepositoryProvider).save(state.review);
   }
 
   Future<void> reject(String id) async {
     state = state.copyWith(review: state.review.reject(id));
+    ref.read(approvedContentProvider.notifier).remove(id);
     await ref.read(contentReviewRepositoryProvider).save(state.review);
   }
 
@@ -679,7 +712,10 @@ TutorContext? assembleTutorContext(
     conceptMastery: learner.conceptMastery,
     misconceptions: learner.misconceptions,
     signals: learner.signals,
-    goals: ['Reach A2 ${curriculum.languageName}'],
+    goals: [
+      'Reach ${ref.read(learnerGoalsProvider).targetLevel.name.toUpperCase()} '
+          '${curriculum.languageName}',
+    ],
     learningTraits: learner.traits,
     focusConceptId:
         focusConceptId ?? learner.misconceptions.all.firstOrNull?.conceptId,
@@ -831,4 +867,39 @@ final dailyLessonProvider = Provider<List<LessonBlock>>((ref) {
 });
 
 /// Minutes the learner has today (goal-derived; a selector could set it).
-final availableMinutesProvider = Provider<int>((ref) => 25);
+final availableMinutesProvider = Provider<int>(
+  (ref) => ref.watch(learnerGoalsProvider).minutesPerDay,
+);
+
+// ---------- learner goals (ADR-0026) ----------
+
+class LearnerGoals {
+  const LearnerGoals({this.minutesPerDay = 25, this.targetLevel = CefrLevel.a2});
+
+  /// Daily study budget — drives the lesson engine's time allocation.
+  final int minutesPerDay;
+
+  /// Desired CEFR level — caps the story queue so learners can read up.
+  final CefrLevel targetLevel;
+
+  LearnerGoals copyWith({int? minutesPerDay, CefrLevel? targetLevel}) =>
+      LearnerGoals(
+        minutesPerDay: minutesPerDay ?? this.minutesPerDay,
+        targetLevel: targetLevel ?? this.targetLevel,
+      );
+}
+
+class LearnerGoalsController extends Notifier<LearnerGoals> {
+  @override
+  LearnerGoals build() => const LearnerGoals();
+
+  void setMinutes(int minutes) =>
+      state = state.copyWith(minutesPerDay: minutes.clamp(5, 60));
+  void setTargetLevel(CefrLevel level) =>
+      state = state.copyWith(targetLevel: level);
+}
+
+final learnerGoalsProvider =
+    NotifierProvider<LearnerGoalsController, LearnerGoals>(
+      LearnerGoalsController.new,
+    );

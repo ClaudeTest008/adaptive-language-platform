@@ -38,6 +38,11 @@ class LanguageDashboardScreen extends ConsumerWidget {
         title: const Text('Language Lab'),
         actions: [
           const _LanguageMenu(),
+          IconButton(
+            icon: const Icon(Icons.track_changes_outlined),
+            tooltip: 'Your goals',
+            onPressed: () => context.push('/goals'),
+          ),
           if (ref.watch(authStateProvider).value?.isAdmin ?? false)
             IconButton(
               icon: const Icon(Icons.library_add_outlined),

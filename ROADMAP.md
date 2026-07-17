@@ -71,9 +71,12 @@ Master plan for the Adaptive Language Platform. Phases are sequential; each ends
 - ✅ Keyboard cleanup (unfocus on submit/advance); four new narrative stories (A1/A2).
 - ⏳ Remaining: merge approved candidates into live curriculum/stories (Phase 8 persistence); AI extractor over the same queue; binary-format (PDF/DOCX/audio) ingestion; content-source schema.
 
-## Phase 8 — Production Deployment
+## Phase 8 — Production Deployment (demo-mode slice complete 2026-07-17, ADR-0026)
 
-- Firebase production integration (runbooks inherited in `docs/deployment/`), Firestore repository swap, RC checklists, monitoring.
+- ✅ Ingestion loop closed: approved Content-Studio candidates merge into the live curriculum (new concepts + exercises) and stories, behind the existing seams (`mergeApprovedContent`/`storyFromApproved`).
+- ✅ Learner goals (minutes/day + target CEFR level) drive `availableMinutesProvider` (plan time budget) and the story queue; `/goals` surface.
+- ✅ `PRODUCTION_CHECKLIST.md` — pre-launch tracker (persistence swap, real speech/AI providers, iOS parity, analytics).
+- ⏳ Remaining (needs infra/keys): Firebase project + Firestore repository swap (schema drafted, seams ready), real speech/AI providers, analytics + crash reporting, iOS/web parity, onboarding, package rename.
 
 ## Principles
 

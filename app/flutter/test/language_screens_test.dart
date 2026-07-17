@@ -7,6 +7,7 @@ import 'package:adaptive_exam_platform/presentation/language_providers.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_concept_screen.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_dashboard_screen.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_content_screen.dart';
+import 'package:adaptive_exam_platform/presentation/screens/language_goals_screen.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_practice_screen.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_tutor_screen.dart';
 import 'package:flutter/material.dart';
@@ -234,5 +235,19 @@ void main() {
     await tester.tap(find.byIcon(Icons.check_circle).first);
     await tester.pump();
     expect(find.text('Approved'), findsWidgets);
+  });
+
+  testWidgets('goals screen sets minutes and target level', (tester) async {
+    await tester.pumpWidget(_app(curriculum, const LanguageGoalsScreen()));
+    await tester.pump();
+
+    expect(find.text('25 minutes / day'), findsOneWidget);
+    // Bump the target level to B1.
+    await tester.tap(find.widgetWithText(ChoiceChip, 'B1'));
+    await tester.pump();
+    expect(
+      find.textContaining("aiming for B1"),
+      findsOneWidget,
+    );
   });
 }

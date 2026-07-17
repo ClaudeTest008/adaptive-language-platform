@@ -2,6 +2,7 @@
 
 ## Active
 
+- Phase 8 infra: Firestore repository swap behind the existing seams (curriculum/review/signals/goals stores → real persistence), then Firebase integration + RC checklists. See `PRODUCTION_CHECKLIST.md`.
 - Delete unrouted exam-era screens (dashboard/practice/mock/bookmarks/search/admin studio) together with the `adaptive_exam_platform` → `adaptive_language_platform` package rename (single sweep; ADR-0019 retired them from navigation).
 
 - Phase 3: tutor history persistence seam (`tutorHistory` shape in docs/database/05) + session summaries feeding Learning DNA.
@@ -9,16 +10,17 @@
 ## Backlog
 
 - Real vendor adapters (AnthropicChatModel/OpenAiChatModel/...) behind `tutorModelProvider` — blocked on API keys.
-- Phase 8: production (Firebase integration, Firestore swap, RC checklists). See ROADMAP.md.
-- Content ingestion follow-ups: merge approved candidates into live curriculum/stories (needs persistence); AI extractor feeding the same review queue; binary-format (PDF/DOCX/audio) ingestion; content-source schema.
+- Content ingestion follow-ups: AI extractor feeding the same review queue; binary-format (PDF/DOCX/audio) ingestion; content-source schema.
 - A2+ conversation scenarios; grow curriculum seeds beyond A1 (data-only; enlarges exercises + stories + drills).
 - Cloud phoneme/prosody speech models (replace the on-device edit-distance approximation + flutter_tts prosody with a neural provider behind the SpeechService seam).
-- Lesson engine follow-ups: minutes selector from learner goals (drive `availableMinutesProvider`); real `nextReviewAt` scheduling once sessions carry timestamps (Phase 8).
+- Lesson engine follow-ups: real `nextReviewAt` scheduling once sessions carry timestamps (Phase 8).
 - Grow story seeds (more stories per language/level, A2+ mini-adventures).
 - Rewrite `docs/product/` for the language product — incremental, as phases touch them.
 - Remove demo seed once real learner accounts persist language state (Firestore swap, Phase 8).
 
 ## Done
+
+- [x] Phase 8 — Production readiness demo slice: approved content merges into live curriculum/stories (`mergeApprovedContent`/`storyFromApproved` + `approvedContentProvider`), learner goals (minutes + target level) driving the lesson engine + story cap + tutor goal via `/goals`, `PRODUCTION_CHECKLIST.md`, ADR-0026; 195 tests green; emulator-verified (goals re-budget the plan to 50 min, A2 stories surface) (2026-07-17).
 
 - [x] Phase 7 — Content ingestion (`ingestLanguageText` → vocab/phrase/sentence/idiom/culture candidates mapped to concepts, review queue, admin Content Studio at `/content`), keyboard cleanup (unfocus on submit/advance), 4 new stories, ADR-0025; 186 tests green; emulator-verified (2026-07-17).
 

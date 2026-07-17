@@ -5,6 +5,7 @@ import 'providers.dart';
 import 'screens/home_shell.dart';
 import 'screens/language_concept_screen.dart';
 import 'screens/language_content_screen.dart';
+import 'screens/language_goals_screen.dart';
 import 'screens/language_practice_screen.dart';
 import 'screens/language_story_reader_screen.dart';
 import 'screens/login_screen.dart';
@@ -53,6 +54,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/content',
         builder: (_, _) => const LanguageContentScreen(),
+      ),
+      GoRoute(
+        path: '/goals',
+        builder: (_, _) => const LanguageGoalsScreen(),
       ),
     ],
   );

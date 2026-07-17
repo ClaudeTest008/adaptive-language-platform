@@ -7,7 +7,23 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
-### Added
+### Changed
+
+- 2026-07-17: Phase 11 — experience overhaul (UX only; core/providers
+  untouched). Stories rewritten as real multi-sentence **narratives**
+  (3–4 sentence pages instead of one-line phrases) across all ES stories.
+  Story reader **redesigned**: a swipeable `PageView` (smooth page
+  transitions), large book-like target text, the translation demoted to
+  secondary muted body text, a slim animated progress bar with an "n / N"
+  counter, and generous negative space over the atmospheric backdrop
+  (fewer heavy containers). Voice: `spokenText` now also strips bullet
+  glyphs and emoji, and TTS reads slightly slower with longer clause
+  breaths for a warmer, less robotic delivery. Speaking feedback rewritten
+  as warm coaching lines by score band with a count-up score animation.
+  Tutor chat bubbles get more breathing room. Motion added: reader page
+  transitions, animated reading progress, speaking score count-up (on top
+  of the existing entrance fades). 201 tests green; emulator-verified in
+  light + dark.
 
 - 2026-07-17: Phase 12 — classic stories, quiz, voice + Stories usability.
   Three famous public-domain tales adapted as graded readers (A1 fable

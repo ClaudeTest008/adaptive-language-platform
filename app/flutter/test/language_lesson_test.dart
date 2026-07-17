@@ -168,13 +168,14 @@ void main() {
   });
 
   group('enriched stories', () {
-    test('phrases are longer narrative chunks with translations', () {
+    test('phrases are multi-sentence narrative paragraphs with translations',
+        () {
       for (final s in stories) {
-        expect(s.phrases.length, greaterThanOrEqualTo(5));
+        expect(s.phrases, isNotEmpty);
         for (final p in s.phrases) {
           expect(p.translation, isNotEmpty);
-          // Richer than a two-word textbook line.
-          expect(p.text.split(' ').length, greaterThanOrEqualTo(6));
+          // Each page is a real narrative paragraph, not a textbook line.
+          expect(p.text.split(' ').length, greaterThanOrEqualTo(12));
         }
       }
     });

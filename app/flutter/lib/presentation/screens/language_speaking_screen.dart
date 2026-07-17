@@ -239,6 +239,14 @@ class _Feedback extends StatelessWidget {
 
   final SpeakingState session;
 
+  /// A warm coaching line by score band — celebrate, encourage, never scold.
+  static String _coachLine(double score) {
+    if (score >= 0.85) return '¡Perfecto! That sounded great.';
+    if (score >= 0.6) return '¡Muy bien! Really close to native.';
+    if (score >= 0.35) return 'Getting there — give it one more go.';
+    return 'Good try! Listen again and repeat slowly.';
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -250,21 +258,37 @@ class _Feedback extends StatelessWidget {
           ? scheme.primaryContainer
           : scheme.errorContainer,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpace.lg),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(good ? Icons.check_circle : Icons.replay, color: color),
-                const SizedBox(width: 8),
-                Text(
-                  good ? 'Nicely said!' : 'Keep practicing',
-                  style: Theme.of(context).textTheme.titleMedium,
+                Icon(good ? Icons.emoji_events_rounded : Icons.replay, color: color),
+                const SizedBox(width: AppSpace.sm),
+                Expanded(
+                  child: Text(
+                    _coachLine(score),
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                  ),
                 ),
-                const Spacer(),
-                Text('${(score * 100).round()}%',
-                    style: Theme.of(context).textTheme.titleLarge
-                        ?.copyWith(color: color)),
+                const SizedBox(width: AppSpace.sm),
+                // Score counts up + pops in for a small win moment.
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: score),
+                  duration: const Duration(milliseconds: 700),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, v, _) => Text(
+                    '${(v * 100).round()}%',
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(color: color, fontWeight: FontWeight.w700),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),

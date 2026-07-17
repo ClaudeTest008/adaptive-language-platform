@@ -22,9 +22,11 @@ class _LanguageStoryReaderScreenState
     extends ConsumerState<LanguageStoryReaderScreen> {
   int _phrase = 0;
   bool _showQuiz = false;
+  final PageController _pageController = PageController();
 
   @override
   void dispose() {
+    _pageController.dispose();
     ref.read(speechServiceProvider).stop();
     super.dispose();
   }
@@ -102,7 +104,6 @@ class _LanguageStoryReaderScreenState
       );
     }
 
-    final phrase = story.phrases[_phrase];
     final bcp47 = ref.watch(languageBcp47Provider);
     final speech = ref.read(speechServiceProvider);
     final isLast = _phrase + 1 >= story.phrases.length;
@@ -135,93 +136,155 @@ class _LanguageStoryReaderScreenState
                     story: story,
                     onFinish: () => Navigator.of(context).pop(),
                   )
-                : Padding(
-                    padding: const EdgeInsets.all(AppSpace.xl),
-                    child: Column(
-                      children: [
-                        LinearProgressIndicator(
-                          value: (_phrase + 1) / story.phrases.length,
-                          minHeight: 6,
+                : Column(
+                    children: [
+                      // Slim reading progress + page counter.
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpace.xl,
+                          AppSpace.lg,
+                          AppSpace.xl,
+                          0,
                         ),
-                        const SizedBox(height: AppSpace.sm),
-                        Text(
-                          'Phrase ${_phrase + 1} of ${story.phrases.length}',
-                          style: Theme.of(context).textTheme.bodySmall,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.pill),
+                                child: TweenAnimationBuilder<double>(
+                                  tween: Tween(
+                                    begin: 0,
+                                    end: (_phrase + 1) / story.phrases.length,
+                                  ),
+                                  duration: const Duration(milliseconds: 320),
+                                  curve: AppMotion.curve,
+                                  builder: (context, v, _) =>
+                                      LinearProgressIndicator(
+                                    value: v,
+                                    minHeight: 5,
+                                    backgroundColor:
+                                        scheme.onSurface.withValues(alpha: 0.1),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: AppSpace.md),
+                            Text(
+                              '${_phrase + 1} / ${story.phrases.length}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelLarge
+                                  ?.copyWith(color: scheme.onSurfaceVariant),
+                            ),
+                          ],
                         ),
-                        const Spacer(),
-                        FadeInUp(
-                          key: ValueKey(_phrase),
-                          child: Card(
-                            color: scheme.surfaceContainerHigh,
-                            child: Padding(
-                              padding: const EdgeInsets.all(28),
+                      ),
+                      // Swipeable story pages — book-like reading with the
+                      // target language large and the translation secondary.
+                      Expanded(
+                        child: PageView.builder(
+                          controller: _pageController,
+                          itemCount: story.phrases.length,
+                          onPageChanged: (i) => setState(() => _phrase = i),
+                          itemBuilder: (context, i) {
+                            final p = story.phrases[i];
+                            return SingleChildScrollView(
+                              padding: const EdgeInsets.fromLTRB(
+                                AppSpace.xl,
+                                AppSpace.xxl,
+                                AppSpace.xl,
+                                AppSpace.xl,
+                              ),
                               child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    phrase.text,
-                                    textAlign: TextAlign.center,
-                                    style:
-                                        Theme.of(context).textTheme.headlineSmall,
+                                    p.text,
+                                    style: const TextStyle(
+                                      fontSize: 25,
+                                      height: 1.55,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: -0.2,
+                                    ),
                                   ),
-                                  const SizedBox(height: AppSpace.lg),
-                                  Divider(color: scheme.outlineVariant),
+                                  const SizedBox(height: AppSpace.xl),
+                                  Align(
+                                    child: TextButton.icon(
+                                      icon: const Icon(Icons.volume_up_rounded),
+                                      label: const Text('Listen'),
+                                      onPressed: () => speech.speak(
+                                        p.text,
+                                        langCode: bcp47,
+                                      ),
+                                    ),
+                                  ),
                                   const SizedBox(height: AppSpace.lg),
                                   Text(
-                                    phrase.translation,
-                                    textAlign: TextAlign.center,
+                                    p.translation,
                                     style: Theme.of(context)
                                         .textTheme
-                                        .titleMedium
+                                        .bodyLarge
                                         ?.copyWith(
-                                          color: scheme.onSurfaceVariant,
+                                          color: scheme.onSurfaceVariant
+                                              .withValues(alpha: 0.85),
+                                          height: 1.5,
                                         ),
-                                  ),
-                                  const SizedBox(height: AppSpace.lg),
-                                  FilledButton.tonalIcon(
-                                    icon: const Icon(Icons.volume_up),
-                                    label: const Text('Listen'),
-                                    onPressed: () => speech.speak(
-                                      phrase.text,
-                                      langCode: bcp47,
-                                    ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
-                        const Spacer(),
-                        Row(
+                      ),
+                      // Reading controls.
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpace.xl,
+                          0,
+                          AppSpace.xl,
+                          AppSpace.xl,
+                        ),
+                        child: Row(
                           children: [
                             Expanded(
-                              child: OutlinedButton.icon(
-                                icon: const Icon(Icons.arrow_back),
-                                label: const Text('Back'),
+                              child: OutlinedButton(
                                 onPressed: _phrase == 0
                                     ? null
-                                    : () => setState(() => _phrase--),
+                                    : () => _pageController.previousPage(
+                                          duration: const Duration(
+                                            milliseconds: 320,
+                                          ),
+                                          curve: AppMotion.curve,
+                                        ),
+                                child: const Text('Back'),
                               ),
                             ),
                             const SizedBox(width: AppSpace.md),
                             Expanded(
+                              flex: 2,
                               child: FilledButton.icon(
                                 icon: Icon(
                                   isLast
                                       ? (story.questions.isEmpty
-                                          ? Icons.check
+                                          ? Icons.check_rounded
                                           : Icons.quiz_outlined)
-                                      : Icons.arrow_forward,
+                                      : Icons.arrow_forward_rounded,
                                 ),
                                 label: Text(
                                   isLast
                                       ? (story.questions.isEmpty
-                                          ? 'Done'
-                                          : 'Quiz')
-                                      : 'Next',
+                                          ? 'Finish'
+                                          : 'Comprehension quiz')
+                                      : 'Continue',
                                 ),
                                 onPressed: () {
                                   if (!isLast) {
-                                    setState(() => _phrase++);
+                                    _pageController.nextPage(
+                                      duration:
+                                          const Duration(milliseconds: 320),
+                                      curve: AppMotion.curve,
+                                    );
                                   } else if (story.questions.isNotEmpty) {
                                     setState(() => _showQuiz = true);
                                   } else {
@@ -232,8 +295,8 @@ class _LanguageStoryReaderScreenState
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
           ),
         ),

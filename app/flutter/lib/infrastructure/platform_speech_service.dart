@@ -30,8 +30,8 @@ class PlatformSpeechService implements SpeechService {
   /// Per-language base prosody. Spanish reads clearer a touch slower with
   /// slightly higher pitch; English sits a hair faster.
   static const _prosody = {
-    'es': (rate: 0.45, pitch: 1.07),
-    'en': (rate: 0.48, pitch: 1.05),
+    'es': (rate: 0.42, pitch: 1.06),
+    'en': (rate: 0.45, pitch: 1.04),
   };
 
   @override
@@ -69,7 +69,7 @@ class PlatformSpeechService implements SpeechService {
           // Longer breath after a sentence, shorter after a comma clause.
           final end = s[s.length - 1];
           await Future<void>.delayed(Duration(
-            milliseconds: '.!?…'.contains(end) ? 260 : 130,
+            milliseconds: '.!?…'.contains(end) ? 320 : 170,
           ));
         }
       }

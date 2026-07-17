@@ -5,6 +5,13 @@
 
 ## Completed
 
+- Phase 11 — experience overhaul (2026-07-17, UX only, branch `feature/phase11-experience-overhaul`, includes Phase 12):
+  - Stories rewritten as multi-sentence **narratives** (3–4 sentences/page); reader **redesigned** — swipeable PageView with smooth transitions, large book-like target text, translation demoted to secondary muted body, slim animated progress + "n/N" counter, generous whitespace over the atmospheric backdrop (fewer containers).
+  - Voice: `spokenText` strips bullets + emoji too; TTS slightly slower + longer breaths (warmer). Speaking feedback = warm coaching lines by score band + count-up score animation.
+  - Motion: reader page transitions, animated progress, speaking score count-up; roomier tutor bubbles.
+  - Verified on emulator (register→onboarding→Stories→narrative reader swipe) in light + dark; 201 tests green; analyze clean; core zero-diff.
+  - Scope note (honest): this is a focused experience pass — the reader/stories are fully reworked; Lab/Goals/Onboarding/Tutor already carry the Phase-10 Hume atmosphere and got spacing/typography/motion nudges rather than ground-up redesigns. Tutor *personality* rewrite (warmer demo replies) was left light to avoid destabilizing the validated tutor flow.
+
 - Phase 12 — classic stories + quiz + voice + Stories usability (2026-07-17, branch `feature/phase12-stories-voice-usability`):
   - Content: 3 famous public-domain stories adapted as graded readers — A1 fable (La liebre y la tortuga), A2 legend (La leyenda de la Llorona), B1 Don Quixote (los molinos de viento) — with key-words glossaries + comprehension questions in `assets/stories/es-for-en.json`.
   - Model: `Story.vocabulary`/`Story.questions` (optional; legacy stories unaffected); reader Key-words bottom sheet + end-of-story comprehension quiz (scored, coloured feedback).

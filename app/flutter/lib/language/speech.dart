@@ -41,6 +41,16 @@ String spokenText(String markdown) {
       RegExp(r'^[ \t]{0,3}([#>]+|[-+*]|\d+[.)])[ \t]+', multiLine: true), '');
   // Inline emphasis / code / strikethrough markers.
   s = s.replaceAll(RegExp(r'[*_`~]'), '');
+  // Bullet glyphs and emoji — never voiced.
+  s = s.replaceAll(RegExp(r'[•·▪‣●◦∙]'), ' ');
+  s = s.replaceAll(
+    RegExp(
+      r'[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}'
+      r'←-⇿️‍]',
+      unicode: true,
+    ),
+    '',
+  );
   // Em/en dashes (—Quiero…, dialogue and asides) → a comma-length pause,
   // never spoken as "raya"/"dash". Ellipses → a single trailing pause.
   s = s.replaceAll(RegExp(r'[—–]'), ', ');

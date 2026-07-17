@@ -99,8 +99,8 @@ class _Bubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final bubble = Container(
-      constraints: const BoxConstraints(maxWidth: 480),
-      padding: const EdgeInsets.all(14),
+      constraints: const BoxConstraints(maxWidth: 520),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
         color: isTutor ? scheme.secondaryContainer : scheme.primary,
         borderRadius: BorderRadius.only(
@@ -128,7 +128,7 @@ class _Bubble extends StatelessWidget {
       ),
     );
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: AppSpace.sm),
       child: Row(
         mainAxisAlignment:
             isTutor ? MainAxisAlignment.start : MainAxisAlignment.end,

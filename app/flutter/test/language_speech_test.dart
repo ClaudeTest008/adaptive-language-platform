@@ -48,6 +48,11 @@ void main() {
       expect(spokenText('• uno • dos'), 'uno dos');
     });
 
+    test('collapses double sentence enders from paragraph joins', () {
+      expect(spokenText('Fin.\n\nOtra frase.'), 'Fin. Otra frase.');
+      expect(spokenText('uno. . dos'), 'uno. dos');
+    });
+
     test('drops list/heading markers and link URLs, collapses blank lines',
         () {
       expect(spokenText('# Title\n\n- one\n- two'), 'Title. one two');

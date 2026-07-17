@@ -9,6 +9,25 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Fixed
 
+- 2026-07-17: Phase 14b — voice debug + acceptance (device-traced, no
+  guessing). **Engine (traced at runtime):** `flutter_tts` 4.2.0 +
+  `speech_to_text` 7.0.0 → Android `com.google.android.tts` (Google TTS).
+  Voice was `es-us-x-sfb-network` (Latin-American) for an `es-ES` request —
+  the picker preferred any "network" voice over locale. **Fixed:** now
+  prefers the exact locale first, so `es-ES` speaks Castilian
+  (`es-es-x-eec-network`), verified on device. Rate 0.42 (tutor)/0.44
+  (reader), pitch 1.06. **Spoken-string logging:** every `speak()` now
+  logs the exact synthesizer input in debug builds; confirmed it contains
+  no markdown/`**`/URLs/emoji/bullets (commas remain, as pauses — never
+  vocalized). Collapsed leftover `..` double-periods from paragraph joins.
+  **Barge-in verified via logcat:** `speak() gen=3` → mic press
+  `stop() → gen=4` → the clause loop aborts (3≠4) → speech halts, listening
+  begins. **Honest:** the Google on-device voice is decent but not
+  ChatGPT/ElevenLabs neural quality — premium voices require binding a
+  cloud neural provider (Google Neural2/WaveNet, Azure Neural, ElevenLabs,
+  OpenAI TTS) behind the existing `SpeechEngine` seam (one `speechService`
+  binding + keys, no UI change). 203 tests green.
+
 - 2026-07-17: Phase 14 — bug fixes + UX completion (verified on device).
   **Barge-in bug** (real): `PlatformSpeechService.speak` speaks clause by
   clause; `stop()` killed only the current clause and the loop kept going,

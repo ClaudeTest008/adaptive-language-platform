@@ -5,6 +5,14 @@
 
 ## Completed
 
+- Phase 14b — voice debug + acceptance (2026-07-17, branch `feature/phase14b-voice-debug`, includes Phase 14). Runtime-traced on device via logcat:
+  - **Step 1 — engine (no guessing):** packages `flutter_tts` 4.2.0 + `speech_to_text` 7.0.0; Android engine `com.google.android.tts`; voice `es-es-x-eec-network` (after fix — was `es-us-x-sfb-network`); locale es-ES; rate 0.42 tutor / 0.44 reader; pitch 1.06. Traced `[TTS]` debug logs from tutor→speak.
+  - **Step 2 — exact spoken string logged:** confirmed no markdown/`**`/URLs/emoji/bullets reach the synthesizer; commas kept as pauses (never vocalized); collapsed stray `..`.
+  - **Step 3 — barge-in works (proven in logcat):** `speak() gen=3` → mic `stop() → gen=4` → clause loop aborts → speech halts, Listening starts.
+  - **Accent fix:** voice picker now prefers exact locale, so es-ES is Castilian (verified: `es-es-x-eec-network`).
+  - **Step 5 — honest:** Google on-device voice ≠ ChatGPT/ElevenLabs neural quality. Premium needs a cloud neural provider (Google Neural2/WaveNet, Azure Neural, ElevenLabs, OpenAI TTS) bound behind the existing `SpeechEngine` seam — a `speechServiceProvider` swap + API keys, zero UI change.
+  - 203 tests green; analyze clean; core zero-diff. Note: TTS audio can't be captured off the emulator, so voice *quality* is judged by the traced engine/voice, not a recording.
+
 - Phase 14 — bug fixes + UX completion (2026-07-17, branch `feature/phase14-bugfixes`, includes Phases 11–13). Each item verified on emulator:
   - **Barge-in (item 3) — real bug fixed & verified.** What was wrong: `speak()` loops over clauses; `stop()` cancelled only the current clause so the tutor kept talking after the mic press. Change: a generation token bumped by `stop()`/`pause()`; the loop bails before the next clause. Tested: pressing the mic now shows the red "Listening…" state and cuts speech (loop cancels).
   - **Voice (item 2).** Engine documented: `flutter_tts` → device Google/Samsung TTS voice (es-ES / en-US), on-device (not neural). Added URL/email stripping to `spokenText`; markdown/bullets/emoji/dashes/ellipses already handled. Verified via unit tests + no punctuation read paths remain.

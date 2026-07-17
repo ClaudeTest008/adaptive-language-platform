@@ -7,6 +7,7 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
@@ -63,7 +64,16 @@ class PlatformSpeechService implements SpeechService {
       // rhythm a single long utterance lacks. Questions rise in pitch and
       // slow slightly; exclamations lift a touch too. Markdown is stripped
       // first so the engine never voices '*' or '`'.
-      final clauses = _clauses(spokenText(text));
+      final normalized = spokenText(text);
+      // Voice diagnostics (STEP 1/2): trace the real engine + the EXACT
+      // string handed to the synthesizer. Debug builds only.
+      if (kDebugMode) {
+        final engine = await _tts.getDefaultEngine;
+        debugPrint('[TTS] engine=$engine voice=${_voiceByLang[langCode]} '
+            'locale=$langCode rate=$baseRate pitch=$basePitch gen=$myGen');
+        debugPrint('[TTS] speak <<$normalized>>');
+      }
+      final clauses = _clauses(normalized);
       for (final (i, c) in clauses.indexed) {
         // Barge-in: stop()/pause() bumped the generation → abort the rest.
         if (myGen != _speakGen) return;
@@ -135,7 +145,19 @@ class PlatformSpeechService implements SpeechService {
             n.contains('network') ||
             n.contains('premium');
       }
-      final chosen = voices.firstWhere(warm, orElse: () => voices.first);
+      final wantLocale = langCode.toLowerCase().replaceAll('_', '-');
+      bool exact(Map<String, String> v) =>
+          v['locale']!.toLowerCase().replaceAll('_', '-') == wantLocale;
+      // Prefer the exact locale (es-ES stays Castilian, not es-US), and a
+      // warm/network voice within it — before falling back to the base
+      // language. Wrong-accent voices were the biggest audible mismatch.
+      final chosen = voices.firstWhere(
+        (v) => exact(v) && warm(v),
+        orElse: () => voices.firstWhere(
+          exact,
+          orElse: () => voices.firstWhere(warm, orElse: () => voices.first),
+        ),
+      );
       _voiceByLang[langCode] = chosen;
       await _tts.setVoice(chosen);
     } catch (_) {
@@ -146,6 +168,7 @@ class PlatformSpeechService implements SpeechService {
   @override
   Future<void> stop() async {
     _speakGen++; // cancel any in-flight clause loop (barge-in)
+    if (kDebugMode) debugPrint('[TTS] stop() → gen=$_speakGen (barge-in)');
     try {
       await _tts.stop();
       await _stt.stop();

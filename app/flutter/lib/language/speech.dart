@@ -90,6 +90,8 @@ String spokenText(String markdown) {
       .replaceAll('\n', ' ')
       // Tidy the punctuation the dash/ellipsis passes can leave behind.
       .replaceAllMapped(RegExp(r'\s+([,.;:!?])'), (m) => m[1]!)
+      // Collapse runs of sentence enders ("..", ". .") into one.
+      .replaceAll(RegExp(r'\.(\s*\.)+'), '.')
       .replaceAll(RegExp(r'(,\s*){2,}'), ', ')
       .replaceAll(RegExp(r'^[\s,.;:]+'), '')
       .trim();

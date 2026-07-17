@@ -16,7 +16,9 @@ class LanguageSpeakingScreen extends ConsumerWidget {
     final speechAvailable = ref.watch(speechServiceProvider).available;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: const Text('Speaking'),
         actions: [
           if (session != null)
@@ -27,14 +29,16 @@ class LanguageSpeakingScreen extends ConsumerWidget {
             ),
         ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
-          child: session == null
-              ? _Intro(speechAvailable: speechAvailable)
-              : session.finished
-              ? _Summary(session: session)
-              : _Drill(session: session),
+      body: AtmosphericBackground(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: session == null
+                ? _Intro(speechAvailable: speechAvailable)
+                : session.finished
+                ? _Summary(session: session)
+                : _Drill(session: session),
+          ),
         ),
       ),
     );

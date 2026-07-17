@@ -49,7 +49,9 @@ class _LanguageStoryReaderScreenState
     final speech = ref.read(speechServiceProvider);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: Text(story.title),
         actions: [
           IconButton(
@@ -59,7 +61,8 @@ class _LanguageStoryReaderScreenState
           ),
         ],
       ),
-      body: Center(
+      body: AtmosphericBackground(
+        child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 640),
           child: Padding(
@@ -148,6 +151,7 @@ class _LanguageStoryReaderScreenState
             ),
           ),
         ),
+      ),
       ),
     );
   }

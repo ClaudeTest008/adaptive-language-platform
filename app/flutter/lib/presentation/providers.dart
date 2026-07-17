@@ -48,6 +48,10 @@ final authStateProvider = StreamProvider<UserProfile?>(
 
 final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.system);
 
+/// First-run onboarding gate (in-memory demo; persists to a real store on
+/// the Firestore swap). False → the router shows the onboarding flow once.
+final onboardingSeenProvider = StateProvider<bool>((ref) => false);
+
 /// Bumped after any Content Studio write so learner + admin views refresh.
 final contentVersionProvider = StateProvider<int>((ref) => 0);
 

@@ -35,7 +35,9 @@ class LanguageDashboardScreen extends ConsumerWidget {
     }
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: const Text('Language Lab'),
         actions: [
           const _LanguageMenu(),
@@ -57,7 +59,8 @@ class LanguageDashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Center(
+      body: AtmosphericBackground(
+        child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: ListView(
@@ -137,6 +140,7 @@ class LanguageDashboardScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -372,14 +376,11 @@ class _SkillMasteryCard extends ConsumerWidget {
     if (mastery.isEmpty) return const SizedBox.shrink();
     final ordered = mastery.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            for (final e in ordered) _SkillBar(skill: e.key, value: e.value),
-          ],
-        ),
+    return GlassCard(
+      child: Column(
+        children: [
+          for (final e in ordered) _SkillBar(skill: e.key, value: e.value),
+        ],
       ),
     );
   }
@@ -624,10 +625,8 @@ class _LessonPreviewCard extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     if (blocks.isEmpty) return const SizedBox.shrink();
     final total = blocks.fold(0, (sum, b) => sum + b.minutes);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+    return GlassCard(
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -697,7 +696,6 @@ class _LessonPreviewCard extends ConsumerWidget {
             ],
           ],
         ),
-      ),
     );
   }
 }

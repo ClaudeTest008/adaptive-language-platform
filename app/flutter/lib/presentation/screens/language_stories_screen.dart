@@ -18,8 +18,13 @@ class LanguageStoriesScreen extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Stories')),
-      body: storiesAsync.when(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: const Text('Stories'),
+      ),
+      body: AtmosphericBackground(
+        child: storiesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Could not load stories:\n$e')),
         data: (stories) {
@@ -46,6 +51,7 @@ class LanguageStoriesScreen extends ConsumerWidget {
             ),
           );
         },
+      ),
       ),
     );
   }

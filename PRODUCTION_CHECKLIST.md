@@ -82,7 +82,9 @@ what must land before a real launch, grouped by area. Status: ✅ done ·
   sheen, frosted pills, staggered entrance motion — applied across all
   learner surfaces; card depth via theme; dark-mode audited (no regressions).
 - ✅ Learner goals surface (minutes/day + target level) driving the plan.
-- ⬜ Onboarding flow (pick target language + native language + goals on
-  first run) — today the learner lands on a seeded demo.
+- ✅ Onboarding flow (Phase 10): first-run `/onboarding` picks the target
+  language + daily-minutes/target-level goals before the dashboard, gated
+  by `onboardingSeenProvider` (in-memory; persists on the Firestore swap).
+  Native-language pick still implicit (one curriculum per pair).
 - ⬜ Localization of the UI chrome (target language and UI locale are
   already independent axes).

@@ -5,6 +5,12 @@
 
 ## Completed
 
+- Phase 9 — deeper premium redesign + consistency (2026-07-17, UI only):
+  - Shared UI kit `presentation/ui.dart`: `AppSpace`/`AppRadius`/`AppMotion` tokens, reusable `GradientHero` (soft shadow + glass sheen; dedupes 3 heroes), frosted `GlassPill`, `FadeInUp` entrance (curve-interval stagger, no timers).
+  - Applied across dashboard (staggered sections, hero depth), tutor mode grid + hero + chat bubbles, stories (gradient tiles, cascade), speaking intro (gradient halo), story reader (per-phrase fade). Theme: card depth (shadow, no tint) + consistent radii.
+  - Verified on emulator: dashboard (light + dark), tutor grid, stories — depth/motion render, dark-mode audited, no regressions. 198 tests green; analyze clean. Zero-diff on core (`lib/adaptive/`, `lib/ai/`).
+  - Note: emulator was crash-prone this session (AVD is `Medium_Phone`, not the stale `flutter_emulator`); speaking/story-reader polish is code-reviewed + shares the same kit.
+
 - Phase 8 polish — input/voice/UI (2026-07-17):
   - Voice: `spokenText` normalizes markdown before TTS (never voices `*`, `` ` `` or heading/list markers), Spanish + English, keeping `¿¡?!` for prosody. On top of existing warm-voice selection + clause-chunked prosody.
   - Chat: `**bold**`/`*italic*` render as real emphasis (no literal asterisks); soft bubble shadow.

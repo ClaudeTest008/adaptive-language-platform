@@ -7,6 +7,7 @@ import '../../language/lesson.dart';
 import '../../language/tutor.dart';
 import '../language_providers.dart';
 import '../providers.dart';
+import '../ui.dart';
 import 'home_shell.dart';
 
 /// Language Lab — the app's home (ADR-0019). Everything the vision
@@ -60,40 +61,71 @@ class LanguageDashboardScreen extends ConsumerWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpace.lg,
+              AppSpace.lg,
+              AppSpace.lg,
+              88,
+            ),
             children: [
-              _HeaderCard(
-                languageName: curriculum.languageName,
-                languageCode: curriculum.languageCode,
-                answered: learner.model.totalAnswered,
-                accuracy: learner.model.overallAccuracy,
+              FadeInUp(
+                child: _HeaderCard(
+                  languageName: curriculum.languageName,
+                  languageCode: curriculum.languageCode,
+                  answered: learner.model.totalAnswered,
+                  accuracy: learner.model.overallAccuracy,
+                ),
               ),
-              const SizedBox(height: 12),
-              const _TutorHeroCard(),
-              const SizedBox(height: 16),
-              _SectionHeader(
-                icon: Icons.today,
-                title: "Today's plan",
-                subtitle: 'Personalized · misconception repair first',
+              const SizedBox(height: AppSpace.md),
+              const FadeInUp(delayMs: 80, child: _TutorHeroCard()),
+              const SizedBox(height: AppSpace.lg),
+              FadeInUp(
+                delayMs: 140,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _SectionHeader(
+                      icon: Icons.today,
+                      title: "Today's plan",
+                      subtitle: 'Personalized · misconception repair first',
+                    ),
+                    const _LessonPreviewCard(),
+                    const SizedBox(height: AppSpace.sm),
+                    const _PracticeCta(),
+                  ],
+                ),
               ),
-              const _LessonPreviewCard(),
-              const SizedBox(height: 8),
-              const _PracticeCta(),
-              const SizedBox(height: 16),
-              _SectionHeader(
-                icon: Icons.insights,
-                title: 'Skill mastery',
-                subtitle: 'Each skill tracked independently',
+              const SizedBox(height: AppSpace.lg),
+              FadeInUp(
+                delayMs: 200,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _SectionHeader(
+                      icon: Icons.insights,
+                      title: 'Skill mastery',
+                      subtitle: 'Each skill tracked independently',
+                    ),
+                    const _SkillMasteryCard(),
+                  ],
+                ),
               ),
-              const _SkillMasteryCard(),
-              const SizedBox(height: 16),
-              _SectionHeader(
-                icon: Icons.school,
-                title: 'Teacher notes',
-                subtitle: 'Interference from your native language',
+              const SizedBox(height: AppSpace.lg),
+              FadeInUp(
+                delayMs: 260,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _SectionHeader(
+                      icon: Icons.school,
+                      title: 'Teacher notes',
+                      subtitle: 'Interference from your native language',
+                    ),
+                    const _TeacherNotesCard(),
+                  ],
+                ),
               ),
-              const _TeacherNotesCard(),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpace.xl),
               Text(
                 'Demo learner · every number comes from the live adaptive '
                 'engine · tap anything to dig in',
@@ -175,78 +207,36 @@ class _HeaderCard extends StatelessWidget {
           orElse: () => availableLanguages.first,
         )
         .flag;
-    return Card(
-      color: Colors.transparent,
-      clipBehavior: Clip.antiAlias,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              scheme.primaryContainer,
-              scheme.tertiaryContainer,
-              scheme.secondaryContainer,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            Text(flag, style: const TextStyle(fontSize: 40)),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    languageName,
-                    style: text.headlineSmall?.copyWith(
-                      color: scheme.onPrimaryContainer,
-                      fontWeight: FontWeight.w700,
-                    ),
+    return GradientHero(
+      child: Row(
+        children: [
+          Text(flag, style: const TextStyle(fontSize: 40)),
+          const SizedBox(width: AppSpace.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  languageName,
+                  style: text.headlineSmall?.copyWith(
+                    color: scheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w700,
                   ),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 6,
-                    children: [
-                      _GlassPill(label: 'A1 · CEFR'),
-                      _GlassPill(label: '$answered answers'),
-                      _GlassPill(
-                        label: '${(accuracy * 100).round()}% correct',
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: AppSpace.sm),
+                Wrap(
+                  spacing: AppSpace.sm,
+                  runSpacing: AppSpace.xs,
+                  children: [
+                    const GlassPill(label: 'A1 · CEFR'),
+                    GlassPill(label: '$answered answers'),
+                    GlassPill(label: '${(accuracy * 100).round()}% correct'),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Frosted pill on the gradient header.
-class _GlassPill extends StatelessWidget {
-  const _GlassPill({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: scheme.surface.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: scheme.onSurface,
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -263,57 +253,44 @@ class _TutorHeroCard extends ConsumerWidget {
     final learner = ref.watch(languageLearnerProvider);
     final curriculum = ref.watch(curriculumProvider).value;
     final top = learner.misconceptions.all.firstOrNull;
-    return Card(
-      color: Colors.transparent,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => ref.read(homeTabProvider.notifier).state = 3,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [scheme.primary, scheme.tertiary],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+    return GradientHero(
+      colors: [scheme.primary, scheme.tertiary],
+      onTap: () => ref.read(homeTabProvider.notifier).state = 3,
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 26,
+            backgroundColor: scheme.onPrimary.withValues(alpha: 0.2),
+            child: Icon(Icons.school, color: scheme.onPrimary, size: 28),
+          ),
+          const SizedBox(width: AppSpace.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Your AI teacher is ready',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: scheme.onPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: AppSpace.xs),
+                Text(
+                  top == null || curriculum == null
+                      ? 'Teacher · Conversation · Coach · Socratic · '
+                            'Grammar · Immersion'
+                      : 'Wants to clear up: '
+                            '${curriculum.graph[top.conceptId]?.name ?? top.conceptId}',
+                  style: TextStyle(
+                    color: scheme.onPrimary.withValues(alpha: 0.9),
+                  ),
+                ),
+              ],
             ),
           ),
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: scheme.onPrimary.withValues(alpha: 0.2),
-                child: Icon(Icons.school, color: scheme.onPrimary, size: 28),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Your AI teacher is ready',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: scheme.onPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      top == null || curriculum == null
-                          ? 'Teacher · Conversation · Coach · Socratic · '
-                                'Grammar · Immersion'
-                          : 'Wants to clear up: '
-                                '${curriculum.graph[top.conceptId]?.name ?? top.conceptId}',
-                      style: TextStyle(
-                        color: scheme.onPrimary.withValues(alpha: 0.9),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.arrow_forward, color: scheme.onPrimary),
-            ],
-          ),
-        ),
+          Icon(Icons.arrow_forward, color: scheme.onPrimary),
+        ],
       ),
     );
   }

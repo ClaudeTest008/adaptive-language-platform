@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'presentation/providers.dart';
 import 'presentation/router.dart';
+import 'presentation/ui.dart';
 
 void main() {
   runApp(const ProviderScope(child: App()));
@@ -37,10 +38,14 @@ class App extends ConsumerWidget {
           bodyMedium: baseText.bodyMedium?.copyWith(height: 1.4),
           bodyLarge: baseText.bodyLarge?.copyWith(height: 1.4),
         ),
+        // Soft depth: a faint shadow lifts cards off the page without the
+        // M3 surface tint, so the color stays clean and premium.
         cardTheme: CardThemeData(
-          elevation: 0,
+          elevation: 1,
+          shadowColor: scheme.shadow.withValues(alpha: 0.28),
+          surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.card),
           ),
           color: scheme.surfaceContainerLow,
         ),
@@ -89,7 +94,7 @@ class App extends ConsumerWidget {
           filled: true,
           fillColor: scheme.surfaceContainerHigh,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.input),
             borderSide: BorderSide.none,
           ),
         ),

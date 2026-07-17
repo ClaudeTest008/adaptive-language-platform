@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../language_providers.dart';
+import '../ui.dart';
 
 /// Speaking practice (ADR-0020): hear the target, say it, get a
 /// pronunciation score. Each attempt records pronunciationConfidence and
@@ -47,22 +48,44 @@ class _Intro extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpace.xl),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.record_voice_over,
-            size: 72,
-            color: Theme.of(context).colorScheme.primary,
+          FadeInUp(
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [scheme.primaryContainer, scheme.tertiaryContainer],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: scheme.shadow.withValues(alpha: 0.12),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.record_voice_over,
+                size: 56,
+                color: scheme.onPrimaryContainer,
+              ),
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpace.xl),
           Text(
             'Speaking practice',
             style: Theme.of(context).textTheme.headlineSmall,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpace.sm),
           Text(
             'Hear a word or phrase, say it aloud, and get a pronunciation '
             'score. Your weakest concepts come first.',

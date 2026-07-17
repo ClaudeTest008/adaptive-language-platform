@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../language/tutor.dart';
 import '../language_providers.dart';
+import '../ui.dart';
 
 /// AI Tutor home (ADR-0018): mode selector → live session. The session
 /// opens with real learner context (misconceptions, weak concepts,
@@ -267,21 +268,11 @@ class _ModeSelector extends ConsumerWidget {
     final topMisconception = learner.misconceptions.all.firstOrNull;
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpace.lg),
       children: [
-        Card(
-          elevation: 0,
-          color: Colors.transparent,
-          clipBehavior: Clip.antiAlias,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [scheme.primaryContainer, scheme.tertiaryContainer],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            padding: const EdgeInsets.all(20),
+        FadeInUp(
+          child: GradientHero(
+            colors: [scheme.primaryContainer, scheme.tertiaryContainer],
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -289,10 +280,10 @@ class _ModeSelector extends ConsumerWidget {
                   'Your personal teacher',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     color: scheme.onPrimaryContainer,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: AppSpace.sm),
                 Text(
                   'Every session starts from your real progress: '
                   '${learner.misconceptions.all.length} tracked misconceptions, '
@@ -300,7 +291,7 @@ class _ModeSelector extends ConsumerWidget {
                   style: TextStyle(color: scheme.onPrimaryContainer),
                 ),
                 if (topMisconception != null && curriculum != null) ...[
-                  const SizedBox(height: 10),
+                  const SizedBox(height: AppSpace.md),
                   Chip(
                     avatar: Icon(Icons.build_circle, size: 16,
                         color: scheme.onErrorContainer),
@@ -316,44 +307,48 @@ class _ModeSelector extends ConsumerWidget {
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpace.lg),
         Text('Choose a mode', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpace.sm),
         GridView.count(
           crossAxisCount: MediaQuery.of(context).size.width > 560 ? 3 : 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
+          mainAxisSpacing: AppSpace.sm,
+          crossAxisSpacing: AppSpace.sm,
           childAspectRatio: 1.15,
           children: [
-            for (final m in _modes)
-              Card(
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: () =>
-                      ref.read(tutorSessionProvider.notifier).start(m.mode),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: scheme.primaryContainer,
-                          child: Icon(m.icon, color: scheme.onPrimaryContainer),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          m.title,
-                          style: Theme.of(context).textTheme.titleSmall,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          m.subtitle,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
+            for (final (i, m) in _modes.indexed)
+              FadeInUp(
+                delayMs: 60 + i * 50,
+                child: Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () =>
+                        ref.read(tutorSessionProvider.notifier).start(m.mode),
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpace.md),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: scheme.primaryContainer,
+                            child:
+                                Icon(m.icon, color: scheme.onPrimaryContainer),
+                          ),
+                          const SizedBox(height: AppSpace.sm),
+                          Text(
+                            m.title,
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          const SizedBox(height: AppSpace.xs / 2),
+                          Text(
+                            m.subtitle,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -464,15 +459,17 @@ class _SessionState extends ConsumerState<_Session> {
         ),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpace.lg),
             children: [
               for (final (isTutor, text) in session.transcript)
-                _Bubble(
-                  isTutor: isTutor,
-                  text: text,
-                  onSpeak: isTutor && speech.available
-                      ? () => _speak(text)
-                      : null,
+                FadeInUp(
+                  child: _Bubble(
+                    isTutor: isTutor,
+                    text: text,
+                    onSpeak: isTutor && speech.available
+                        ? () => _speak(text)
+                        : null,
+                  ),
                 ),
               if (session.busy) const _TypingIndicator(),
             ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../language_providers.dart';
+import '../ui.dart';
 
 /// Story reader (ADR-0020): one bite-sized phrase on screen at a time,
 /// target text large with the native translation beneath, a Listen button
@@ -75,7 +76,9 @@ class _LanguageStoryReaderScreenState
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const Spacer(),
-                Card(
+                FadeInUp(
+                  key: ValueKey(_phrase),
+                  child: Card(
                   color: scheme.surfaceContainerHigh,
                   child: Padding(
                     padding: const EdgeInsets.all(28),
@@ -105,6 +108,7 @@ class _LanguageStoryReaderScreenState
                       ],
                     ),
                   ),
+                ),
                 ),
                 const Spacer(),
                 Row(

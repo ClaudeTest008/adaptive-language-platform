@@ -8,6 +8,7 @@ import 'package:adaptive_exam_platform/presentation/screens/language_concept_scr
 import 'package:adaptive_exam_platform/presentation/screens/language_dashboard_screen.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_content_screen.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_goals_screen.dart';
+import 'package:adaptive_exam_platform/presentation/screens/language_onboarding_screen.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_practice_screen.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_tutor_screen.dart';
 import 'package:flutter/material.dart';
@@ -235,6 +236,35 @@ void main() {
     await tester.tap(find.byIcon(Icons.check_circle).first);
     await tester.pump();
     expect(find.text('Approved'), findsWidgets);
+  });
+
+  testWidgets('onboarding flow steps through language and goals', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(home: LanguageOnboardingScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Page 1: welcome.
+    expect(find.textContaining('Your personal'), findsOneWidget);
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    // Page 2: pick a language, then continue.
+    expect(find.textContaining('like to learn'), findsOneWidget);
+    expect(find.text('Spanish'), findsOneWidget);
+    await tester.tap(find.text('English'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    // Page 3: goals, with the final CTA.
+    expect(find.text('Set your pace'), findsOneWidget);
+    expect(find.text('25 minutes / day'), findsOneWidget);
+    expect(find.text('Start learning'), findsOneWidget);
   });
 
   testWidgets('goals screen sets minutes and target level', (tester) async {

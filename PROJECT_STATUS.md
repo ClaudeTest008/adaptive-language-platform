@@ -5,6 +5,11 @@
 
 ## Completed
 
+- Phase 10 — onboarding + Hume visual maturity (2026-07-17, UI only, branch `feature/phase10-hume-visual-maturity-onboarding`):
+  - First-run onboarding (`/onboarding`, gated by `onboardingSeenProvider`): immersive 3-step atmospheric flow (welcome → target language → daily minutes + target CEFR level) writing the live `selectedLanguage`/`learnerGoals` providers; segmented progress, full-width CTA.
+  - UI kit: `AtmosphericBackground` (dark-first gradient + colour glows), `GlassCard` (frosted backdrop-blur surface + hairline border), `_fadeThrough` shared-axis route transitions. Applied atmospheric backdrops across Lab/Tutor/Stories/Speaking/Story-reader; glass on plan + skill-mastery cards + onboarding.
+  - Verified on emulator: full flow register → onboarding (3 pages) → dashboard, light + dark; atmosphere/glass render, dark-mode audited. 199 tests green; analyze clean; core zero-diff.
+
 - Phase 9 — deeper premium redesign + consistency (2026-07-17, UI only):
   - Shared UI kit `presentation/ui.dart`: `AppSpace`/`AppRadius`/`AppMotion` tokens, reusable `GradientHero` (soft shadow + glass sheen; dedupes 3 heroes), frosted `GlassPill`, `FadeInUp` entrance (curve-interval stagger, no timers).
   - Applied across dashboard (staggered sections, hero depth), tutor mode grid + hero + chat bubbles, stories (gradient tiles, cascade), speaking intro (gradient halo), story reader (per-phrase fade). Theme: card depth (shadow, no tint) + consistent radii.

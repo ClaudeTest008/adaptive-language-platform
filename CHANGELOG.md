@@ -7,6 +7,21 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
+### Added
+
+- 2026-07-17: Phase 10 — first-run onboarding + Hume-inspired visual
+  maturity (UI only). New immersive onboarding flow (`/onboarding`,
+  gated by `onboardingSeenProvider`): a 3-step atmospheric PageView
+  (welcome → pick target language → set daily minutes + target CEFR level)
+  writing the same `selectedLanguage`/`learnerGoals` providers the Lab
+  uses, with a segmented progress bar and a full-width CTA. UI kit gains
+  `AtmosphericBackground` (dark-first gradient + soft colour glows),
+  `GlassCard` (frosted translucent surface with a backdrop blur + hairline
+  border) and `_fadeThrough` shared-axis route transitions. Applied
+  atmospheric backdrops across Lab / Tutor / Stories / Speaking / Story
+  reader, glass cards on the plan + skill-mastery cards and the onboarding
+  steps. 1 new onboarding widget test (199 green); dark-mode verified.
+
 ### Changed
 
 - 2026-07-17: Phase 9 — deeper premium redesign + consistency (UI only, no

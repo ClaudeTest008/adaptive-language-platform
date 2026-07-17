@@ -29,7 +29,9 @@ class _LanguageTutorScreenState extends ConsumerState<LanguageTutorScreen> {
   Widget build(BuildContext context) {
     final session = ref.watch(tutorSessionProvider);
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: const Text('AI Tutor'),
         actions: [
           if (session != null)
@@ -40,7 +42,8 @@ class _LanguageTutorScreenState extends ConsumerState<LanguageTutorScreen> {
             ),
         ],
       ),
-      body: Center(
+      body: AtmosphericBackground(
+        child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: session == null ? const _ModeSelector() : _Session(
@@ -55,6 +58,7 @@ class _LanguageTutorScreenState extends ConsumerState<LanguageTutorScreen> {
             },
           ),
         ),
+      ),
       ),
     );
   }

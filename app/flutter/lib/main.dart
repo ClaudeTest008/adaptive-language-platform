@@ -20,8 +20,23 @@ class App extends ConsumerWidget {
         seedColor: seed,
         brightness: brightness,
       );
+      final baseText = Typography.material2021(colorScheme: scheme)
+          .black
+          .apply(bodyColor: scheme.onSurface, displayColor: scheme.onSurface);
       return ThemeData(
         colorScheme: scheme,
+        // Refined typography: tighter, more confident headings; roomier
+        // body line-height for a calm, premium read.
+        textTheme: baseText.copyWith(
+          headlineSmall: baseText.headlineSmall
+              ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.3),
+          titleLarge: baseText.titleLarge
+              ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.2),
+          titleMedium: baseText.titleMedium
+              ?.copyWith(fontWeight: FontWeight.w600, letterSpacing: -0.1),
+          bodyMedium: baseText.bodyMedium?.copyWith(height: 1.4),
+          bodyLarge: baseText.bodyLarge?.copyWith(height: 1.4),
+        ),
         cardTheme: CardThemeData(
           elevation: 0,
           shape: RoundedRectangleBorder(

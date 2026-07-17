@@ -46,7 +46,10 @@ class _LanguageTutorScreenState extends ConsumerState<LanguageTutorScreen> {
             session: session,
             input: _input,
             onSend: (text) {
+              if (text.trim().isEmpty) return;
               _input.clear();
+              // Dismiss the keyboard so the reply lands cleanly.
+              FocusManager.instance.primaryFocus?.unfocus();
               ref.read(tutorSessionProvider.notifier).send(text);
             },
           ),
@@ -54,6 +57,28 @@ class _LanguageTutorScreenState extends ConsumerState<LanguageTutorScreen> {
       ),
     );
   }
+}
+
+/// Renders `**bold**` and `*italic*` emphasis as styled spans so the chat
+/// never shows literal asterisks (the tutor prompts emphasise concepts and
+/// example forms in markdown).
+List<InlineSpan> _markdownSpans(String text) {
+  final spans = <InlineSpan>[];
+  final re = RegExp(r'\*\*(.+?)\*\*|\*(.+?)\*', dotAll: true);
+  var i = 0;
+  for (final m in re.allMatches(text)) {
+    if (m.start > i) spans.add(TextSpan(text: text.substring(i, m.start)));
+    final bold = m[1] != null;
+    spans.add(TextSpan(
+      text: bold ? m[1] : m[2],
+      style: bold
+          ? const TextStyle(fontWeight: FontWeight.w700)
+          : const TextStyle(fontStyle: FontStyle.italic),
+    ));
+    i = m.end;
+  }
+  if (i < text.length) spans.add(TextSpan(text: text.substring(i)));
+  return spans;
 }
 
 class _Bubble extends StatelessWidget {
@@ -79,11 +104,21 @@ class _Bubble extends StatelessWidget {
           bottomLeft: Radius.circular(isTutor ? 4 : 18),
           bottomRight: Radius.circular(isTutor ? 18 : 4),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.shadow.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: isTutor ? scheme.onSecondaryContainer : scheme.onPrimary,
+      child: Text.rich(
+        TextSpan(
+          style: TextStyle(
+            color: isTutor ? scheme.onSecondaryContainer : scheme.onPrimary,
+            height: 1.35,
+          ),
+          children: _markdownSpans(text),
         ),
       ),
     );
@@ -460,8 +495,10 @@ class _SessionState extends ConsumerState<_Session> {
                   child: TextField(
                     controller: widget.input,
                     enabled: !session.busy,
+                    textInputAction: TextInputAction.send,
+                    // No floating selection toolbar over the chat.
+                    contextMenuBuilder: (_, _) => const SizedBox.shrink(),
                     decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
                       hintText: 'Reply to your tutor…',
                     ),
                     onSubmitted: widget.onSend,

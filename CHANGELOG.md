@@ -7,6 +7,20 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
+### Changed
+
+- 2026-07-17: UX polish — the AI-tutor chat renders `**bold**`/`*italic*`
+  markdown as real emphasis instead of literal asterisks; the tutor reply
+  and practice text fields drop the Flutter floating selection toolbar
+  (`contextMenuBuilder` → empty) and use the premium filled input; sending
+  a reply unfocuses the field so the keyboard dismisses cleanly. Refined
+  app-wide typography (tighter headings, roomier body line-height) and a
+  soft bubble shadow. Voice: `spokenText` normalizes markdown before TTS
+  so the engine never voices `*`, `` ` `` or heading/list markers, in
+  Spanish and English (Spanish `¿¡?!` kept for prosody); 3 new tests
+  (198 green). Note: Gboard's own floating-keyboard toolbar is a device
+  keyboard mode, outside app control.
+
 ### Fixed
 
 - 2026-07-16: Android `applicationId` → `com.adaptiveexam.adaptive_language_platform` and iOS bundle id → `com.adaptiveexam.adaptiveLanguagePlatform` (inherited exam-platform ids made emulator installs silently replace the exam app; both apps now verified side by side on one device). Kotlin namespace/MainActivity package left for the queued package-rename sweep.

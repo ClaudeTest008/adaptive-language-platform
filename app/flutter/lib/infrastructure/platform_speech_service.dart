@@ -52,8 +52,9 @@ class PlatformSpeechService implements SpeechService {
       await _tts.awaitSpeakCompletion(true);
       // Speak clause by clause with a short breath between — the natural
       // rhythm a single long utterance lacks. Questions rise in pitch and
-      // slow slightly; exclamations lift a touch too.
-      final clauses = _clauses(text);
+      // slow slightly; exclamations lift a touch too. Markdown is stripped
+      // first so the engine never voices '*' or '`'.
+      final clauses = _clauses(spokenText(text));
       for (final (i, c) in clauses.indexed) {
         final s = c.trim();
         if (s.isEmpty) continue;

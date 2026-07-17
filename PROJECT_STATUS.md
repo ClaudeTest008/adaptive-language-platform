@@ -5,6 +5,14 @@
 
 ## Completed
 
+- Phase 8 polish — input/voice/UI (2026-07-17):
+  - Voice: `spokenText` normalizes markdown before TTS (never voices `*`, `` ` `` or heading/list markers), Spanish + English, keeping `¿¡?!` for prosody. On top of existing warm-voice selection + clause-chunked prosody.
+  - Chat: `**bold**`/`*italic*` render as real emphasis (no literal asterisks); soft bubble shadow.
+  - Input: Flutter floating selection toolbar suppressed on the tutor reply + practice fields; premium filled inputs (dropped hardcoded outline); reply send unfocuses so the keyboard dismisses cleanly; voice mic docked bottom-left of the reply row.
+  - Theme: refined typography (tighter headings, roomier body).
+  - Verified on Android emulator (Teacher session: bold renders, no floating toolbar on long-press, clean keyboard dismiss on send); 198 tests green; analyze clean.
+  - Note: the device's Gboard floating-keyboard toolbar is a system keyboard mode, outside app control.
+
 - Phase 8 — Production Readiness demo slice (2026-07-17, ADR-0026):
   - Ingestion loop closed: `lib/language/content_merge.dart` `mergeApprovedContent` attaches approved, unmapped vocabulary/phrases/idioms as new concept/phrase nodes under a synthesized `<lang>:<level>:vocabulary:ingested` domain — they generate exercises like any authored node and project onto the core unchanged; `storyFromApproved` turns approved sentences into a "From your content" story. Base curriculum never mutated.
   - `approvedContentProvider` (durable, resets on language switch): Content Studio appends on approve / removes on reject; `curriculumProvider` and `storiesProvider` watch it, so approved items surface in practice, stories and the plan immediately. Review queue stays the only gate.

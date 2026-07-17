@@ -26,6 +26,28 @@ abstract class SpeechService {
   bool get available;
 }
 
+/// Normalizes tutor/markdown text into clean prose for text-to-speech, so
+/// the engine never reads "asterisk asterisk" or a code backtick aloud.
+/// Strips emphasis/code markers, heading/list/quote markers and link URLs;
+/// keeps sentence punctuation (incl. Spanish `¿¡`) so prosody survives.
+String spokenText(String markdown) {
+  var s = markdown;
+  // [label](url) → label
+  s = s.replaceAllMapped(RegExp(r'\[([^\]]+)\]\([^)]*\)'), (m) => m[1]!);
+  // Line-start markers: headings, blockquotes, bullets, numbered lists.
+  s = s.replaceAll(
+      RegExp(r'^[ \t]{0,3}([#>]+|[-+*]|\d+[.)])[ \t]+', multiLine: true), '');
+  // Inline emphasis / code / strikethrough markers.
+  s = s.replaceAll(RegExp(r'[*_`~]'), '');
+  // Collapse whitespace; blank lines become a sentence break for a pause.
+  s = s
+      .replaceAll(RegExp(r'[ \t]+'), ' ')
+      .replaceAll(RegExp(r'\n{2,}'), '. ')
+      .replaceAll('\n', ' ')
+      .trim();
+  return s;
+}
+
 /// No-op speech for tests and unsupported platforms. `listen` echoes an
 /// optional scripted transcript so speaking flows are testable offline.
 class NoopSpeechService implements SpeechService {

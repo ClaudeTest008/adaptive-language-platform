@@ -7,6 +7,7 @@ import 'package:adaptive_exam_platform/language/lesson.dart';
 import 'package:adaptive_exam_platform/language/misconceptions.dart';
 import 'package:adaptive_exam_platform/language/signals.dart';
 import 'package:adaptive_exam_platform/language/speaking.dart';
+import 'package:adaptive_exam_platform/language/speech.dart';
 import 'package:adaptive_exam_platform/language/exercises.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -21,6 +22,28 @@ Curriculum _curriculum() => parseCurriculum(
 void main() {
   final curriculum = _curriculum();
   final graph = curriculum.graph;
+
+  group('spokenText (TTS normalization)', () {
+    test('strips markdown emphasis so the engine never voices asterisks', () {
+      expect(spokenText('Let\'s work on **tener for physical states**.'),
+          "Let's work on tener for physical states.");
+      expect(spokenText('English produces *soy cansado*.'),
+          'English produces soy cansado.');
+      expect(spokenText('Use the `tener` pattern.'), 'Use the tener pattern.');
+    });
+
+    test('keeps Spanish sentence punctuation for prosody', () {
+      const q = '¿Cómo estás? ¡Bien!';
+      expect(spokenText(q), q);
+    });
+
+    test('drops list/heading markers and link URLs, collapses blank lines',
+        () {
+      expect(spokenText('# Title\n\n- one\n- two'), 'Title. one two');
+      expect(spokenText('See [the docs](https://x.y) now.'),
+          'See the docs now.');
+    });
+  });
 
   group('pronunciation scorer (phoneme-aware)', () {
     test('exact match is perfect with all words ok', () {

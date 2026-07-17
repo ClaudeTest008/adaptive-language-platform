@@ -226,8 +226,10 @@ class _LanguagePracticeScreenState
           TextField(
             controller: _textController,
             enabled: !session.answered,
+            textInputAction: TextInputAction.done,
+            // No floating selection toolbar over the exercise.
+            contextMenuBuilder: (_, _) => const SizedBox.shrink(),
             decoration: InputDecoration(
-              border: const OutlineInputBorder(),
               labelText: item.type == ExerciseType.fillInBlank
                   ? 'Missing word'
                   : 'Your translation',

@@ -22,7 +22,8 @@ what must land before a real launch, grouped by area. Status: ✅ done ·
 ## Speech (real provider)
 
 - ✅ `SpeechService` seam with a platform adapter (flutter_tts +
-  speech_to_text) and prosodic TTS.
+  speech_to_text), prosodic TTS, and markdown normalization (`spokenText`)
+  so emphasis/markup is never read aloud.
 - ⏳ Cloud neural speech provider for higher-quality voices + real
   phoneme/prosody pronunciation scoring (replaces the on-device
   edit-distance approximation). Binds behind the same seam.
@@ -73,7 +74,9 @@ what must land before a real launch, grouped by area. Status: ✅ done ·
 ## UX / launch polish
 
 - ✅ Language-first navigation, premium NavigationBar, filled inputs,
-  no floating elements; keyboard shows only on field focus.
+  no floating elements; keyboard shows only on field focus; Flutter text
+  selection toolbar suppressed on learner inputs; markdown rendered (no
+  literal asterisks in chat); refined typography.
 - ✅ Learner goals surface (minutes/day + target level) driving the plan.
 - ⬜ Onboarding flow (pick target language + native language + goals on
   first run) — today the learner lands on a seeded demo.

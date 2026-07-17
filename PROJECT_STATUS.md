@@ -5,6 +5,18 @@
 
 ## Completed
 
+- Phase 15 — premium-voice architecture + immersive reading (2026-07-17, UX only, branch `feature/phase15-premium-offline-voice`, includes Phase 14b):
+  - **Speech-engine selection** behind the seam (`speechEngineProvider`: Piper default / device fallback); UI engine-independent. Voice Settings screen (`/voice-settings`) with engine + speed (0.8×–1.2×); a `speed` seam param scales base rate → rate never hard-coded. Speed routed through tutor + reader.
+  - **Reading flow:** removed the mandatory quiz — a **completion card** (Continue reading / Reading companion / Vocabulary / Speaking / optional quiz) shows at chapter end. **Device-verified** (screenshot: card renders, no forced quiz).
+  - **Reading Companion** bottom sheet (ask about the page without leaving the reader; reuses `AiChatModel` seam). **Device-verified** (opens over reader; chip → model → reply bubble rendered).
+  - **Library:** Bookmarks shelf added.
+  - 203 tests green; analyze clean; core zero-diff.
+  - **HONEST STATUS:**
+    - **Piper is NOT functional** — it's a labeled scaffold that delegates to the device TTS. Real Piper needs bundled native binaries + an ONNX voice model (tens of MB) over FFI/platform-channel — genuine native work, out of scope for a UX pass. The *architecture* to swap it in with no UI change is done; the neural audio is not.
+    - **Reading Companion answer quality is demo-model-limited** — the wiring works, but `DemoTutorModel` gives thin off-domain replies; a real vendor model (behind the same seam) is needed for rich answers.
+    - **30–45 min multi-chapter novel library: NOT delivered** — that's substantial original graded-Spanish authoring (thousands of words with recurring characters/cliffhangers per book) beyond one session. Current stories remain short (~1–2 min). Flagged as the main content deferral.
+    - **Voice Settings screen** is code-complete + analyze-clean but was **not** screenshot-verified this pass (a modal sheet blocked navigation late in the session). Barge-in unchanged from Phase 14b (logcat-verified there).
+
 - Phase 14b — voice debug + acceptance (2026-07-17, branch `feature/phase14b-voice-debug`, includes Phase 14). Runtime-traced on device via logcat:
   - **Step 1 — engine (no guessing):** packages `flutter_tts` 4.2.0 + `speech_to_text` 7.0.0; Android engine `com.google.android.tts`; voice `es-es-x-eec-network` (after fix — was `es-us-x-sfb-network`); locale es-ES; rate 0.42 tutor / 0.44 reader; pitch 1.06. Traced `[TTS]` debug logs from tutor→speak.
   - **Step 2 — exact spoken string logged:** confirmed no markdown/`**`/URLs/emoji/bullets reach the synthesizer; commas kept as pauses (never vocalized); collapsed stray `..`.

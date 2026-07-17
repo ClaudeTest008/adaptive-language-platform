@@ -7,6 +7,26 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
+### Added
+
+- 2026-07-17: Phase 15 — premium-voice architecture + immersive reading UX
+  (UX only; core/providers-of-record untouched). **Speech-engine selection**
+  behind the seam: `speechEngineProvider` picks Piper (offline neural,
+  default) or the device engine; the UI never depends on which. **Piper is
+  a labeled SCAFFOLD** (`PiperSpeechService`) — it implements the seam and
+  reports `SpeechEngine.piper` but delegates audio to the platform engine
+  until a Piper binary + ONNX model are bundled (native work, not shipped
+  here). **Voice Settings** screen (`/voice-settings`, from the tutor):
+  engine picker + speech-speed 0.8×–1.2×, held in session providers; a new
+  `speed` seam param scales the base rate so **rate is never hard-coded**.
+  **Reading flow:** the mandatory post-chapter quiz is gone — finishing a
+  chapter shows a **completion card** (Continue reading · Reading companion
+  · Vocabulary review · Speaking practice · optional quiz); reading is never
+  interrupted. **Reading Companion** bottom sheet — ask about the current
+  page without leaving the book (quick chips + free text), answered via the
+  existing `AiChatModel` seam. **Library:** added a **Bookmarks** shelf.
+  203 tests green.
+
 ### Fixed
 
 - 2026-07-17: Phase 14b — voice debug + acceptance (device-traced, no

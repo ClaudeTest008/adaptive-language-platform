@@ -12,6 +12,7 @@ import 'screens/language_practice_screen.dart';
 import 'screens/language_story_reader_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/voice_settings_screen.dart';
 import 'ui.dart';
 
 /// Shared-axis-style page: a fade combined with a gentle scale/rise, for a
@@ -97,6 +98,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/goals',
         pageBuilder: (_, _) => _fadeThrough(const LanguageGoalsScreen()),
+      ),
+      GoRoute(
+        path: '/voice-settings',
+        pageBuilder: (_, _) => _fadeThrough(const VoiceSettingsScreen()),
       ),
     ],
   );

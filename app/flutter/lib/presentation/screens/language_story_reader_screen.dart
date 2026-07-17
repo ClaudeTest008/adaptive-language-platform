@@ -5,6 +5,8 @@ import '../../language/story.dart';
 import '../language_providers.dart';
 import '../reading_state.dart';
 import '../ui.dart';
+import 'home_shell.dart';
+import 'reader_companion.dart';
 
 /// Story reader (ADR-0020): one bite-sized phrase on screen at a time,
 /// target text large with the native translation beneath, a Listen button
@@ -27,6 +29,7 @@ class _LanguageStoryReaderScreenState
     extends ConsumerState<LanguageStoryReaderScreen> {
   late int _phrase = lastReadingPage(widget.storyId);
   bool _showQuiz = false;
+  bool _showComplete = false;
   bool _playing = false;
   late bool _bookmarked = isBookmarked(widget.storyId);
   double _speed = 1.0;
@@ -41,14 +44,11 @@ class _LanguageStoryReaderScreenState
     super.dispose();
   }
 
-  /// Absolute TTS rate for the chosen playback speed (1.0x ≈ natural).
-  double get _rate => (0.44 * _speed).clamp(0.2, 0.9);
-
   Future<void> _playParagraph(String text, String bcp47) async {
     final speech = ref.read(speechServiceProvider);
     await speech.stop();
     setState(() => _playing = true);
-    await speech.speak(text, langCode: bcp47, rate: _rate);
+    await speech.speak(text, langCode: bcp47, speed: _speed);
     if (mounted) setState(() => _playing = false);
   }
 
@@ -61,6 +61,23 @@ class _LanguageStoryReaderScreenState
     const speeds = [0.8, 1.0, 1.2, 1.5];
     final next = speeds[(speeds.indexOf(_speed) + 1) % speeds.length];
     setState(() => _speed = next);
+  }
+
+  /// Reading Companion — ask questions about the current page without
+  /// leaving the book. Reuses the tutor's AiChatModel seam.
+  void _showCompanion(BuildContext context, Story story) {
+    final page = story.phrases[_phrase.clamp(0, story.phrases.length - 1)];
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: ReadingCompanionSheet(story: story, paragraph: page.text),
+      ),
+    );
   }
 
   /// Key-words glossary as a bottom sheet.
@@ -163,6 +180,11 @@ class _LanguageStoryReaderScreenState
               onPressed: () => _showVocab(context, story),
             ),
           IconButton(
+            icon: const Icon(Icons.forum_outlined),
+            tooltip: 'Reading companion',
+            onPressed: () => _showCompanion(context, story),
+          ),
+          IconButton(
             icon: const Icon(Icons.headphones),
             tooltip: 'Listen to the whole story',
             onPressed: () => speech.speak(story.fullText, langCode: bcp47),
@@ -178,7 +200,26 @@ class _LanguageStoryReaderScreenState
                     story: story,
                     onFinish: () => Navigator.of(context).pop(),
                   )
-                : Column(
+                : _showComplete
+                    ? CompletionCard(
+                        story: story,
+                        onContinue: () => Navigator.of(context).pop(),
+                        onCompanion: () => _showCompanion(context, story),
+                        onVocab: story.vocabulary.isEmpty
+                            ? null
+                            : () => _showVocab(context, story),
+                        onSpeaking: () {
+                          ref.read(homeTabProvider.notifier).state = 2;
+                          Navigator.of(context).pop();
+                        },
+                        onQuiz: story.questions.isEmpty
+                            ? null
+                            : () => setState(() {
+                                  _showComplete = false;
+                                  _showQuiz = true;
+                                }),
+                      )
+                    : Column(
                     children: [
                       // Slim reading progress + page counter.
                       Padding(
@@ -425,18 +466,10 @@ class _LanguageStoryReaderScreenState
                               child: FilledButton.icon(
                                 icon: Icon(
                                   isLast
-                                      ? (story.questions.isEmpty
-                                          ? Icons.check_rounded
-                                          : Icons.quiz_outlined)
+                                      ? Icons.check_rounded
                                       : Icons.arrow_forward_rounded,
                                 ),
-                                label: Text(
-                                  isLast
-                                      ? (story.questions.isEmpty
-                                          ? 'Finish'
-                                          : 'Comprehension quiz')
-                                      : 'Continue',
-                                ),
+                                label: Text(isLast ? 'Finish' : 'Continue'),
                                 onPressed: () {
                                   if (!isLast) {
                                     _pageController.nextPage(
@@ -444,10 +477,11 @@ class _LanguageStoryReaderScreenState
                                           const Duration(milliseconds: 320),
                                       curve: AppMotion.curve,
                                     );
-                                  } else if (story.questions.isNotEmpty) {
-                                    setState(() => _showQuiz = true);
                                   } else {
-                                    Navigator.of(context).pop();
+                                    // No forced quiz — show a completion card;
+                                    // the quiz is one optional choice on it.
+                                    ref.read(speechServiceProvider).stop();
+                                    setState(() => _showComplete = true);
                                   }
                                 },
                               ),

@@ -18,6 +18,7 @@ import '../ai/chat_model.dart';
 import '../infrastructure/demo_tutor_model.dart';
 import '../infrastructure/language_content_repository.dart';
 import '../infrastructure/language_repositories.dart';
+import '../infrastructure/piper_speech_service.dart';
 import '../infrastructure/platform_speech_service.dart';
 import '../language/conversation.dart';
 import '../language/content_merge.dart';
@@ -106,11 +107,25 @@ final storiesProvider = FutureProvider<List<Story>>((ref) async {
   return storiesForLevel(all, target);
 });
 
-/// Speech (TTS/STT) — platform adapter; a NoopSpeechService is bound in
-/// tests. Kept alive so recognition state persists across screens.
-final speechServiceProvider = Provider<SpeechService>(
-  (ref) => PlatformSpeechService(),
-);
+/// Voice settings (session-persistent, like themeMode). Engine choice —
+/// Piper (offline neural, default) with the platform engine as fallback —
+/// and a playback-speed multiplier the learner sets in Voice Settings.
+final speechEngineProvider =
+    StateProvider<SpeechEngine>((ref) => SpeechEngine.piper);
+final speechSpeedProvider = StateProvider<double>((ref) => 1.0);
+
+/// Speech (TTS/STT). The concrete engine is chosen behind this seam, so the
+/// UI never depends on it. Piper (scaffolded, falls back to the platform
+/// engine until a model is bundled) or Android TTS directly. A
+/// NoopSpeechService is bound in tests; kept alive so STT state persists.
+final speechServiceProvider = Provider<SpeechService>((ref) {
+  final platform = PlatformSpeechService();
+  final engine = ref.watch(speechEngineProvider);
+  return switch (engine) {
+    SpeechEngine.piper => PiperSpeechService(platform),
+    _ => platform,
+  };
+});
 
 // ---------- content ingestion (ADR-0025) ----------
 

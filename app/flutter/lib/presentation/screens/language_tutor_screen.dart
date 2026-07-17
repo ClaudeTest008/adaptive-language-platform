@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../language/tutor.dart';
 import '../language_providers.dart';
@@ -34,6 +35,11 @@ class _LanguageTutorScreenState extends ConsumerState<LanguageTutorScreen> {
         backgroundColor: Colors.transparent,
         title: const Text('AI Tutor'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.tune_rounded),
+            tooltip: 'Voice settings',
+            onPressed: () => context.push('/voice-settings'),
+          ),
           if (session != null)
             IconButton(
               icon: const Icon(Icons.restart_alt),
@@ -395,7 +401,11 @@ class _SessionState extends ConsumerState<_Session> {
   Future<void> _speak(String text) async {
     final speech = ref.read(speechServiceProvider);
     if (mounted) setState(() => _conv = _ConvState.speaking);
-    await speech.speak(text, langCode: ref.read(languageBcp47Provider));
+    await speech.speak(
+      text,
+      langCode: ref.read(languageBcp47Provider),
+      speed: ref.read(speechSpeedProvider),
+    );
     // Only fall back to idle if nothing else changed the state meanwhile
     // (e.g. the learner already barged in with the mic).
     if (mounted && _conv == _ConvState.speaking) {

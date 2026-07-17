@@ -46,6 +46,9 @@ class LanguageStoriesScreen extends ConsumerWidget {
               for (final s in stories)
                 if (started(s) && !_finished(s)) s,
             ];
+            final bookmarked = [
+              for (final s in stories) if (isBookmarked(s.id)) s,
+            ];
             final classics = [for (final s in stories) if (s.author.isNotEmpty) s];
             final beginner = [
               for (final s in stories) if (s.level == CefrLevel.a1) s,
@@ -87,6 +90,8 @@ class LanguageStoriesScreen extends ConsumerWidget {
                         books: continueReading,
                         showProgress: true,
                       ),
+                    if (bookmarked.isNotEmpty)
+                      _Shelf(title: 'Bookmarks', books: bookmarked),
                     _Shelf(title: 'Spanish classics', books: classics),
                     _Shelf(title: 'Beginner · A1', books: beginner),
                     _Shelf(title: 'Intermediate · A2–B1', books: intermediate),

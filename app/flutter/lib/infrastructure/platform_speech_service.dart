@@ -49,12 +49,14 @@ class PlatformSpeechService implements SpeechService {
     String langCode = 'es-ES',
     double? rate,
     double? pitch,
+    double speed = 1.0,
   }) async {
     final myGen = ++_speakGen;
     try {
       final base = _prosody[langCode.split('-').first.toLowerCase()] ??
           (rate: 0.46, pitch: 1.06);
-      final baseRate = rate ?? base.rate;
+      // Base prosody × the learner's chosen playback speed (never hardcoded).
+      final baseRate = ((rate ?? base.rate) * speed).clamp(0.2, 1.0);
       final basePitch = pitch ?? base.pitch;
       await _tts.setLanguage(langCode);
       await _pickWarmVoice(langCode);

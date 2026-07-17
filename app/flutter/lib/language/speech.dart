@@ -11,6 +11,7 @@ library;
 /// screen changes. Only the `speechServiceProvider` binding moves.
 enum SpeechEngine {
   demo('Demo'),
+  piper('Piper offline'),
   androidNeural('Android Neural'),
   iosEnhanced('iOS Enhanced'),
   cloud('Cloud TTS');
@@ -26,12 +27,15 @@ abstract class SpeechService {
 
   /// Text-to-speech, best-effort. [langCode] is a BCP-47 tag ('es-ES').
   /// [rate] (0..1, ~0.45 natural) and [pitch] (0.5..2, ~1.05 warm)
-  /// override the service defaults per utterance.
+  /// override the service defaults per utterance. [speed] is the learner's
+  /// playback-speed multiplier (0.8×–1.5×) applied on top of the base rate,
+  /// so the rate is never hard-coded.
   Future<void> speak(
     String text, {
     String langCode = 'es-ES',
     double? rate,
     double? pitch,
+    double speed = 1.0,
   });
 
   /// Stops any in-progress speech.
@@ -120,6 +124,7 @@ class NoopSpeechService implements SpeechService {
     String langCode = 'es-ES',
     double? rate,
     double? pitch,
+    double speed = 1.0,
   }) async =>
       spoken.add(text);
 

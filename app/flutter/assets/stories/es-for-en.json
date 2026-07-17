@@ -1,0 +1,42 @@
+{
+  "stories": [
+    {
+      "id": "es-a1-restaurante",
+      "title": "En el restaurante",
+      "level": "a1",
+      "topics": ["food", "restaurant", "tener"],
+      "phrases": [
+        { "text": "María tiene hambre.", "translation": "María is hungry.",
+          "conceptIds": ["es:a1:grammar:verbs:states:tener-states"] },
+        { "text": "Va a un restaurante pequeño.", "translation": "She goes to a small restaurant.",
+          "conceptIds": ["es:a1:vocabulary:food:restaurant"] },
+        { "text": "Quiere comer una manzana.", "translation": "She wants to eat an apple.",
+          "conceptIds": ["es:a1:vocabulary:food:fruit:manzana"] },
+        { "text": "El camarero habla español.", "translation": "The waiter speaks Spanish.",
+          "conceptIds": ["es:a1:grammar:verbs:present-tense:ar-verbs:hablar"] },
+        { "text": "María también tiene sed.", "translation": "María is also thirsty.",
+          "conceptIds": ["es:a1:grammar:verbs:states:tener-states"] },
+        { "text": "Ahora está contenta.", "translation": "Now she is happy.",
+          "conceptIds": ["es:a1:grammar:verbs:states:ser-estar"] }
+      ]
+    },
+    {
+      "id": "es-a1-manana",
+      "title": "Por la mañana",
+      "level": "a1",
+      "topics": ["daily-life", "tener", "states"],
+      "phrases": [
+        { "text": "Es temprano y Pedro tiene sueño.", "translation": "It is early and Pedro is sleepy.",
+          "conceptIds": ["es:a1:grammar:verbs:states:tener-states"] },
+        { "text": "Tiene frío en la casa.", "translation": "He is cold in the house.",
+          "conceptIds": ["es:a1:grammar:verbs:states:tener-states"] },
+        { "text": "Pedro habla con su madre.", "translation": "Pedro talks with his mother.",
+          "conceptIds": ["es:a1:grammar:verbs:present-tense:ar-verbs:hablar"] },
+        { "text": "Ella no tiene miedo.", "translation": "She is not afraid.",
+          "conceptIds": ["es:a1:grammar:verbs:states:tener-states"] },
+        { "text": "El día es bueno.", "translation": "The day is good.",
+          "conceptIds": ["es:a1:grammar:verbs:states:ser-estar"] }
+      ]
+    }
+  ]
+}

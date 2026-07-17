@@ -25,3 +25,5 @@ ADRs 0001–0013 are inherited from the exam-platform lineage and remain binding
 | [0017](0017-exercise-generation.md) | Exercises derived from curriculum data (deterministic, focus-first); lineage-walking detection; diacritic-preserving answer checks | Accepted |
 | [0018](0018-ai-tutor-foundation.md) | AI tutor foundation: TutorContext snapshot, six mode contracts, output validation with grounding, provider-blind over AiChatModel | Accepted |
 | [0019](0019-language-first-navigation.md) | Language-first navigation: Language Lab at `/`, exam routes retired, multi-language selector, per-language demo state, immersion theme | Accepted |
+| [0020](0020-stories-speaking-voice.md) | Short stories (data), speaking practice (pronunciation → signals), tutor voice; speech behind a provider-blind seam | Accepted |
+| [0021](0021-bottom-nav-shell.md) | Bottom NavigationBar shell (Lab/Stories/Speaking/Tutor); FAB removed | Accepted |

@@ -5,6 +5,14 @@
 
 ## Completed
 
+- Content & Voice — stories, speaking, tutor voice, nav shell (2026-07-16, ADR-0020/0021):
+  - Short Stories: `lib/language/story.dart` + `assets/stories/` seeds (level-matched, phrase-by-phrase reader with target/translation + per-phrase and whole-story text-to-speech); Stories tab; Today's-Plan story recommendation.
+  - Speaking practice: `lib/language/speaking.dart` (graph-derived drills, accent-folded token-overlap scoring); hear-the-target TTS, tap-to-speak mic, score → `pronunciationConfidence` signal + a real core AnswerEvent (mastery/DNA move); Speaking tab.
+  - Tutor voice: speak-aloud on every tutor bubble, "Voice replies" auto-speak toggle, mic dictation into the reply field — same modes, now audible.
+  - Speech seam: `lib/language/speech.dart` (`SpeechService`) + `infrastructure/platform_speech_service.dart` (flutter_tts + speech_to_text, best-effort); `NoopSpeechService` for tests; `available` guards voice UI on unsupported platforms.
+  - UI: bottom `NavigationBar` shell (Lab / Stories / Speaking / Tutor) replaces the floating action button; keyboard shows only on field focus.
+  - Verified: `flutter analyze` clean; 147 tests green (10 new content/speaking/controller tests); Android `RECORD_AUDIO` permission + recognizer query added.
+
 - Phase 3 dialogue depth + Android verification (2026-07-16, ADR-0018 addendum):
   - Per-mode dialogue plans in every tutor prompt (`Session flow:` + `MODE:` tag); DemoTutorModel now composes six mode-true strategies (Teacher lesson w/ check question, Conversation scenario turns, Coach minute-plans from real skill percentages, Socratic single-question chains, Grammar minimal pairs, Immersion target-language-only), multi-turn aware.
   - Immersion language-purity validation: native-stopword gate in `validateTutorReply` (≥2 distinct native function words → rejected).

@@ -57,10 +57,13 @@ class _LanguageTutorScreenState extends ConsumerState<LanguageTutorScreen> {
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({required this.isTutor, required this.text});
+  const _Bubble({required this.isTutor, required this.text, this.onSpeak});
 
   final bool isTutor;
   final String text;
+
+  /// Tutor bubbles get a tap-to-hear speaker when speech is available.
+  final VoidCallback? onSpeak;
 
   @override
   Widget build(BuildContext context) {
@@ -104,6 +107,12 @@ class _Bubble extends StatelessWidget {
             const SizedBox(width: 8),
           ],
           Flexible(child: bubble),
+          if (isTutor && onSpeak != null)
+            IconButton(
+              icon: const Icon(Icons.volume_up, size: 18),
+              tooltip: 'Hear this',
+              onPressed: onSpeak,
+            ),
         ],
       ),
     );
@@ -321,7 +330,10 @@ class _ModeSelector extends ConsumerWidget {
   }
 }
 
-class _Session extends StatelessWidget {
+/// Session view with voice (ADR-0020): speak-aloud tutor replies, a
+/// "Voice replies" toggle that auto-speaks each new tutor turn, and a
+/// microphone that dictates the learner's reply.
+class _Session extends ConsumerStatefulWidget {
   const _Session({
     required this.session,
     required this.input,
@@ -333,8 +345,46 @@ class _Session extends StatelessWidget {
   final void Function(String) onSend;
 
   @override
+  ConsumerState<_Session> createState() => _SessionState();
+}
+
+class _SessionState extends ConsumerState<_Session> {
+  bool _voiceOn = false;
+  bool _listening = false;
+  int _spokenCount = 0;
+
+  void _speak(String text) {
+    ref.read(speechServiceProvider).speak(
+      text,
+      langCode: ref.read(languageBcp47Provider),
+    );
+  }
+
+  Future<void> _dictate() async {
+    if (_listening) return;
+    setState(() => _listening = true);
+    final heard = await ref
+        .read(speechServiceProvider)
+        .listen(langCode: ref.read(languageBcp47Provider));
+    if (!mounted) return;
+    setState(() => _listening = false);
+    if (heard != null && heard.isNotEmpty) widget.input.text = heard;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final session = widget.session;
+    final speech = ref.watch(speechServiceProvider);
     final mode = _modes.firstWhere((m) => m.mode == session.mode);
+
+    // Auto-speak each new tutor turn while voice replies are on.
+    final tutorTurns = session.transcript.where((t) => t.$1).length;
+    if (_voiceOn && tutorTurns > _spokenCount && !session.busy) {
+      _spokenCount = tutorTurns;
+      final last = session.transcript.lastWhere((t) => t.$1);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _speak(last.$2));
+    }
+
     return Column(
       children: [
         Padding(
@@ -359,6 +409,21 @@ class _Session extends StatelessWidget {
                   '${session.context.misconceptions.length} misconceptions in context',
                 ),
               ),
+              if (speech.available)
+                FilterChip(
+                  avatar: Icon(
+                    _voiceOn ? Icons.volume_up : Icons.volume_off,
+                    size: 16,
+                  ),
+                  label: const Text('Voice replies'),
+                  selected: _voiceOn,
+                  onSelected: (v) {
+                    setState(() {
+                      _voiceOn = v;
+                      _spokenCount = tutorTurns; // don't replay history
+                    });
+                  },
+                ),
             ],
           ),
         ),
@@ -367,7 +432,13 @@ class _Session extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             children: [
               for (final (isTutor, text) in session.transcript)
-                _Bubble(isTutor: isTutor, text: text),
+                _Bubble(
+                  isTutor: isTutor,
+                  text: text,
+                  onSpeak: isTutor && speech.available
+                      ? () => _speak(text)
+                      : null,
+                ),
               if (session.busy) const _TypingIndicator(),
             ],
           ),
@@ -377,22 +448,30 @@ class _Session extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
             child: Row(
               children: [
+                if (speech.available) ...[
+                  IconButton.filledTonal(
+                    icon: Icon(_listening ? Icons.hearing : Icons.mic),
+                    tooltip: 'Speak your reply',
+                    onPressed: session.busy || _listening ? null : _dictate,
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 Expanded(
                   child: TextField(
-                    controller: input,
+                    controller: widget.input,
                     enabled: !session.busy,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       hintText: 'Reply to your tutor…',
                     ),
-                    onSubmitted: onSend,
+                    onSubmitted: widget.onSend,
                   ),
                 ),
                 const SizedBox(width: 8),
                 IconButton.filled(
                   icon: const Icon(Icons.send),
                   onPressed:
-                      session.busy ? null : () => onSend(input.text),
+                      session.busy ? null : () => widget.onSend(widget.input.text),
                 ),
               ],
             ),

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../language/entities.dart';
 import '../../language/lesson.dart';
 import '../language_providers.dart';
+import 'home_shell.dart';
 
 /// Language Lab — the app's home (ADR-0019). Everything the vision
 /// promises, driven live: AI tutor hero, today's personalized plan,
@@ -42,11 +43,6 @@ class LanguageDashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.school),
-        label: const Text('AI Tutor'),
-        onPressed: () => context.push('/language/tutor'),
-      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
@@ -70,6 +66,8 @@ class LanguageDashboardScreen extends ConsumerWidget {
               const _LessonPreviewCard(),
               const SizedBox(height: 8),
               const _PracticeCta(),
+              const SizedBox(height: 8),
+              const _StoryRecommendation(),
               const SizedBox(height: 16),
               _SectionHeader(
                 icon: Icons.insights,
@@ -258,7 +256,7 @@ class _TutorHeroCard extends ConsumerWidget {
       color: Colors.transparent,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.push('/language/tutor'),
+        onTap: () => ref.read(homeTabProvider.notifier).state = 3,
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -335,6 +333,33 @@ class _PracticeCta extends ConsumerWidget {
           '/language/practice',
           extra: repair?.conceptIds ?? const <String>[],
         ),
+      ),
+    );
+  }
+}
+
+/// Story recommendation inside Today's plan — reading at the learner's
+/// level, one tap into the reader.
+class _StoryRecommendation extends ConsumerWidget {
+  const _StoryRecommendation();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final story = ref.watch(storiesProvider).value?.firstOrNull;
+    if (story == null) return const SizedBox.shrink();
+    final scheme = Theme.of(context).colorScheme;
+    return Card(
+      color: scheme.tertiaryContainer,
+      child: ListTile(
+        leading: Icon(Icons.auto_stories, color: scheme.onTertiaryContainer),
+        title: Text('Read: ${story.title}',
+            style: TextStyle(color: scheme.onTertiaryContainer)),
+        subtitle: Text(
+          '${story.level.name.toUpperCase()} · ${story.phrases.length} phrases · tap to read & listen',
+          style: TextStyle(color: scheme.onTertiaryContainer),
+        ),
+        trailing: Icon(Icons.chevron_right, color: scheme.onTertiaryContainer),
+        onTap: () => context.push('/story/${Uri.encodeComponent(story.id)}'),
       ),
     );
   }

@@ -97,6 +97,20 @@ class LanguageConceptSignals {
           : nativeInterference * (1 - alpha),
     );
   }
+
+  /// Applies one pronunciation attempt (0..1 [score] from a speaking
+  /// drill). EWMA confidence, seeded by the first attempt so a single
+  /// good/bad reading moves the needle from "unknown".
+  LanguageConceptSignals afterPronunciation(double score) {
+    const alpha = 0.4;
+    final s = score.clamp(0.0, 1.0);
+    return copyWith(
+      pronunciationConfidence: pronunciationConfidence == null
+          ? s
+          : pronunciationConfidence! * (1 - alpha) + s * alpha,
+      usageFrequency: usageFrequency + 1,
+    );
+  }
 }
 
 /// Per-learner signal state: concept id → signals. Immutable.
@@ -123,6 +137,18 @@ class LanguageSignalsStore {
         responseSeconds: responseSeconds,
         transferError: transferConceptIds.contains(id),
       );
+    }
+    return LanguageSignalsStore(next);
+  }
+
+  /// Records a pronunciation attempt on one concept's lineage.
+  LanguageSignalsStore afterPronunciation({
+    required List<String> conceptIds,
+    required double score,
+  }) {
+    final next = Map<String, LanguageConceptSignals>.of(byConcept);
+    for (final id in conceptIds) {
+      next[id] = this[id].afterPronunciation(score);
     }
     return LanguageSignalsStore(next);
   }

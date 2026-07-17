@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:adaptive_exam_platform/language/curriculum.dart';
+import 'package:adaptive_exam_platform/language/speech.dart';
 import 'package:adaptive_exam_platform/presentation/language_providers.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_concept_screen.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_dashboard_screen.dart';
@@ -25,7 +26,11 @@ Curriculum _curriculumFor(String code) => parseCurriculum(
 );
 
 Widget _app(Curriculum c, Widget home) => ProviderScope(
-  overrides: [curriculumProvider.overrideWith((ref) => Future.value(c))],
+  overrides: [
+    curriculumProvider.overrideWith((ref) => Future.value(c)),
+    // Tests never touch the real TTS/STT plugins.
+    speechServiceProvider.overrideWithValue(NoopSpeechService()),
+  ],
   child: MaterialApp(home: home),
 );
 
@@ -197,4 +202,11 @@ void main() {
     // Demo tutor teaches the tener concept with repair, from graph data.
     expect(find.textContaining('tener'), findsWidgets);
   });
+
+  // Stories + Speaking screens load real assets (rootBundle) and are
+  // covered end-to-end by test/language_content_test.dart (parsing,
+  // level recommendation, drill generation, scoring, the speaking
+  // controller flow with a fake recognizer). They are verified visually
+  // on the Android emulator; widget tests over real-async asset I/O are
+  // flaky under the shared test binding, so they live at the unit level.
 }

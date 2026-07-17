@@ -17,23 +17,42 @@ import '../adaptive/model.dart' as adaptive;
 import '../ai/chat_model.dart';
 import '../infrastructure/demo_tutor_model.dart';
 import '../infrastructure/language_repositories.dart';
+import '../infrastructure/platform_speech_service.dart';
 import '../language/curriculum.dart';
 import '../language/entities.dart';
 import '../language/exercises.dart';
 import '../language/lesson.dart';
 import '../language/misconceptions.dart';
 import '../language/signals.dart';
+import '../language/speaking.dart';
+import '../language/speech.dart';
+import '../language/story.dart';
 import '../language/tutor.dart';
 
 /// Available (target language, native language) curricula. Adding a
-/// language = adding a curriculum JSON + one row here.
+/// language = adding a curriculum + stories JSON and one row here.
+/// `bcp47` is the target-language voice tag for text-to-speech.
 const availableLanguages = [
-  (code: 'es', name: 'Spanish', flag: '🇪🇸', asset: 'assets/curriculum/es-for-en.json'),
-  (code: 'en', name: 'English', flag: '🇬🇧', asset: 'assets/curriculum/en-for-es.json'),
+  (
+    code: 'es', name: 'Spanish', flag: '🇪🇸', bcp47: 'es-ES',
+    asset: 'assets/curriculum/es-for-en.json',
+    stories: 'assets/stories/es-for-en.json',
+  ),
+  (
+    code: 'en', name: 'English', flag: '🇬🇧', bcp47: 'en-US',
+    asset: 'assets/curriculum/en-for-es.json',
+    stories: 'assets/stories/en-for-es.json',
+  ),
 ];
 
 /// Currently selected target language (Language Lab selector).
 final selectedLanguageProvider = StateProvider<String>((ref) => 'es');
+
+/// BCP-47 voice tag for the selected language (TTS/STT).
+final languageBcp47Provider = Provider<String>((ref) {
+  final code = ref.watch(selectedLanguageProvider);
+  return availableLanguages.firstWhere((l) => l.code == code).bcp47;
+});
 
 final curriculumProvider = FutureProvider<Curriculum>((ref) async {
   final code = ref.watch(selectedLanguageProvider);
@@ -41,6 +60,25 @@ final curriculumProvider = FutureProvider<Curriculum>((ref) async {
   final raw = await rootBundle.loadString(lang.asset);
   return parseCurriculum(jsonDecode(raw) as Map<String, dynamic>);
 });
+
+/// Stories for the selected language, level-filtered for this learner.
+final storiesProvider = FutureProvider<List<Story>>((ref) async {
+  final code = ref.watch(selectedLanguageProvider);
+  final lang = availableLanguages.firstWhere((l) => l.code == code);
+  final raw = await rootBundle.loadString(lang.stories);
+  final all = parseStories(jsonDecode(raw) as Map<String, dynamic>);
+  final mastery = ref.watch(languageLearnerProvider).conceptMastery;
+  final avg = mastery.isEmpty
+      ? 1.0
+      : mastery.values.reduce((a, b) => a + b) / mastery.length;
+  return storiesForLevel(all, recommendedLevel(CefrLevel.a1, averageMastery: avg));
+});
+
+/// Speech (TTS/STT) — platform adapter; a NoopSpeechService is bound in
+/// tests. Kept alive so recognition state persists across screens.
+final speechServiceProvider = Provider<SpeechService>(
+  (ref) => PlatformSpeechService(),
+);
 
 final misconceptionRepositoryProvider = Provider<MisconceptionRepository>(
   (ref) => InMemoryMisconceptionRepository(),
@@ -187,6 +225,43 @@ class LanguageLearnerController extends Notifier<LanguageLearnerState> {
     await ref.read(misconceptionRepositoryProvider).save(misconceptions);
     await ref.read(languageSignalsRepositoryProvider).save(signals);
     return detected;
+  }
+
+  /// Records a pronunciation attempt on [node] ([score] 0..1). Updates
+  /// pronunciationConfidence beside the core model; the concept's mastery
+  /// also moves (a spoken attempt is a real answer: correct if score is
+  /// good). Speaking is production, so this is stronger evidence than
+  /// recognition.
+  Future<void> recordPronunciation({
+    required LanguageNode node,
+    required double score,
+    DateTime? at,
+  }) async {
+    await _initFuture;
+    final engine = _engine;
+    if (engine == null) return;
+    final when = at ?? DateTime.now();
+    final model = engine.applyAnswer(
+      state.model,
+      adaptive.AnswerEvent(
+        questionId: 'sp-${node.conceptId}-${when.microsecondsSinceEpoch}',
+        conceptIds: node.lineageConceptIds.reversed.toList(),
+        correct: score >= 0.6,
+        responseSeconds: 4,
+        difficulty01: 0.5,
+        answeredAt: when,
+      ),
+    );
+    final signals = state.signals.afterPronunciation(
+      conceptIds: [node.conceptId],
+      score: score,
+    );
+    state = state.copyWith(
+      model: model,
+      signals: signals,
+      traits: [for (final t in engine.learningDna(model)) t.name],
+    );
+    await ref.read(languageSignalsRepositoryProvider).save(signals);
   }
 
   /// Deterministic demo learner per language (ADR-0006 demo mode):
@@ -366,6 +441,120 @@ class LanguagePracticeController extends Notifier<LanguagePracticeState?> {
 final languagePracticeProvider =
     NotifierProvider<LanguagePracticeController, LanguagePracticeState?>(
       LanguagePracticeController.new,
+    );
+
+// ---------- speaking practice (ADR-0020) ----------
+
+class SpeakingState {
+  const SpeakingState({
+    required this.drills,
+    required this.index,
+    this.transcript,
+    this.score,
+    this.listening = false,
+    this.finished = false,
+  });
+
+  final List<SpeakingDrill> drills;
+  final int index;
+
+  /// Last recognized utterance (null before an attempt).
+  final String? transcript;
+
+  /// 0..1 score for the current drill (null before an attempt).
+  final double? score;
+  final bool listening;
+  final bool finished;
+
+  SpeakingDrill get current => drills[index];
+  bool get attempted => score != null;
+
+  SpeakingState copyWith({
+    int? index,
+    String? transcript,
+    double? score,
+    bool clearAttempt = false,
+    bool? listening,
+    bool? finished,
+  }) => SpeakingState(
+    drills: drills,
+    index: index ?? this.index,
+    transcript: clearAttempt ? null : (transcript ?? this.transcript),
+    score: clearAttempt ? null : (score ?? this.score),
+    listening: listening ?? this.listening,
+    finished: finished ?? this.finished,
+  );
+}
+
+class SpeakingController extends Notifier<SpeakingState?> {
+  @override
+  SpeakingState? build() {
+    ref.watch(selectedLanguageProvider);
+    return null;
+  }
+
+  void start({List<String> focusConceptIds = const [], int limit = 8}) {
+    final curriculum = ref.read(curriculumProvider).value;
+    if (curriculum == null) return;
+    state = SpeakingState(
+      drills: generateSpeakingDrills(
+        curriculum.graph,
+        focusConceptIds: focusConceptIds,
+        limit: limit,
+      ),
+      index: 0,
+    );
+  }
+
+  /// Speaks the target so the learner hears it before attempting.
+  Future<void> playTarget() async {
+    final s = state;
+    if (s == null) return;
+    await ref
+        .read(speechServiceProvider)
+        .speak(s.current.target, langCode: ref.read(languageBcp47Provider));
+  }
+
+  /// Listens for the learner's utterance, scores it, records the signal.
+  Future<void> attempt() async {
+    final s = state;
+    if (s == null || s.listening || s.finished) return;
+    state = s.copyWith(listening: true);
+    final transcript = await ref
+        .read(speechServiceProvider)
+        .listen(langCode: ref.read(languageBcp47Provider));
+    if (transcript == null) {
+      state = state?.copyWith(listening: false);
+      return;
+    }
+    final score = scorePronunciation(s.current.target, transcript);
+    await ref.read(languageLearnerProvider.notifier).recordPronunciation(
+      node: s.current.node,
+      score: score,
+    );
+    state = state?.copyWith(
+      listening: false,
+      transcript: transcript,
+      score: score,
+    );
+  }
+
+  void next() {
+    final s = state;
+    if (s == null || !s.attempted) return;
+    if (s.index + 1 < s.drills.length) {
+      state = s.copyWith(index: s.index + 1, clearAttempt: true);
+    } else {
+      state = s.copyWith(finished: true);
+    }
+  }
+
+  void reset() => state = null;
+}
+
+final speakingProvider =
+    NotifierProvider<SpeakingController, SpeakingState?>(
+      SpeakingController.new,
     );
 
 // ---------- AI tutor (Phase 3 foundation, ADR-0018) ----------

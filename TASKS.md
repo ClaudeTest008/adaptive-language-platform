@@ -11,11 +11,15 @@
 - Real vendor adapters (AnthropicChatModel/OpenAiChatModel/...) behind `tutorModelProvider` — blocked on API keys.
 - Phase 4: daily lesson engine (replaces `lesson.dart` preview heuristics; review schedule, goals, past performance); learning-goals schema lands with it.
 - Phases 5–8: conversation engine, speech/pronunciation, language content ingestion, production deployment. See ROADMAP.md.
-- Grow curriculum seeds beyond A1 slices (A2+, more domains) — data-only; enlarges exercise pool + tutor material.
+- Grow curriculum seeds beyond A1 slices (A2+, more domains) — data-only; enlarges exercise pool + tutor material + story queue.
+- Real phoneme-level pronunciation scoring (speech models) replacing token-overlap proxy; listening-recognition signal (ADR-0020 remainder).
+- Grow story seeds (more stories per language/level); tie Today's-Plan story pick to weak-concept overlap, not just level.
 - Rewrite `docs/product/` for the language product — incremental, as phases touch them.
 - Remove demo seed once real learner accounts persist language state (Firestore swap, Phase 8).
 
 ## Done
+
+- [x] Content & Voice — short stories (data + level-matched reader with TTS), speaking practice (graph drills + pronunciation scoring → signals + core AnswerEvent), tutor voice (speak bubbles, auto-speak toggle, mic dictation), provider-blind speech seam, bottom-nav shell replacing the FAB, ADR-0020/0021; 147 tests green; Android emulator verified (2026-07-16).
 
 - [x] Phase 3 dialogue depth — per-mode Session-flow plans + MODE tag in prompts, six mode-true DemoTutorModel strategies (multi-turn aware), immersion purity gate (native stopwords), live Learning DNA in TutorContext, typing indicator + avatar bubbles, tappable Today's Plan blocks, exercise-type interleaving; Android emulator run verified with screenshots; 137 tests green (2026-07-16).
 

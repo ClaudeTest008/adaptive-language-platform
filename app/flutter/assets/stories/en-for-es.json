@@ -1,0 +1,20 @@
+{
+  "stories": [
+    {
+      "id": "en-a1-meetup",
+      "title": "At the meetup",
+      "level": "a1",
+      "topics": ["greetings", "introductions"],
+      "phrases": [
+        { "text": "Hello! How are you?", "translation": "¡Hola! ¿Cómo estás?",
+          "conceptIds": ["en:a1:vocabulary:everyday:greetings"] },
+        { "text": "She speaks Spanish and English.", "translation": "Ella habla español e inglés.",
+          "conceptIds": ["en:a1:grammar:verbs:present-simple:third-person-s"] },
+        { "text": "It is raining today.", "translation": "Hoy está lloviendo.",
+          "conceptIds": ["en:a1:grammar:verbs:present-simple:subject-required"] },
+        { "text": "I am happy to meet you.", "translation": "Me alegra conocerte.",
+          "conceptIds": ["en:a1:vocabulary:everyday:greetings"] }
+      ]
+    }
+  ]
+}

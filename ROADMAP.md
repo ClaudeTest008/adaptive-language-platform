@@ -52,12 +52,12 @@ Master plan for the Adaptive Language Platform. Phases are sequential; each ends
 - Schema: conversations.
 - Tests: conversation flow contracts.
 
-## Phase 6 — Speech & Pronunciation
+## Phase 6 — Speech & Pronunciation (foundation delivered early 2026-07-16, ADR-0020)
 
-- Speaking practice and pronunciation scoring exercise types.
-- Speech-model provider seam (same vendor-independence rules as chat models).
-- Pronunciation confidence + listening recognition signals.
-- Schema: pronunciation attempts.
+- ✅ Speaking practice + pronunciation scoring exercise (drills from the graph, accent-folded token-overlap score → `pronunciationConfidence`).
+- ✅ Speech provider seam (`SpeechService`, flutter_tts + speech_to_text adapter; vendor-independent like the chat-model seam).
+- ✅ Pronunciation confidence signal wired; also short-stories reading with TTS and tutor voice I/O.
+- ⏳ Remaining: real phoneme-level scoring (speech models) replacing token overlap; listening-recognition signal; pronunciation-attempt persistence (schema drafted).
 
 ## Phase 7 — Content Ingestion for Language Resources
 

@@ -68,6 +68,35 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 22 — Phase15-FINAL merge + Learning Experience Engine.
+  **Merge**: `origin/feature/phase15-premium-offline-voice-final` merged into
+  the Phase 16–21 line — real Piper offline-neural TTS (sherpa_onnx,
+  background-isolate inference with the device-verified ANR fix), the
+  "La casa del faro" graded novel, story chapters, voice-settings download UI.
+  Conflicts were docs/deps only (both dependency sets kept; both histories
+  kept; lock regenerated); all newer architecture preserved. **Learning
+  Experience Engine** (`lib/language/experience.dart`, pure): **vocabulary
+  mining** (`mineVocabulary` — recurring words ranked, known/unknown judged
+  from curriculum + the learner's actual mastery); **reading records**
+  (`buildReadingRecord` — a finished story yields a measured record: known
+  ratio as a comprehension proxy, unknown words, topics); **lesson outcomes**
+  (`outcomesFromRecords` — the first real producer of the brain's
+  `lessonHistory`); **interest discovery** (`discoverInterests` — weighted
+  topics of books the learner actually chose and finished; empty history ⇒ no
+  interests, nothing fabricated); **plain-text book import**
+  (`importPlainText` — paragraphs→pages, sentence-boundary splitting;
+  `BookImportParser` seam typed for PDF/EPUB backends). **Persistence**:
+  `ExperienceRepository` seam + `PrefsExperienceRepository` (records capped,
+  imported books, saved words) + in-memory test double. **Producers wired**:
+  finishing a story in the reader records a reading session; the Teacher
+  Brain now receives `interests` + `lessonHistory` from real reading records
+  — two Phase 17–20 empty seams are now live. **Library**: "Import text"
+  action (paste a passage → readable, narrated, mineable book on the shelf;
+  dependency-free). 278 tests (+9: mining known/unknown + empty, record
+  measurement, outcomes, weighted interests + none-fabricated, import
+  chapterization, record JSON, prefs round-trip incl. restart), analyze
+  clean, Android debug build green (sherpa_onnx/audioplayers integrate).
+
 - 2026-07-18: Phase 21 — Unified Language Pipeline + persistent AI teacher.
   **Strict voice rule** (`lib/language/pipeline.dart`, pure): `speechSafeText`
   gates everything bound for TTS — sentence-level language detection (small

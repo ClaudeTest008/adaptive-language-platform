@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:adaptive_exam_platform/infrastructure/prefs_experience_repository.dart';
 import 'package:adaptive_exam_platform/language/curriculum.dart';
 import 'package:adaptive_exam_platform/language/notebook_repository.dart';
 import 'package:adaptive_exam_platform/language/speech.dart';
@@ -37,6 +38,9 @@ Widget _app(Curriculum c, Widget home) => ProviderScope(
     // In-memory notebook store — no shared_preferences plugin under test.
     teacherNotebookRepositoryProvider.overrideWithValue(
       InMemoryTeacherNotebookRepository(),
+    ),
+    experienceRepositoryProvider.overrideWithValue(
+      InMemoryExperienceRepository(),
     ),
   ],
   child: MaterialApp(home: home),
@@ -106,6 +110,9 @@ void main() {
           speechServiceProvider.overrideWithValue(NoopSpeechService()),
           teacherNotebookRepositoryProvider.overrideWithValue(
             InMemoryTeacherNotebookRepository(),
+          ),
+          experienceRepositoryProvider.overrideWithValue(
+            InMemoryExperienceRepository(),
           ),
         ],
         child: const MaterialApp(home: LanguageDashboardScreen()),

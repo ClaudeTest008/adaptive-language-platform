@@ -491,6 +491,12 @@ class _LanguageStoryReaderScreenState
                                     // No forced quiz — show a completion card;
                                     // the quiz is one optional choice on it.
                                     ref.read(speechServiceProvider).stop();
+                                    // Phase 22 producer: a finished story
+                                    // becomes a measured reading record
+                                    // (vocab mined, interests discovered).
+                                    ref
+                                        .read(readingExperienceProvider.notifier)
+                                        .recordCompletion(story);
                                     setState(() => _showComplete = true);
                                   }
                                 },

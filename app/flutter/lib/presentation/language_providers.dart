@@ -20,7 +20,9 @@ import '../infrastructure/language_content_repository.dart';
 import '../infrastructure/language_repositories.dart';
 import '../infrastructure/piper_speech_service.dart';
 import '../infrastructure/platform_speech_service.dart';
+import '../infrastructure/prefs_experience_repository.dart';
 import '../infrastructure/prefs_notebook_repository.dart';
+import '../language/experience.dart';
 import '../language/conversation.dart';
 import '../language/content_merge.dart';
 import '../language/curriculum.dart';
@@ -117,6 +119,8 @@ final storiesProvider = FutureProvider<List<Story>>((ref) async {
     level: CefrLevel.a1,
   );
   if (ingested != null) all.insert(0, ingested);
+  // Phase 22: learner-imported books join the shelf (already level-agnostic).
+  all.addAll(await ref.watch(importedBooksProvider.future));
   final target = ref.watch(learnerGoalsProvider).targetLevel;
   return storiesForLevel(all, target);
 });
@@ -1004,6 +1008,9 @@ final teacherBrainProvider = FutureProvider<TeacherBrain?>((ref) async {
   final previous = history.where((s) => s.day != today).lastOrNull;
   final historyDays = <String>{for (final s in history) s.day, today}.toList();
 
+  // Phase 22: reading records feed lesson history + discovered interests.
+  final readingRecords = await ref.watch(readingRecordsProvider.future);
+
   final brain = engine.assemble(
     BrainInputs(
       today: DateTime.now(),
@@ -1045,6 +1052,8 @@ final teacherBrainProvider = FutureProvider<TeacherBrain?>((ref) async {
       currentObjective: currentObjective,
       secondaryObjective: nextName ?? 'Keep your skills fresh',
       nextConceptName: nextName,
+      interests: discoverInterests(readingRecords),
+      lessonHistory: outcomesFromRecords(readingRecords),
     ),
   );
 
@@ -1067,6 +1076,76 @@ final teachingChoiceProvider = Provider<TeachingChoice?>((ref) {
   final brain = ref.watch(teacherBrainProvider).value;
   return brain == null ? null : chooseTeachingStrategy(brain);
 });
+
+// ---------- Learning Experience (Phase 22) ----------
+
+/// Persistent evidence store: reading records, imported books, saved words.
+final experienceRepositoryProvider = Provider<ExperienceRepository>(
+  (ref) => PrefsExperienceRepository(),
+);
+
+/// Bumped after every write so derived providers reload.
+final experienceRevisionProvider = StateProvider<int>((ref) => 0);
+
+/// Finished-reading records (evidence the brain derives outcomes/interests
+/// from).
+final readingRecordsProvider = FutureProvider<List<ReadingRecord>>((ref) async {
+  ref.watch(experienceRevisionProvider);
+  return ref.watch(experienceRepositoryProvider).loadReadingRecords();
+});
+
+/// Books the learner imported (TXT today; PDF/EPUB parser seams pending),
+/// parsed into readable stories.
+final importedBooksProvider = FutureProvider<List<Story>>((ref) async {
+  ref.watch(experienceRevisionProvider);
+  final books = await ref.watch(experienceRepositoryProvider).loadImportedBooks();
+  return [
+    for (final e in books.entries)
+      importPlainText(id: e.key, title: e.value.title, text: e.value.text),
+  ];
+});
+
+/// Records finished stories: mines vocabulary against the learner's real
+/// knowledge, persists the measured record, refreshes everything derived
+/// from it (brain lesson history, interests, notebook). State = writes done.
+class ReadingExperienceController extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  Future<void> recordCompletion(Story story) async {
+    final curriculum = ref.read(curriculumProvider).value;
+    if (curriculum == null) return;
+    final learner = ref.read(languageLearnerProvider);
+    final mined = mineVocabulary(
+      story.fullText,
+      curriculum,
+      learner.conceptMastery,
+    );
+    final record = buildReadingRecord(
+      story: story,
+      mined: mined,
+      day: _notebookDay(DateTime.now()),
+    );
+    await ref.read(experienceRepositoryProvider).addReadingRecord(record);
+    ref.read(experienceRevisionProvider.notifier).state++;
+    state++;
+  }
+
+  Future<void> importText({required String title, required String text}) async {
+    if (title.trim().isEmpty || text.trim().isEmpty) return;
+    final id = 'imported-${title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-')}';
+    await ref
+        .read(experienceRepositoryProvider)
+        .saveImportedBook(id, title.trim(), text);
+    ref.read(experienceRevisionProvider.notifier).state++;
+    state++;
+  }
+}
+
+final readingExperienceProvider =
+    NotifierProvider<ReadingExperienceController, int>(
+      ReadingExperienceController.new,
+    );
 
 /// Immersion vs Mentor (Phase 21): how much native-language support the
 /// teacher SHOWS. Audio is always target-language only, in both modes.

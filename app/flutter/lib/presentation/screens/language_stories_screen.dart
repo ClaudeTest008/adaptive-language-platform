@@ -26,6 +26,15 @@ class LanguageStoriesScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: const Text('Reading Library'),
+        actions: [
+          // Phase 22: import your own text as a book (TXT paste today;
+          // PDF/EPUB parsers arrive behind the same seam).
+          IconButton(
+            icon: const Icon(Icons.upload_file_outlined),
+            tooltip: 'Import text',
+            onPressed: () => _showImportDialog(context, ref),
+          ),
+        ],
       ),
       body: AtmosphericBackground(
         child: storiesAsync.when(
@@ -272,4 +281,50 @@ class _BookCover extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Paste-a-text import (Phase 22). Kept dependency-free: the learner pastes
+/// any passage or chapter; it becomes a readable, narrated, mineable book.
+void _showImportDialog(BuildContext context, WidgetRef ref) {
+  final titleCtrl = TextEditingController();
+  final textCtrl = TextEditingController();
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Import a text'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: titleCtrl,
+            decoration: const InputDecoration(labelText: 'Title'),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: textCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Paste the text',
+              alignLabelWithHint: true,
+            ),
+            maxLines: 6,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () async {
+            await ref
+                .read(readingExperienceProvider.notifier)
+                .importText(title: titleCtrl.text, text: textCtrl.text);
+            if (ctx.mounted) Navigator.of(ctx).pop();
+          },
+          child: const Text('Import'),
+        ),
+      ],
+    ),
+  );
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../infrastructure/piper_speech_service.dart';
 import '../../language/speech.dart';
@@ -84,6 +85,18 @@ class VoiceSettingsScreen extends ConsumerWidget {
                         langCode: ref.read(languageBcp47Provider),
                         speed: speed,
                       ),
+                ),
+                const SizedBox(height: AppSpace.lg),
+                // Phase 23: offline speech understanding (Whisper).
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.hearing),
+                  title: const Text('Offline speech (Whisper)'),
+                  subtitle: const Text(
+                    'Understand your speech on-device',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/whisper-settings'),
                 ),
                 const SizedBox(height: AppSpace.lg),
                 Text(

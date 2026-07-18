@@ -36,6 +36,12 @@ import '../language/notebook.dart';
 import '../language/notebook_repository.dart';
 import '../language/pipeline.dart';
 import '../language/reasoning_engine.dart';
+import '../language/speaking_session.dart';
+import '../language/whisper/whisper_model_manager.dart';
+import '../language/whisper/whisper_pipeline.dart';
+import '../language/whisper/whisper_repository.dart';
+import '../language/whisper/whisper_service.dart';
+import '../infrastructure/whisper_downloader.dart';
 import '../language/signals.dart';
 import '../language/teacher_brain.dart';
 import '../language/speaking.dart';
@@ -705,21 +711,30 @@ class SpeakingController extends Notifier<SpeakingState?> {
     final s = state;
     if (s == null || s.listening || s.finished) return;
     state = s.copyWith(listening: true);
-    final transcript = await ref
-        .read(speechServiceProvider)
-        .listen(langCode: ref.read(languageBcp47Provider));
-    if (transcript == null) {
+    // Phase 23: capture through the Whisper pipeline (local model when ready,
+    // platform recognizer fallback otherwise) so the attempt becomes a
+    // measured SpeakingSession — first-class Teacher Brain evidence.
+    final session = await ref.read(whisperPipelineProvider).capture(
+      target: s.current.target,
+      langCode: ref.read(languageBcp47Provider),
+      conceptId: s.current.node.conceptId,
+    );
+    if (session == null) {
       state = state?.copyWith(listening: false);
       return;
     }
-    final result = scorePronunciationDetailed(s.current.target, transcript);
+    final result = scorePronunciationDetailed(
+      s.current.target,
+      session.transcript,
+    );
     await ref.read(languageLearnerProvider.notifier).recordPronunciation(
       node: s.current.node,
       score: result.score,
     );
+    ref.read(speakingSessionsProvider.notifier).add(session);
     state = state?.copyWith(
       listening: false,
-      transcript: transcript,
+      transcript: session.transcript,
       score: result.score,
       words: result.words,
     );
@@ -1010,6 +1025,12 @@ final teacherBrainProvider = FutureProvider<TeacherBrain?>((ref) async {
 
   // Phase 22: reading records feed lesson history + discovered interests.
   final readingRecords = await ref.watch(readingRecordsProvider.future);
+  // Phase 23: speaking sessions (Whisper/fallback) feed lesson history too.
+  final speakingSessions = ref.watch(speakingSessionsProvider);
+  final lessonHistory = [
+    ...outcomesFromRecords(readingRecords),
+    for (final s in speakingSessions) speakingOutcome(s, today),
+  ];
 
   final brain = engine.assemble(
     BrainInputs(
@@ -1053,7 +1074,7 @@ final teacherBrainProvider = FutureProvider<TeacherBrain?>((ref) async {
       secondaryObjective: nextName ?? 'Keep your skills fresh',
       nextConceptName: nextName,
       interests: discoverInterests(readingRecords),
-      lessonHistory: outcomesFromRecords(readingRecords),
+      lessonHistory: lessonHistory,
     ),
   );
 
@@ -1076,6 +1097,52 @@ final teachingChoiceProvider = Provider<TeachingChoice?>((ref) {
   final brain = ref.watch(teacherBrainProvider).value;
   return brain == null ? null : chooseTeachingStrategy(brain);
 });
+
+// ---------- Local Whisper (Phase 23) ----------
+
+/// Persistent Whisper model metadata store (disk on device; overridable).
+final whisperModelRepositoryProvider = Provider<WhisperModelRepository>(
+  (ref) => PrefsWhisperModelRepository(),
+);
+
+/// Model lifecycle manager (download/verify/delete). Pure logic over seams.
+final whisperModelManagerProvider = Provider<WhisperModelManager>(
+  (ref) => WhisperModelManager(
+    repository: ref.watch(whisperModelRepositoryProvider),
+    downloader: HttpModelDownloader(),
+  ),
+);
+
+/// The offline speech-understanding service. Until the local Whisper model is
+/// installed and verified on device, this is the platform-recognizer fallback
+/// (offline-capable) behind the same interface — the pipeline never changes.
+/// When the sherpa Whisper isolate lands, only this binding moves.
+final whisperServiceProvider = Provider<WhisperService>(
+  (ref) => FallbackWhisperService(ref.watch(speechServiceProvider)),
+);
+
+/// The offline speech-in pipeline: mic → Whisper → SpeakingSession analytics.
+final whisperPipelineProvider = Provider<WhisperPipeline>(
+  (ref) => WhisperPipeline(ref.watch(whisperServiceProvider)),
+);
+
+/// Speaking sessions produced this run — evidence the Teacher Brain derives
+/// outcomes from (not a duplicate store; cross-restart persistence is a
+/// documented seam). Appended by the speaking flow.
+class SpeakingSessionsController extends Notifier<List<SpeakingSession>> {
+  @override
+  List<SpeakingSession> build() {
+    ref.watch(selectedLanguageProvider); // reset on language switch
+    return const [];
+  }
+
+  void add(SpeakingSession s) => state = [...state, s];
+}
+
+final speakingSessionsProvider =
+    NotifierProvider<SpeakingSessionsController, List<SpeakingSession>>(
+      SpeakingSessionsController.new,
+    );
 
 // ---------- Learning Experience (Phase 22) ----------
 

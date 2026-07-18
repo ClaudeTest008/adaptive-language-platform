@@ -68,6 +68,42 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 23 — Local Whisper architecture + speaking analytics
+  (offline speech understanding). Piper gives offline speech OUT; this adds the
+  offline speech-IN counterpart behind a clean seam. **Whisper subsystem**
+  (`lib/language/whisper/`): `WhisperService` interface + `NoopWhisperService`
+  (tests) + `FallbackWhisperService` (delegates to the platform recognizer,
+  offline-capable — so speaking works today); `WhisperModelManager` — a pure,
+  deterministic model lifecycle (absent → download w/ progress → verify →
+  ready; stale-version invalidation; verify/delete) over a
+  `WhisperModelRepository` + injected `ModelDownloader` seam; `whisper_isolate`
+  message contract mirroring Piper's background-isolate design;
+  `whisper_pipeline` orchestrating mic → transcript → analytics → feedback.
+  Disk backing (`infrastructure/whisper_downloader.dart`:
+  `PrefsWhisperModelRepository` + `HttpModelDownloader` with resume + isolate
+  extract). **Speaking analytics** (`lib/language/speaking_session.dart`,
+  pure): `analyzeSpeaking` turns any recognized utterance (Whisper or fallback)
+  into a measured `SpeakingSession` — pronunciation (phoneme-aware),
+  fluency (words/sec, null without duration), hesitation/filler counts, repair
+  attempts, behavioural confidence (null when nothing said — never
+  fabricated); `speakingOutcome` feeds the brain's lessonHistory;
+  `connectionFeedback` praises by naming the family ("you used the same pattern
+  as tener hambre, tener sueño…") so speaking reinforces the mental network,
+  and returns null rather than invent a link. **Teacher Brain integration**:
+  speaking sessions (via `speakingSessionsProvider`) now feed lesson outcomes
+  alongside reading records — the speaking-practice attempt runs through the
+  Whisper pipeline. **Settings**: `/whisper-settings` model screen (download /
+  verify / delete / storage size), linked from Voice settings. The platform
+  recognizer is now an explicit, labelled fallback. 292 tests (+14: model
+  manager lifecycle/version/error/delete, speaking analytics + null-when-
+  unmeasured, connection feedback present/absent, pipeline capture + fallback,
+  feedback selection), analyze clean, Android debug build green. HONEST SEAM:
+  real on-device sherpa-onnx `OfflineRecognizer` inference + raw-PCM mic
+  capture (needs an audio-capture plugin + physical-device verification) is the
+  documented next step — staged exactly as Piper's real synthesis was after
+  its scaffold; the interface, model manager, pipeline and analytics are real
+  and complete now, so only the `whisperServiceProvider` binding moves.
+
 - 2026-07-18: Phase 22 — Phase15-FINAL merge + Learning Experience Engine.
   **Merge**: `origin/feature/phase15-premium-offline-voice-final` merged into
   the Phase 16–21 line — real Piper offline-neural TTS (sherpa_onnx,

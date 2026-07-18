@@ -13,6 +13,7 @@ import 'screens/language_story_reader_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/voice_settings_screen.dart';
+import 'screens/llm_settings_screen.dart';
 import 'screens/whisper_settings_screen.dart';
 import 'ui.dart';
 
@@ -103,6 +104,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/whisper-settings',
         pageBuilder: (_, _) => _fadeThrough(const WhisperSettingsScreen()),
+      ),
+      GoRoute(
+        path: '/llm-settings',
+        pageBuilder: (_, _) => _fadeThrough(const LlmSettingsScreen()),
       ),
       GoRoute(
         path: '/voice-settings',

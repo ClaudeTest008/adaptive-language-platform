@@ -98,6 +98,15 @@ class VoiceSettingsScreen extends ConsumerWidget {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/whisper-settings'),
                 ),
+                // Phase 25: optional on-device LLM (natural wording).
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.smart_toy_outlined),
+                  title: const Text('On-device teacher voice (LLM)'),
+                  subtitle: const Text('Optional — more natural wording'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/llm-settings'),
+                ),
                 const SizedBox(height: AppSpace.lg),
                 Text(
                   'The speed applies everywhere the tutor or a story speaks. '

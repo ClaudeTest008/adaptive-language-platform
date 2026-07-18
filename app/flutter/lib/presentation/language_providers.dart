@@ -36,8 +36,13 @@ import '../language/notebook.dart';
 import '../language/notebook_repository.dart';
 import '../language/pipeline.dart';
 import '../language/reasoning_engine.dart';
+import '../language/local_llm/llm_model_manager.dart';
+import '../language/local_llm/llm_pipeline.dart';
+import '../language/local_llm/llm_repository.dart';
+import '../language/local_llm/local_llm.dart';
 import '../language/speaking_session.dart';
 import '../language/teacher_intelligence.dart';
+import '../infrastructure/llm_downloader.dart';
 import '../language/whisper/whisper_model_manager.dart';
 import '../language/whisper/whisper_pipeline.dart';
 import '../language/whisper/whisper_repository.dart';
@@ -1094,6 +1099,29 @@ final teacherBrainProvider = FutureProvider<TeacherBrain?>((ref) async {
 
   return brain;
 });
+
+// ---------- Local LLM (Phase 25) ----------
+
+/// Persistent LLM model metadata store (disk on device; overridable).
+final llmModelRepositoryProvider = Provider<LlmModelRepository>(
+  (ref) => PrefsLlmModelRepository(),
+);
+
+/// LLM model lifecycle manager (download/verify/delete/upgrade). Pure logic.
+final llmModelManagerProvider = Provider<LlmModelManager>(
+  (ref) => LlmModelManager(
+    repository: ref.watch(llmModelRepositoryProvider),
+    downloader: GgufModelDownloader(),
+  ),
+);
+
+/// The on-device LLM seam (`AiChatModel`). Not-ready until a GGUF model is
+/// loaded on device; the deterministic voice below words the plan meanwhile.
+final localLlmProvider = Provider<LocalLlm>((ref) => const LocalLlm());
+
+/// The response pipeline: TeacherBrain → plan → prompt → voice → language
+/// policy. Words the teacher's decision offline, without repetition.
+final llmPipelineProvider = Provider<LlmPipeline>((ref) => const LlmPipeline());
 
 /// The Teacher Intelligence Engine (Phase 24) — decides WHAT/WHY/WHEN to teach
 /// from the brain. A future local LLM (P25) consumes this to word responses;

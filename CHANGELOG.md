@@ -68,6 +68,46 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 25 — Local LLM integration (offline). Adds the first
+  on-device language-generation layer behind a clean seam. Principle:
+  **TeacherBrain decides (WHAT/WHY/WHEN), the LLM only words (HOW), the pipeline
+  speaks** — the LLM never decides pedagogy or language policy. `lib/language/
+  local_llm/`: `llm_prompt_builder.dart` (pure) converts a `TeacherResponsePlan`
+  + brain + conversation context into a structured `LlmPrompt` (system brief =
+  intent/stage/pacing/objective/Socratic-or-message/connections/one-correction/
+  memory/reflection/mental-model + facts-only grounding + do-not-repeat list) —
+  no UI knows the prompt format, nothing fabricated; `LlmConstraints` fixes
+  target/native language, mentor/immersion, correction cap. `llm_memory.dart`
+  `ConversationContext` — conversation-scoped only (recent turns bounded,
+  topic/roleplay/pending/exercise, used-phrasings); NOT learner memory (the
+  brain owns that). `local_llm.dart`: `LocalLlm` (`AiChatModel` seam for a
+  future GGUF model, reports not-ready until loaded) + `DeterministicTeacherVoice`
+  — pure offline generator that words the plan with **variation-without-
+  randomness** (rotates phrasing by conversation position + intent, skips
+  already-used phrasings → the teacher stops repeating), in the target
+  language. `llm_pipeline.dart` `LlmPipeline.respond` = brain → intelligence →
+  plan → prompt → voice → language policy (strict voice gate + immersion drop)
+  → reply + advanced context. `llm_model_manager.dart` — pure lifecycle
+  mirroring Piper/Whisper (absent/downloading/verifying/ready/failed/deleting/
+  corrupt/versionMismatch; SHA-verified; upgrade path) over repository +
+  downloader seams; interchangeable GGUF (tiny/small/medium/large abstract).
+  `llm_isolate.dart` — serializable message contract for background-isolate
+  inference (no streaming tokens, out of scope). Disk backing
+  (`infrastructure/llm_downloader.dart`: prefs repo + `GgufModelDownloader`
+  with resume + SHA-256 via the new `crypto` dep). Providers:
+  `llmModelRepositoryProvider`, `llmModelManagerProvider`, `localLlmProvider`,
+  `llmPipelineProvider`. Settings: `/llm-settings` (download/delete/size/
+  version/type/context length/status), linked from Voice settings. 320 tests
+  (+14: prompt builder determinism/policy/no-repeat/immersion, conversation
+  context bounding, voice target-language + variation, pipeline respond +
+  policy, model manager lifecycle incl. corrupt/versionMismatch, JSON
+  round-trip), analyze clean, Android debug build green. HONEST SEAM: real
+  on-device GGUF inference (llama.cpp binding + isolate load/generate) is the
+  device-gated next step — the deterministic voice is the shipping generator
+  today and words the plan fully offline; the tutor still uses DemoTutorModel by
+  default (swapping `tutorModelProvider` to the LLM pipeline lands with the real
+  model to avoid regressing verified flows). NOT device-verified.
+
 - 2026-07-18: Phase 24 — Teacher Intelligence & Conversation Engine. Makes the
   AI decide like a real teacher, not a chatbot. `lib/language/teacher_intelligence.dart`
   (pure, deterministic, offline; consumes ONLY the Teacher Brain — no UI, no

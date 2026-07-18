@@ -68,6 +68,37 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 27 — PDF/EPUB backend + Learning Workspace. Turns imported
+  books into structured, measurable teaching material. **Book Ingestion Engine**
+  (`lib/language/book_ingestion.dart`, pure, no learner data): normalizes raw
+  text into chapters (split at Chapter/Capítulo headings), paragraphs and
+  sentences; builds a word-frequency index; extracts frequent phrases (bigrams);
+  detects language; infers topics from a lexicon; and estimates reading
+  difficulty → CEFR from a deterministic readability proxy (avg word + sentence
+  length). **Real import backend** (`infrastructure/document_parser.dart`)
+  behind the existing seam: **TXT** and **EPUB** are real and offline — EPUB is
+  unzipped via `archive`, the OPF spine gives chapter order, XHTML is
+  tag-stripped, and `<dc:title>`/`<dc:creator>` metadata is read; format is
+  detected from magic bytes, never the filename. **No OCR**: PDFs and scanned
+  documents are reported politely ("PDF import needs the text-extraction
+  backend… EPUB and TXT work today; scanned PDFs are not supported") and never
+  crash. **Reading analytics + vocabulary discovery + book relationships**
+  (`lib/language/book_analytics.dart`, pure, measured-only): `ReadingAnalytics`
+  (completion; speed/re-read/tap-frequency null unless actually measured);
+  `VocabularyEntry` with first/last seen, times encountered/looked-up, source
+  book + chapter, context sentences, confidence **null until a real signal
+  exists**; `BookRelationship` from measured topic + vocabulary-Jaccard overlap
+  (book-to-book, reusing no concept graph) so the teacher can later say "you've
+  seen this in another book". **Audio cache policy** (`lib/language/audio_cache.dart`,
+  pure): stable FNV-1a hash filenames keyed on text/lang/voice/speed + LRU
+  `evictionPlan` — the real Piper wiring lands in P28 and consumes this.
+  Imported books now flow through ingestion → `storyFromIngested` (real
+  chapters/difficulty/topics/author) into the reader; `bookRelationshipsProvider`
+  added. 353 tests (+19: ingestion chapters/language/difficulty/phrases, TXT +
+  EPUB (crafted-zip) + PDF-polite parsing, analytics null-when-unmeasured,
+  vocabulary merge + JSON, book relationships + none-for-single, audio cache
+  key/eviction, ingested→Story), analyze clean, Android debug build green.
+
 - 2026-07-18: Phase 26 — Curriculum Intelligence Engine + Conversation
   Continuity Engine. Two new pure/offline/deterministic engines; neither
   stores learner state, contains UI, or persists anything. **Curriculum

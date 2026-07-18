@@ -1,3 +1,4 @@
+import 'book_ingestion.dart';
 import 'curriculum.dart';
 import 'entities.dart';
 import 'story.dart';
@@ -218,6 +219,51 @@ Story importPlainText({
     topics: topics,
     phrases: [
       for (final p in pages) StoryPhrase(text: p, translation: ''),
+    ],
+  );
+}
+
+/// Builds a rich reader Story from an ingested book (Phase 27): real chapters,
+/// paragraph pages, measured difficulty/topics/author — everything the reader
+/// and the Teacher Brain consume, derived, nothing fabricated.
+Story storyFromIngested({
+  required String id,
+  required IngestedBook book,
+  int maxPageChars = 420,
+}) {
+  final pages = <String>[];
+  final chapterTitles = <String>[];
+  final chapterStarts = <int>[];
+  for (final chapter in book.chapters) {
+    chapterTitles.add(chapter.title);
+    chapterStarts.add(pages.length);
+    for (final para in chapter.paragraphs) {
+      if (para.length <= maxPageChars) {
+        pages.add(para);
+        continue;
+      }
+      var page = StringBuffer();
+      for (final s in segmentSentences(para)) {
+        if (page.isNotEmpty && page.length + s.length > maxPageChars) {
+          pages.add(page.toString().trim());
+          page = StringBuffer();
+        }
+        page.write('$s ');
+      }
+      if (page.isNotEmpty) pages.add(page.toString().trim());
+    }
+  }
+  return Story(
+    id: id,
+    title: book.title,
+    author: book.author,
+    level: book.estimatedCefr,
+    topics: book.topics,
+    chapterTitles: book.chapters.length > 1 ? chapterTitles : const [],
+    chapterStarts: book.chapters.length > 1 ? chapterStarts : const [],
+    phrases: [
+      for (final p in pages)
+        if (p.trim().isNotEmpty) StoryPhrase(text: p, translation: ''),
     ],
   );
 }

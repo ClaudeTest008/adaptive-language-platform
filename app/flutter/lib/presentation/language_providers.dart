@@ -22,6 +22,8 @@ import '../infrastructure/piper_speech_service.dart';
 import '../infrastructure/platform_speech_service.dart';
 import '../infrastructure/prefs_experience_repository.dart';
 import '../infrastructure/prefs_notebook_repository.dart';
+import '../language/book_analytics.dart';
+import '../language/book_ingestion.dart';
 import '../language/experience.dart';
 import '../language/conversation.dart';
 import '../language/content_merge.dart';
@@ -1214,10 +1216,32 @@ final readingRecordsProvider = FutureProvider<List<ReadingRecord>>((ref) async {
 final importedBooksProvider = FutureProvider<List<Story>>((ref) async {
   ref.watch(experienceRevisionProvider);
   final books = await ref.watch(experienceRepositoryProvider).loadImportedBooks();
+  // Phase 27: ingest each imported text into real chapters/paragraphs with
+  // measured difficulty + topics before it reaches the reader.
   return [
     for (final e in books.entries)
-      importPlainText(id: e.key, title: e.value.title, text: e.value.text),
+      storyFromIngested(
+        id: e.key,
+        book: ingestBook(title: e.value.title, author: '', text: e.value.text),
+      ),
   ];
+});
+
+/// Relationships between the learner's imported books (Phase 27): measured
+/// topic + vocabulary overlap, so the teacher can say "you've seen this in
+/// another book". Empty until at least two books are imported.
+final bookRelationshipsProvider =
+    FutureProvider<List<BookRelationship>>((ref) async {
+  ref.watch(experienceRevisionProvider);
+  final books = await ref.watch(experienceRepositoryProvider).loadImportedBooks();
+  final fingerprints = [
+    for (final e in books.entries)
+      BookFingerprint.fromIngested(
+        e.key,
+        ingestBook(title: e.value.title, author: '', text: e.value.text),
+      ),
+  ];
+  return relateBooks(fingerprints);
 });
 
 /// Records finished stories: mines vocabulary against the learner's real

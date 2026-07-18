@@ -1,17 +1,29 @@
-/// Piper offline-neural speech (Phase 15 — REAL implementation).
+/// Piper offline-neural speech (Phase 15 — production hardening).
 ///
-/// Piper voices run on-device through sherpa_onnx (ONNX runtime): free,
-/// open source, no API keys. The voice model (~60 MB, from the sherpa-onnx
-/// releases mirror of the Piper voices) is NOT bundled in git — it is
-/// downloaded on first use into the app documents directory, with live
-/// progress, and cached forever after.
+/// CONFIRMED CRASH (real device, OnePlus CPH2037 / Android 12): calling the
+/// synchronous ONNX `OfflineTts.generate()` on Flutter's UI isolate froze
+/// the main thread → ANR → force close.
 ///
-/// Speech-to-text stays on the platform recognizer (Piper is TTS-only);
-/// that is not a TTS fallback — audio synthesis here is Piper's.
+/// FIX: a single long-lived background isolate owns the Piper engine (model
+/// load + all inference). The UI isolate only sends text over a SendPort and
+/// receives a WAV file path back, then plays it. The UI thread never runs
+/// ONNX inference, so it never blocks.
+///
+/// - model loads exactly once (in the isolate);
+/// - speech requests are serialized (one synthesis at a time);
+/// - a new request / stop() cancels the current one instantly (generation
+///   token) — no blocking waits, no 7 s timeout;
+/// - temp WAVs, ports, the isolate and the AudioPlayer are disposed;
+/// - on any Piper failure we log the full stack and fall back to the device
+///   TTS for that utterance (reported, never silent).
+///
+/// STT stays on the platform recognizer (Piper is TTS-only) — not a TTS
+/// fallback: audio synthesis here is Piper's.
 library;
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:archive/archive.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -24,80 +36,175 @@ import '../language/speech.dart';
 /// Download/initialization state, surfaced in Voice Settings.
 enum PiperStatus { idle, downloading, extracting, loading, ready, error }
 
-/// One Piper voice per language family, served from the sherpa-onnx
-/// tts-models release (converted Piper voices, MIT/CC licensed).
 class _PiperVoice {
   const _PiperVoice(this.dir, this.model);
-
-  final String dir; // archive + extracted directory name
-  final String model; // onnx file inside the directory
-
+  final String dir;
+  final String model;
   String get url =>
       'https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/'
       '$dir.tar.bz2';
 }
 
 const _voices = {
-  'es': _PiperVoice(
-    'vits-piper-es_ES-davefx-medium',
-    'es_ES-davefx-medium.onnx',
-  ),
-  'en': _PiperVoice(
-    'vits-piper-en_US-amy-medium',
-    'en_US-amy-medium.onnx',
-  ),
+  'es': _PiperVoice('vits-piper-es_ES-davefx-medium', 'es_ES-davefx-medium.onnx'),
+  'en': _PiperVoice('vits-piper-en_US-amy-medium', 'en_US-amy-medium.onnx'),
 };
 
-class PiperSpeechService implements SpeechService {
-  PiperSpeechService(this._sttFallback);
+// ===========================================================================
+// Background isolate: owns the Piper engine. Pure FFI + dart:io (NO plugins),
+// so it needs no RootIsolateToken. One OfflineTts, loaded once, reused.
+// ===========================================================================
 
-  /// Platform service used ONLY for microphone/STT (Piper has no STT).
-  final SpeechService _sttFallback;
+class _LoadCmd {
+  const _LoadCmd(this.model, this.tokens, this.dataDir);
+  final String model, tokens, dataDir;
+}
+
+class _GenCmd {
+  const _GenCmd(this.reqId, this.text, this.speed, this.outPath);
+  final int reqId;
+  final String text;
+  final double speed;
+  final String outPath;
+}
+
+void _piperIsolateEntry(SendPort toMain) {
+  final port = ReceivePort();
+  toMain.send(port.sendPort); // handshake: give main our SendPort
+  sherpa.OfflineTts? tts;
+  var bindingsReady = false;
+
+  port.listen((msg) {
+    try {
+      if (msg is _LoadCmd) {
+        if (tts != null) {
+          toMain.send({'event': 'loaded', 'reused': true});
+          return;
+        }
+        if (!bindingsReady) {
+          sherpa.initBindings();
+          bindingsReady = true;
+        }
+        tts = sherpa.OfflineTts(
+          sherpa.OfflineTtsConfig(
+            model: sherpa.OfflineTtsModelConfig(
+              vits: sherpa.OfflineTtsVitsModelConfig(
+                model: msg.model,
+                tokens: msg.tokens,
+                dataDir: msg.dataDir,
+              ),
+              numThreads: 2,
+            ),
+          ),
+        );
+        toMain.send({'event': 'loaded', 'reused': false});
+      } else if (msg is _GenCmd) {
+        final engine = tts;
+        if (engine == null) {
+          toMain.send({'event': 'error', 'reqId': msg.reqId, 'msg': 'no engine'});
+          return;
+        }
+        // Synchronous ONNX inference — but on THIS isolate, so the UI stays
+        // responsive. One request at a time (main serializes).
+        final audio = engine.generate(text: msg.text, sid: 0, speed: msg.speed);
+        if (audio.samples.isEmpty) {
+          toMain.send({'event': 'empty', 'reqId': msg.reqId});
+          return;
+        }
+        sherpa.writeWave(
+          filename: msg.outPath,
+          samples: audio.samples,
+          sampleRate: audio.sampleRate,
+        );
+        toMain.send({
+          'event': 'wav',
+          'reqId': msg.reqId,
+          'path': msg.outPath,
+          'samples': audio.samples.length,
+          'sr': audio.sampleRate,
+        });
+      } else if (msg == 'dispose') {
+        tts?.free();
+        tts = null;
+        port.close();
+      }
+    } catch (e, st) {
+      toMain.send({'event': 'error', 'msg': '$e', 'stack': '$st'});
+    }
+  });
+}
+
+// ===========================================================================
+// Main-isolate service.
+// ===========================================================================
+
+class PiperSpeechService implements SpeechService {
+  PiperSpeechService(this._platform);
+
+  /// Platform service: microphone/STT, and the reported fallback voice if
+  /// Piper cannot synthesize.
+  final SpeechService _platform;
 
   final AudioPlayer _player = AudioPlayer();
-  final Map<String, sherpa.OfflineTts> _engines = {};
-  final Map<String, Future<void>> _inflight = {};
-  bool _bindingsReady = false;
-  int _gen = 0;
 
-  // ---- Diagnostics only (Phase-15 stability investigation). No behavior
-  // change: these counters/logs expose concurrency, leaks and exceptions in
-  // the phone's logcat. debugPrint is NOT stripped in release builds.
-  int _active = 0; // concurrent speak() bodies in flight
-  int _seq = 0; // monotonic speak id
-  int _loads = 0; // how many times a voice model was actually loaded
-  static void _log(String m) => debugPrint('[PIPER] $m');
+  // Isolate plumbing.
+  Isolate? _isolate;
+  SendPort? _toIsolate;
+  final _events = StreamController<Map<String, dynamic>>.broadcast();
+  Future<void>? _spawning;
 
-  /// Live status + download progress (0..1) for Voice Settings.
+  bool _engineReady = false;
+  Future<void>? _loading;
+  int _loadCount = 0;
+
+  int _gen = 0; // barge-in / cancellation token
+  int _reqCounter = 0;
+  Future<void> _busy = Future.value(); // serialization chain
+  String? _tmpDir;
+  String? _docsDir;
+  bool _disposed = false;
+
   final ValueNotifier<PiperStatus> status = ValueNotifier(PiperStatus.idle);
   final ValueNotifier<double> progress = ValueNotifier(0);
   final ValueNotifier<String> statusDetail = ValueNotifier('');
 
+  static void _log(String m) => debugPrint('[PIPER] $m');
+  static String _base(String c) => c.split('-').first.toLowerCase();
+
   @override
   SpeechEngine get engine => SpeechEngine.piper;
-
   @override
   bool get available => true;
 
-  static String _base(String langCode) =>
-      langCode.split('-').first.toLowerCase();
+  // ---- isolate lifecycle -------------------------------------------------
 
-  /// Ensures the voice for [langCode] is downloaded + loaded. Kicks off the
-  /// download when missing; concurrent callers share one in-flight future.
+  Future<void> _ensureIsolate() {
+    if (_toIsolate != null) return Future.value();
+    return _spawning ??= () async {
+      final rp = ReceivePort();
+      rp.listen((msg) {
+        if (msg is SendPort) {
+          _toIsolate = msg;
+        } else if (msg is Map) {
+          _events.add(msg.cast<String, dynamic>());
+        }
+      });
+      _isolate = await Isolate.spawn(_piperIsolateEntry, rp.sendPort);
+      // wait for handshake
+      while (_toIsolate == null) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+      _log('isolate spawned');
+    }();
+  }
+
+  // ---- voice download + one-time load ------------------------------------
+
   Future<void> ensureVoice(String langCode) {
-    final base = _base(langCode);
-    if (_engines.containsKey(base)) {
-      _log('ensureVoice($base): cache hit (loads=$_loads)');
-      return Future.value();
-    }
-    if (_inflight.containsKey(base)) {
-      _log('ensureVoice($base): joining in-flight load');
-      return _inflight[base]!;
-    }
-    _log('ensureVoice($base): starting load');
-    return _inflight[base] ??= _loadVoice(base).whenComplete(
-      () => _inflight.remove(base),
-    );
+    if (_engineReady) return Future.value();
+    return _loading ??= _loadVoice(_base(langCode)).whenComplete(() {
+      _loading = null;
+    });
   }
 
   Future<void> _loadVoice(String base) async {
@@ -108,52 +215,49 @@ class PiperSpeechService implements SpeechService {
       return;
     }
     try {
-      final docs = await getApplicationDocumentsDirectory();
-      final root = Directory('${docs.path}/piper');
-      final dir = Directory('${root.path}/${voice.dir}');
-      final modelFile = File('${dir.path}/${voice.model}');
+      _docsDir ??= (await getApplicationDocumentsDirectory()).path;
+      _tmpDir ??= (await getTemporaryDirectory()).path;
+      final dir = '$_docsDir/piper/${voice.dir}';
+      final modelFile = File('$dir/${voice.model}');
       if (!modelFile.existsSync()) {
-        await _downloadAndExtract(voice, root);
+        await _downloadAndExtract(voice, '$_docsDir/piper');
       }
       status.value = PiperStatus.loading;
       statusDetail.value = 'Loading neural voice…';
-      if (!_bindingsReady) {
-        sherpa.initBindings();
-        _bindingsReady = true;
-      }
-      final config = sherpa.OfflineTtsConfig(
-        model: sherpa.OfflineTtsModelConfig(
-          vits: sherpa.OfflineTtsVitsModelConfig(
-            model: modelFile.path,
-            tokens: '${dir.path}/tokens.txt',
-            dataDir: '${dir.path}/espeak-ng-data',
-          ),
-          numThreads: 2,
-        ),
+      await _ensureIsolate();
+      final loaded = _events.stream.firstWhere(
+        (e) => e['event'] == 'loaded' || e['event'] == 'error',
       );
-      _engines[base] = sherpa.OfflineTts(config);
-      _loads++;
+      _toIsolate!.send(_LoadCmd(
+        modelFile.path,
+        '$dir/tokens.txt',
+        '$dir/espeak-ng-data',
+      ));
+      final res = await loaded.timeout(const Duration(seconds: 60));
+      if (res['event'] == 'error') {
+        throw StateError('${res['msg']}\n${res['stack']}');
+      }
+      _engineReady = true;
+      _loadCount++;
       status.value = PiperStatus.ready;
       statusDetail.value = 'Piper voice ready (${voice.dir})';
-      _log('LOAD ok: ${voice.dir} (total model loads this session=$_loads; '
-          'expected 1 per language)');
+      _log('LOAD model ok (loadCount=$_loadCount; must stay 1) '
+          'reused=${res['reused']}');
     } catch (e, st) {
       status.value = PiperStatus.error;
       statusDetail.value = 'Voice setup failed: $e';
-      _log('LOAD FAILED base=$base ex=$e');
+      _log('LOAD FAILED $e');
       _log('LOAD FAILED stack:\n$st');
     }
   }
 
-  Future<void> _downloadAndExtract(_PiperVoice voice, Directory root) async {
+  Future<void> _downloadAndExtract(_PiperVoice voice, String root) async {
     status.value = PiperStatus.downloading;
     progress.value = 0;
     statusDetail.value = 'Downloading neural voice…';
     final client = HttpClient();
     try {
-      // GitHub releases redirect to a CDN; HttpClient follows by default.
-      final request = await client.getUrl(Uri.parse(voice.url));
-      final response = await request.close();
+      final response = await (await client.getUrl(Uri.parse(voice.url))).close();
       if (response.statusCode != 200) {
         throw HttpException('HTTP ${response.statusCode} for ${voice.url}');
       }
@@ -167,24 +271,24 @@ class PiperSpeechService implements SpeechService {
       }
       status.value = PiperStatus.extracting;
       statusDetail.value = 'Unpacking voice…';
-      // .tar.bz2 → tar → files on disk (pure Dart, no native tools).
-      final tar = BZip2Decoder().decodeBytes(bytes);
-      final files = TarDecoder().decodeBytes(tar);
-      for (final f in files) {
-        if (!f.isFile) continue;
-        final out = File('${root.path}/${f.name}');
+      // Off the UI thread: BZip2 + tar of ~67 MB in a one-shot isolate.
+      final files = await compute(_extractArchive, bytes);
+      for (final f in files.entries) {
+        final out = File('$root/${f.key}');
         out.parent.createSync(recursive: true);
-        out.writeAsBytesSync(f.content as List<int>);
+        out.writeAsBytesSync(f.value);
       }
-      _log('DOWNLOAD ok ${voice.dir} ($received bytes)');
+      _log('DOWNLOAD+EXTRACT ok ${voice.dir} ($received bytes)');
     } catch (e, st) {
-      _log('DOWNLOAD FAILED ${voice.url} ex=$e');
+      _log('DOWNLOAD FAILED ${voice.url} $e');
       _log('DOWNLOAD FAILED stack:\n$st');
       rethrow;
     } finally {
       client.close();
     }
   }
+
+  // ---- speak (serialized; synthesis on isolate; playback on main) --------
 
   @override
   Future<void> speak(
@@ -194,82 +298,100 @@ class PiperSpeechService implements SpeechService {
     double? pitch,
     double speed = 1.0,
   }) async {
-    final myGen = ++_gen;
-    final id = ++_seq;
-    _active++;
-    final sw = Stopwatch()..start();
-    _log('speak#$id START gen=$myGen active=$_active len=${text.length} '
-        'speed=$speed ${_active > 1 ? '*** CONCURRENT SPEAK ***' : ''}');
+    final myGen = ++_gen; // cancels any running/queued speak
+    final prev = _busy;
+    final done = Completer<void>();
+    _busy = done.future;
     try {
-      final base = _base(langCode);
-      // First use: start (or join) the voice download. Never falls back to
-      // another TTS — until the model is ready, we stay silent and Voice
-      // Settings shows the download progress.
+      await prev; // the previous speak exits fast (its myGen != _gen now)
+    } catch (_) {}
+    try {
+      await _run(text, langCode, speed, myGen);
+    } finally {
+      done.complete();
+    }
+  }
+
+  Future<void> _run(String text, String langCode, double speed, int myGen) async {
+    try {
       await ensureVoice(langCode);
-      final tts = _engines[base];
-      if (tts == null || myGen != _gen) {
-        _log('speak#$id EXIT early (tts=${tts != null} '
-            'superseded=${myGen != _gen})');
+      if (myGen != _gen || _disposed) return;
+      if (!_engineReady) {
+        _log('FALLBACK device TTS: Piper engine not ready');
+        await _platform.speak(text, langCode: langCode, speed: speed);
         return;
       }
       final normalized = spokenText(text);
       if (normalized.isEmpty) return;
-      // Sentence-chunked synthesis: keeps latency low, gives natural breaths,
-      // and lets a barge-in cancel between chunks.
-      final chunks = _sentences(normalized);
-      final tmp = await getTemporaryDirectory();
-      for (final (i, s) in chunks.indexed) {
-        if (myGen != _gen) {
-          _log('speak#$id BARGE-IN before chunk$i (gen $myGen!=$_gen)');
-          return;
-        }
-        final gsw = Stopwatch()..start();
-        final audio = tts.generate(text: s, sid: 0, speed: speed);
-        gsw.stop();
-        // generate() runs synchronously on THIS isolate: this ms figure is
-        // main-thread block time — the ANR risk on a real phone.
-        _log('speak#$id chunk$i generate=${gsw.elapsedMilliseconds}ms '
-            'samples=${audio.samples.length} sr=${audio.sampleRate}'
-            '${gsw.elapsedMilliseconds > 800 ? ' *** MAIN-ISOLATE BLOCK ***' : ''}');
-        if (myGen != _gen || audio.samples.isEmpty) return;
-        final wav = '${tmp.path}/piper_$myGen$i.wav';
-        sherpa.writeWave(
-          filename: wav,
-          samples: audio.samples,
-          sampleRate: audio.sampleRate,
-        );
-        if (myGen != _gen) return;
-        final done = Completer<void>();
-        late final StreamSubscription<void> sub;
-        sub = _player.onPlayerComplete.listen((_) {
-          if (!done.isCompleted) done.complete();
-        });
-        await _player.play(DeviceFileSource(wav));
-        final timeout = Duration(
-          seconds: 5 + audio.samples.length ~/ audio.sampleRate,
-        );
-        var timedOut = false;
-        await done.future.timeout(timeout, onTimeout: () => timedOut = true);
-        // A timeout here means onPlayerComplete never fired — e.g. stop()
-        // was called (stop() does NOT emit complete). Diagnostic for the
-        // "coroutine lingers for the whole timeout on barge-in" leak.
-        if (timedOut) {
-          _log('speak#$id chunk$i PLAY TIMEOUT after ${timeout.inSeconds}s '
-              '(onPlayerComplete never fired — stopped or hung)');
-        }
-        await sub.cancel();
-        if (i < chunks.length - 1) {
-          await Future<void>.delayed(const Duration(milliseconds: 200));
-        }
+      for (final s in _sentences(normalized)) {
+        if (myGen != _gen || _disposed) return; // barge-in
+        final path = await _synthesize(s, speed, myGen);
+        if (path == null || myGen != _gen || _disposed) return;
+        await _playFile(path, myGen);
+        if (myGen != _gen || _disposed) return;
+        await Future<void>.delayed(const Duration(milliseconds: 180));
       }
-      _log('speak#$id DONE in ${sw.elapsedMilliseconds}ms');
     } catch (e, st) {
-      // Previously UNHANDLED — an exception here escaped as an unhandled
-      // async error. Log the full trace so the crash is attributable.
-      _log('speak#$id EXCEPTION ex=$e');
-      _log('speak#$id stack:\n$st');
+      _log('speak EXCEPTION $e');
+      _log('speak stack:\n$st');
+      // Never crash on a voice failure — hand this utterance to device TTS.
+      if (myGen == _gen && !_disposed) {
+        _log('FALLBACK device TTS after exception');
+        try {
+          await _platform.speak(text, langCode: langCode, speed: speed);
+        } catch (_) {}
+      }
+    }
+  }
+
+  /// One sentence → WAV path via the background isolate. Null on error/cancel.
+  Future<String?> _synthesize(String sentence, double speed, int myGen) async {
+    final reqId = ++_reqCounter;
+    final out = '$_tmpDir/piper_$reqId.wav';
+    final reply = _events.stream.firstWhere(
+      (e) =>
+          (e['event'] == 'wav' && e['reqId'] == reqId) ||
+          (e['event'] == 'empty' && e['reqId'] == reqId) ||
+          e['event'] == 'error',
+    );
+    final sw = Stopwatch()..start();
+    _toIsolate!.send(_GenCmd(reqId, sentence, speed, out));
+    final e = await reply.timeout(const Duration(seconds: 30), onTimeout: () {
+      return {'event': 'error', 'msg': 'synth timeout'};
+    });
+    sw.stop();
+    if (myGen != _gen) return null; // barged in while synthesizing
+    if (e['event'] != 'wav') {
+      _log('synth req$reqId ${e['event']} ${e['msg'] ?? ''}');
+      if (e['event'] == 'error') throw StateError('${e['msg']}');
+      return null; // empty
+    }
+    _log('synth req$reqId ${sw.elapsedMilliseconds}ms (isolate) '
+        'samples=${e['samples']} sr=${e['sr']}');
+    return e['path'] as String;
+  }
+
+  /// Play a WAV, completing the instant it finishes OR is stopped (no long
+  /// timeout, so barge-in returns immediately).
+  Future<void> _playFile(String path, int myGen) async {
+    final done = Completer<void>();
+    late final StreamSubscription<PlayerState> sub;
+    sub = _player.onPlayerStateChanged.listen((s) {
+      if (s == PlayerState.completed ||
+          s == PlayerState.stopped ||
+          s == PlayerState.disposed) {
+        if (!done.isCompleted) done.complete();
+      }
+    });
+    try {
+      await _player.play(DeviceFileSource(path));
+      // Safety cap only; normally resolved by state change above.
+      await done.future.timeout(const Duration(seconds: 30), onTimeout: () {});
+    } catch (e) {
+      _log('play error $e');
     } finally {
-      _active--;
+      await sub.cancel();
+      _deleteQuiet(path);
     }
   }
 
@@ -289,32 +411,67 @@ class PiperSpeechService implements SpeechService {
     return out.isEmpty ? [text] : out;
   }
 
+  // ---- barge-in: instant, no waiting -------------------------------------
+
   @override
   Future<void> stop() async {
-    _gen++; // cancels the synthesis/playback loop instantly (barge-in)
-    _log('stop() gen->$_gen active=$_active');
+    _gen++; // running _run exits at its next guard; synth reply discarded
+    _log('stop() gen->$_gen (instant barge-in)');
     try {
       await _player.stop();
     } catch (e, st) {
-      _log('stop() player.stop ex=$e');
+      _log('stop() player $e');
       _log('stop() stack:\n$st');
     }
-    await _sttFallback.stop();
+    await _platform.stop();
   }
 
   @override
   Future<void> pause() async {
     _gen++;
-    _log('pause() gen->$_gen active=$_active');
     try {
       await _player.pause();
-    } catch (e, st) {
-      _log('pause() player.pause ex=$e');
-      _log('pause() stack:\n$st');
-    }
+    } catch (_) {}
   }
 
   @override
   Future<String?> listen({String langCode = 'es-ES'}) =>
-      _sttFallback.listen(langCode: langCode);
+      _platform.listen(langCode: langCode);
+
+  // ---- lifecycle ---------------------------------------------------------
+
+  void dispose() {
+    _disposed = true;
+    _gen++;
+    _toIsolate?.send('dispose');
+    _isolate?.kill(priority: Isolate.immediate);
+    _isolate = null;
+    _toIsolate = null;
+    _events.close();
+    _player.dispose();
+    // Purge leftover temp WAVs.
+    final tmp = _tmpDir;
+    if (tmp != null) {
+      for (final f in Directory(tmp).listSync()) {
+        if (f is File && f.path.contains('piper_')) _deleteQuiet(f.path);
+      }
+    }
+  }
+
+  static void _deleteQuiet(String path) {
+    try {
+      final f = File(path);
+      if (f.existsSync()) f.deleteSync();
+    } catch (_) {}
+  }
+}
+
+/// Runs in a one-shot `compute` isolate: BZip2 + tar → {name: bytes}.
+Map<String, List<int>> _extractArchive(List<int> bytes) {
+  final tar = BZip2Decoder().decodeBytes(bytes);
+  final files = TarDecoder().decodeBytes(tar);
+  return {
+    for (final f in files)
+      if (f.isFile) f.name: f.content as List<int>,
+  };
 }

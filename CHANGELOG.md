@@ -7,6 +7,32 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
+### Fixed
+
+- 2026-07-18: Piper ANR crash — FIXED and verified on the physical device
+  (OnePlus CPH2037 / Android 12). Root cause (confirmed on-device):
+  synchronous ONNX `OfflineTts.generate()` ran on Flutter's UI isolate
+  (logcat showed all Piper work on tid == pid == main thread; after
+  "LOAD ok" no synthesis returned and the UI froze ~5 min → ANR).
+  Fix (`piper_speech_service.dart` only): a single long-lived **background
+  isolate** owns the Piper engine — model load + all inference. The UI
+  isolate sends text over a SendPort and receives a WAV path, then plays it,
+  so the main thread never runs inference. Also: model loads exactly once;
+  speech requests are serialized (a `_gen` token cancels the running one on
+  a new request/stop — no overlap); `stop()` is instant (playback wait now
+  resolves on `onPlayerStateChanged` stopped/completed, the 7 s timeout is
+  gone); temp WAVs, ports, isolate and AudioPlayer are disposed; the
+  one-time 67 MB extract moved off the UI thread via `compute()`; every op
+  is wrapped, logs its full stack, and falls back to device TTS (reported)
+  on failure — never crashes. On-device verification (logcat): isolate
+  spawned ×1; `LOAD model ok (loadCount=1)` ×1; synthesis runs on the
+  isolate (`synth req… (isolate)`, 0.35–2.5 s); 50× rapid Play/Stop with
+  barge-in — no crash, no ANR, no extra loads, no exceptions; full-passage
+  narration synthesizes + plays; barge-in stops instantly
+  (`stop() … instant barge-in`); the UI stays responsive during synthesis
+  (language toggle applied + re-rendered mid-synth). `flutter analyze`
+  clean; 204 tests green.
+
 ### Changed
 
 - 2026-07-17: Piper voice STABILITY INVESTIGATION — diagnostics only, no

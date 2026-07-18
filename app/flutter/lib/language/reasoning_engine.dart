@@ -1,11 +1,13 @@
 import 'connections.dart';
 import 'curiosity.dart';
 import 'entities.dart';
+import 'learning_profile.dart';
 import 'mental_models.dart';
 import 'misconceptions.dart';
 import 'notebook.dart';
 import 'relationships.dart';
 import 'teacher_brain.dart';
+import 'teaching_style.dart';
 
 /// Everything the reasoning engine needs to assemble a [TeacherBrain], gathered
 /// from the app's authoritative sources by the provider layer. Keeping this as
@@ -31,6 +33,7 @@ class BrainInputs {
     this.relations = const [],
     this.recentlyActivated = const {},
     this.storiesAvailable = false,
+    this.history = const [],
     this.pronunciationConfidence,
     this.listeningRecognition,
     this.conversationAbility,
@@ -67,6 +70,10 @@ class BrainInputs {
 
   /// Whether level-matched stories exist (gates the "ready to read" curiosity).
   final bool storiesAvailable;
+
+  /// Full snapshot history oldest-first (struggle detection, motivation,
+  /// retention). [previous] remains the most recent prior-day snapshot.
+  final List<NotebookSnapshot> history;
   final double? pronunciationConfidence;
   final double? listeningRecognition;
   final double? conversationAbility;
@@ -145,6 +152,25 @@ class OfflineReasoningEngine implements ReasoningEngine {
     );
     final moments = buildConnectionMoments(connections);
 
+    // Phase 20: how the learner learns, and how to teach them.
+    final streak = computeStreak(i.historyDays, i.today);
+    final profile = deriveLearningProfile(
+      facts: facts,
+      learningDna: i.learningDna,
+      history: i.history,
+      streakDays: streak,
+    );
+    final pedagogy = const TeachingStyleEngine().decide(
+      facts: facts,
+      profile: profile,
+      history: i.history,
+    );
+    final readiness = computeReadiness(
+      facts: facts,
+      confidence: profile.confidence,
+      history: i.history,
+    );
+
     final notebook = buildTeacherNotebook(
       mastery: i.skillMastery,
       misconceptions: i.misconceptions,
@@ -194,7 +220,7 @@ class OfflineReasoningEngine implements ReasoningEngine {
         targetLanguageName: i.targetLanguageName,
         currentLevel: cefr,
         longTermGoal: i.longTermGoal,
-        streakDays: computeStreak(i.historyDays, i.today),
+        streakDays: streak,
         estimatedVocabulary: (vocab * i.vocabularyPoolSize).round(),
       ),
       facts: facts,
@@ -204,6 +230,9 @@ class OfflineReasoningEngine implements ReasoningEngine {
       patterns: patterns,
       curiosities: curiosities,
       connectionMoments: moments,
+      profile: profile,
+      pedagogy: pedagogy,
+      readiness: readiness,
       interests: i.interests,
       learningDna: i.learningDna,
       objectives: LearnerObjectives(

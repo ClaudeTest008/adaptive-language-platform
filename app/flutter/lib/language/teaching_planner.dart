@@ -44,6 +44,17 @@ ConnectionSuggestion? _connectionFor(TeacherBrain brain, String? conceptId) {
 /// general teacher review. Pure and offline; a premium planner can replace
 /// this while consuming the same brain.
 TeachingChoice chooseTeachingStrategy(TeacherBrain brain) {
+  // 0 · Recovery beats everything (Phase 20): sustained struggle or material
+  // running too hard — review, no new concepts.
+  final pedagogy = brain.pedagogy;
+  if (pedagogy != null && pedagogy.recoveryMode) {
+    return TeachingChoice(
+      mode: TutorMode.teacher,
+      focusConceptId: brain.objectives.currentConceptId,
+      rationale: pedagogy.rationale,
+    );
+  }
+
   final focusId = brain.objectives.currentConceptId;
 
   // 1 · An active misconception: teach it, connected to what they know.

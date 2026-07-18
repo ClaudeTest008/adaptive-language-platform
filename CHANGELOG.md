@@ -9,6 +9,40 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 20 — Learning Profile + Teaching Style Engine + Adaptive
+  Pedagogy. The teacher now knows HOW the learner learns and adapts how it
+  teaches — optimizing long-term learning over lesson completion.
+  **LearningProfile** (`lib/language/learning_profile.dart`, pure): typed,
+  explainable traits derived only from real data — core Learning DNA
+  (repetition/fast/slow-durable/pressure/consistency/confidence), skill
+  balances (strong listener/reader, speaking avoidance), each with evidence.
+  Includes a **ConfidenceModel separate from mastery** (someone may understand
+  grammar but avoid speaking — avoidance drags speaking confidence below its
+  mastery) and a **MotivationModel** (flowing/steady/strained + momentum, from
+  snapshot history and streak; unknown until ≥2 sessions). Learning speed and
+  difficulty tolerance stay null under 10 answers — nothing fabricated. The
+  profile is recomputed every brain build, so it evolves automatically.
+  **TeachingStyleEngine** (`lib/language/teaching_style.dart`, pure): decides
+  the presentation (example/story/conversation/review/challenge/encouragement/
+  connection-first), correction style (minimal/gentle/detailed), and continuous
+  **difficulty fit** (too easy/ideal/too difficult/unknown). **Recovery
+  detection**: sustained mastery decline across recent snapshots, or
+  too-difficult material, flips `recoveryMode` — review only, no new concepts —
+  and this propagates into the unified teacher's choice (`teaching_planner`
+  honors it first). **Success prediction** (`predictSuccess`): prerequisite-
+  weighted probability before assigning a lesson (low → prerequisites first).
+  **Readiness analytics** (`computeReadiness`, typed, architecture): speaking/
+  reading/conversation readiness, retention, learning efficiency — real
+  measurements only, null when unmeasured. **TeacherReflection** typed model
+  added (producer lands with lesson outcomes in the roleplay phase). Brain now
+  carries `profile`, `pedagogy`, `readiness`, `reflections`; `BrainInputs`
+  gains full snapshot `history`. Everything derived from the brain,
+  deterministic, offline; premium still swaps only ReasoningEngine. 257 tests
+  (+14: profile derivation/avoidance/confidence-split/motivation/no-fabrication,
+  style engine recovery/difficulty/profile-driven style, success prediction,
+  readiness, brain integration + recovery propagation), analyze clean, Android
+  debug build green.
+
 - 2026-07-18: Phase 19 — Adaptive Lesson Generator + Curiosity Engine + Mental
   Model Builder. Three new pure/offline engines that make the Teacher Brain
   *proactively teach* instead of only measure. **Mental Model Builder**

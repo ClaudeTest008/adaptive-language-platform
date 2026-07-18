@@ -1,8 +1,10 @@
 import 'connections.dart';
 import 'curiosity.dart';
 import 'entities.dart';
+import 'learning_profile.dart';
 import 'mental_models.dart';
 import 'notebook.dart';
+import 'teaching_style.dart';
 
 /// The Teacher Brain (Phase 17) — the application's single, structured source
 /// of truth about the learner. It is a *derived* read-model: assembled by a
@@ -186,6 +188,10 @@ class TeacherBrain {
     this.patterns = const [],
     this.curiosities = const [],
     this.connectionMoments = const [],
+    this.profile = const LearningProfile(),
+    this.pedagogy,
+    this.readiness = const ReadinessScores(),
+    this.reflections = const [],
     this.interests = const [],
     this.learningDna = const [],
     required this.objectives,
@@ -212,6 +218,20 @@ class TeacherBrain {
 
   /// Short "this connects to…" asides the tutor/reader can weave in.
   final List<ConnectionMoment> connectionMoments;
+
+  /// HOW the learner learns — derived from DNA/skills/history (Phase 20).
+  final LearningProfile profile;
+
+  /// The Teaching Style Engine's decision: style, corrections, difficulty,
+  /// recovery mode. Null until the engine has run.
+  final PedagogyDecision? pedagogy;
+
+  /// Typed readiness analytics — real measurements only, null when unmeasured.
+  final ReadinessScores readiness;
+
+  /// Post-lesson teacher reflections (typed; producer lands with lesson
+  /// outcomes in the roleplay phase).
+  final List<TeacherReflection> reflections;
   final List<Interest> interests;
   final List<String> learningDna;
   final LearnerObjectives objectives;

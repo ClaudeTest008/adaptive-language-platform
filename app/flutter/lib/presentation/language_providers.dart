@@ -970,6 +970,7 @@ final teacherBrainProvider = FutureProvider<TeacherBrain?>((ref) async {
       recentlyActivated: recentlyActivated,
       storiesAvailable:
           (ref.watch(storiesProvider).value ?? const []).isNotEmpty,
+      history: history,
       currentConceptId: currentConceptId,
       pronunciationConfidence: _meanSignal(
         st.signals,

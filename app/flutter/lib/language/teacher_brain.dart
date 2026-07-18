@@ -1,5 +1,7 @@
 import 'connections.dart';
+import 'curiosity.dart';
 import 'entities.dart';
+import 'mental_models.dart';
 import 'notebook.dart';
 
 /// The Teacher Brain (Phase 17) — the application's single, structured source
@@ -180,6 +182,10 @@ class TeacherBrain {
     required this.facts,
     required this.notebook,
     this.connections = const ConnectionGraph(),
+    this.mentalModels = const [],
+    this.patterns = const [],
+    this.curiosities = const [],
+    this.connectionMoments = const [],
     this.interests = const [],
     this.learningDna = const [],
     required this.objectives,
@@ -193,6 +199,19 @@ class TeacherBrain {
   /// The learner's derived relationship graph — how what they know connects,
   /// and which nearby concepts to teach next (Phase 18).
   final ConnectionGraph connections;
+
+  /// Big-idea explanations that turn linked concepts into understanding
+  /// (Phase 19).
+  final List<MentalModel> mentalModels;
+
+  /// Structural regularities discovered in the learner's graph (Phase 19).
+  final List<LanguagePattern> patterns;
+
+  /// Proactive teaching observations — the teacher noticing opportunities.
+  final List<CuriosityNote> curiosities;
+
+  /// Short "this connects to…" asides the tutor/reader can weave in.
+  final List<ConnectionMoment> connectionMoments;
   final List<Interest> interests;
   final List<String> learningDna;
   final LearnerObjectives objectives;

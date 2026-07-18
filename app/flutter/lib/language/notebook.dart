@@ -25,6 +25,8 @@ enum ObservationCategory {
   focus,
   encouragement,
   connection,
+  mentalModel,
+  curiosity,
   plan,
 }
 

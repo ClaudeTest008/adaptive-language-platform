@@ -462,6 +462,9 @@ class _TeacherNotebookCard extends ConsumerWidget {
     ObservationCategory.trend: Icons.trending_up,
     ObservationCategory.focus: Icons.center_focus_strong,
     ObservationCategory.encouragement: Icons.emoji_events,
+    ObservationCategory.connection: Icons.hub,
+    ObservationCategory.mentalModel: Icons.lightbulb,
+    ObservationCategory.curiosity: Icons.auto_awesome,
     ObservationCategory.plan: Icons.arrow_forward,
   };
 

@@ -9,6 +9,37 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 19 — Adaptive Lesson Generator + Curiosity Engine + Mental
+  Model Builder. Three new pure/offline engines that make the Teacher Brain
+  *proactively teach* instead of only measure. **Mental Model Builder**
+  (`lib/language/mental_models.dart`): turns connection links into
+  understanding — curated big-idea insights ("Spanish uses TENER where English
+  uses TO BE", por↔movement-through / para↔direction-toward, ser/estar) plus
+  generic family models, derived deterministically from the connection graph;
+  `discoverPatterns` surfaces verb/grammar/semantic families and
+  interference/false-friend/progression regularities. **Curiosity Engine**
+  (`lib/language/curiosity.dart`): a few genuine, capped, priority-sorted
+  observations the teacher volunteers ("this is the 3rd time this pattern has
+  tripped you up", "you're holding back on speaking", "you've learned enough
+  vocabulary to begin reading") — never spam, each fires only when its real
+  condition is met; plus `buildConnectionMoments` for short "this works just
+  like X" asides. **Adaptive Lesson Generator**
+  (`lib/language/lesson_generator.dart`): consumes the brain and emits a typed
+  `LessonPlan` — today/recovery/grammar/stretch/review/conversation/story/
+  speaking recommendations following the Known → Connected → New → Practice →
+  Reflection → Connection-review → Mental-model arc. The brain now carries
+  `mentalModels`, `patterns`, `curiosities`, `connectionMoments`; the reasoning
+  engine populates them and folds the top mental model + top curiosity into the
+  notebook, so the dashboard shows the teacher teaching with no UI rewrite.
+  Providers: `lessonPlanProvider` (the orchestrator's "what next", derived from
+  the brain). Reading/speaking integration is architecture-only (recommendations
+  live on the brain/plan; UI producers wire in later phases). Everything
+  deterministic, offline, single-source-of-truth (all derived from the brain,
+  no parallel stores); the existing daily-lesson engine is untouched (it feeds
+  the brain). 243 tests (+10: mental models/patterns/no-fabrication, curiosity
+  cap + repeated-pattern + moments, lesson-plan arc + recommendations, brain
+  integration + notebook surfacing), analyze clean, Android debug build green.
+
 - 2026-07-18: Phase 18 — Unified Adaptive Teacher + Connection Engine (teaching
   through connections). **Connection Engine** (`lib/language/connections.dart`,
   pure/offline): derives the learner's *personal* relationship graph from the

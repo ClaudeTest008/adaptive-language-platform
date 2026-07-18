@@ -1,5 +1,7 @@
 import 'connections.dart';
+import 'curiosity.dart';
 import 'entities.dart';
+import 'mental_models.dart';
 import 'misconceptions.dart';
 import 'notebook.dart';
 import 'relationships.dart';
@@ -28,6 +30,7 @@ class BrainInputs {
     required this.vocabularyPoolSize,
     this.relations = const [],
     this.recentlyActivated = const {},
+    this.storiesAvailable = false,
     this.pronunciationConfidence,
     this.listeningRecognition,
     this.conversationAbility,
@@ -61,6 +64,9 @@ class BrainInputs {
 
   /// Concepts touched in the current plan (marked as recently activated).
   final Set<String> recentlyActivated;
+
+  /// Whether level-matched stories exist (gates the "ready to read" curiosity).
+  final bool storiesAvailable;
   final double? pronunciationConfidence;
   final double? listeningRecognition;
   final double? conversationAbility;
@@ -125,6 +131,20 @@ class OfflineReasoningEngine implements ReasoningEngine {
         ? null
         : connections.suggestions.first;
 
+    // Phase 19 derived layers: understanding, patterns, proactive teaching.
+    final mentalModels = buildMentalModels(
+      graph: connections,
+      misconceptions: i.misconceptions,
+    );
+    final patterns = discoverPatterns(connections);
+    final curiosities = discoverCuriosities(
+      facts: facts,
+      connections: connections,
+      misconceptions: i.misconceptions,
+      storiesAvailable: i.storiesAvailable,
+    );
+    final moments = buildConnectionMoments(connections);
+
     final notebook = buildTeacherNotebook(
       mastery: i.skillMastery,
       misconceptions: i.misconceptions,
@@ -140,6 +160,33 @@ class OfflineReasoningEngine implements ReasoningEngine {
       connectionSuggestion: suggestion,
     );
 
+    // Surface the teacher's proactive teaching in the notebook itself: the top
+    // mental model leads, the top curiosity closes — so the dashboard shows
+    // "the teacher is teaching", not just measuring.
+    final augmented = TeacherNotebook(
+      cefrEstimate: notebook.cefrEstimate,
+      observations: [
+        if (mentalModels.isNotEmpty)
+          TeacherObservation(
+            mentalModels.first.insight,
+            category: ObservationCategory.mentalModel,
+            priority: 0,
+            conceptIds: [
+              mentalModels.first.anchorConceptId,
+              ...mentalModels.first.relatedConceptIds,
+            ],
+          ),
+        ...notebook.observations,
+        if (curiosities.isNotEmpty)
+          TeacherObservation(
+            curiosities.first.text,
+            category: ObservationCategory.curiosity,
+            priority: 8,
+            conceptIds: curiosities.first.conceptIds,
+          ),
+      ],
+    );
+
     return TeacherBrain(
       identity: LearnerIdentity(
         nativeLanguage: i.nativeLanguage,
@@ -151,8 +198,12 @@ class OfflineReasoningEngine implements ReasoningEngine {
         estimatedVocabulary: (vocab * i.vocabularyPoolSize).round(),
       ),
       facts: facts,
-      notebook: notebook,
+      notebook: augmented,
       connections: connections,
+      mentalModels: mentalModels,
+      patterns: patterns,
+      curiosities: curiosities,
+      connectionMoments: moments,
       interests: i.interests,
       learningDna: i.learningDna,
       objectives: LearnerObjectives(

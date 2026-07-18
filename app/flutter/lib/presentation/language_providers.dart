@@ -28,6 +28,7 @@ import '../language/entities.dart';
 import '../language/exercises.dart';
 import '../language/ingestion.dart';
 import '../language/lesson.dart';
+import '../language/lesson_generator.dart';
 import '../language/misconceptions.dart';
 import '../language/notebook.dart';
 import '../language/notebook_repository.dart';
@@ -967,6 +968,8 @@ final teacherBrainProvider = FutureProvider<TeacherBrain?>((ref) async {
       vocabularyPoolSize: vocabularyPoolSize,
       relations: curriculum.graph.relations,
       recentlyActivated: recentlyActivated,
+      storiesAvailable:
+          (ref.watch(storiesProvider).value ?? const []).isNotEmpty,
       currentConceptId: currentConceptId,
       pronunciationConfidence: _meanSignal(
         st.signals,
@@ -1005,6 +1008,16 @@ final teacherBrainProvider = FutureProvider<TeacherBrain?>((ref) async {
 final teachingChoiceProvider = Provider<TeachingChoice?>((ref) {
   final brain = ref.watch(teacherBrainProvider).value;
   return brain == null ? null : chooseTeachingStrategy(brain);
+});
+
+/// The Adaptive Lesson Generator's plan (Phase 19) — the orchestrator's
+/// "what next", derived from the Teacher Brain. Null until the brain is ready.
+/// Reading/speaking/tutor surfaces read their recommendations from here.
+final lessonPlanProvider = Provider<LessonPlan?>((ref) {
+  final brain = ref.watch(teacherBrainProvider).value;
+  if (brain == null) return null;
+  final stories = ref.watch(storiesProvider).value ?? const [];
+  return const AdaptiveLessonGenerator().generate(brain, stories: stories);
 });
 
 /// Today's personalized plan (ADR-0022): misconception repair first, then

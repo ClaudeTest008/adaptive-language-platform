@@ -9,6 +9,34 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 18 — Unified Adaptive Teacher + Connection Engine (teaching
+  through connections). **Connection Engine** (`lib/language/connections.dart`,
+  pure/offline): derives the learner's *personal* relationship graph from the
+  existing curriculum knowledge graph + mastery — `ConnectionGraph` of
+  `ConceptNode`s and typed `ConceptEdge`s (`ConnectionRelationType`), grouped
+  into `LearningCluster`s, split into **strong** (both ends known), **weak**
+  (shaky), and **hidden** connections (one end known, the other not yet met —
+  the teaching frontier). From the hidden edges it builds ranked
+  `ConnectionSuggestion`s ("you already know *tener hambre* — connect it to
+  *tener sueño, tener miedo*"). Nothing new is stored; the graph is derived
+  each build, so the Teacher Brain stays the single source of truth. Added to
+  `TeacherBrain.connections`; notebook observations now carry `conceptIds` and
+  a **connection note** is generated from the top suggestion; `explainByConnection`
+  gives reading-tap the architecture to explain a word via a known neighbour
+  instead of a definition (producer wires later). **Unified Teacher**
+  (`lib/language/teaching_planner.dart`, `chooseTeachingStrategy`): the Teacher
+  Brain now picks the strategy automatically (repair-through-connection → get a
+  lagging speaker talking → build outward from a strong anchor → review). **The
+  visible 6-mode selector is removed** from the tutor screen — replaced by one
+  "Today's lesson" card that shows the teacher's chosen focus + rationale and
+  starts directly. The six internal strategies are preserved (the teacher picks
+  among them); `teachingChoiceProvider` exposes the decision. Deterministic and
+  offline throughout; future relation producers (pronunciation patterns,
+  collocations, word formation, …) are enum-typed but not emitted until real
+  data backs them — no fabricated connections. 233 tests (+10: connection graph
+  classification/suggestions/no-fabrication/explain, strategy selection, brain
+  connection note), analyze clean, Android debug build green.
+
 - 2026-07-18: Phase 17 (Teacher Brain) — elevate the notebook engine into the
   application's central **Teacher Brain**: one derived, structured source of
   truth about the learner that every future feature reads from. It is

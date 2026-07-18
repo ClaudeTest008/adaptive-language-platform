@@ -37,6 +37,7 @@ import '../language/teacher_brain.dart';
 import '../language/speaking.dart';
 import '../language/speech.dart';
 import '../language/story.dart';
+import '../language/teaching_planner.dart';
 import '../language/tutor.dart';
 
 /// Available (target language, native language) curricula. Adding a
@@ -920,11 +921,18 @@ final teacherBrainProvider = FutureProvider<TeacherBrain?>((ref) async {
   final nextName =
       nameOf(nextBlock?.conceptIds.firstOrNull) ?? nextBlock?.title;
   final topMisconception = st.misconceptions.all.firstOrNull;
+  final currentConceptId =
+      repairBlock?.conceptIds.firstOrNull ??
+      topMisconception?.conceptId ??
+      blocks.firstOrNull?.conceptIds.firstOrNull;
   final currentObjective =
-      nameOf(repairBlock?.conceptIds.firstOrNull) ??
-      nameOf(topMisconception?.conceptId) ??
-      blocks.firstOrNull?.title ??
-      'Warm-up review';
+      nameOf(currentConceptId) ?? blocks.firstOrNull?.title ?? 'Warm-up review';
+
+  // Concepts touched by today's plan or a live misconception = recently active.
+  final recentlyActivated = <String>{
+    for (final b in blocks) ...b.conceptIds,
+    for (final m in st.misconceptions.all) m.conceptId,
+  };
 
   final conceptNames = {
     for (final e in curriculum.graph.nodes.entries) e.key: e.value.name,
@@ -957,6 +965,9 @@ final teacherBrainProvider = FutureProvider<TeacherBrain?>((ref) async {
       learningDna: st.traits,
       historyDays: historyDays,
       vocabularyPoolSize: vocabularyPoolSize,
+      relations: curriculum.graph.relations,
+      recentlyActivated: recentlyActivated,
+      currentConceptId: currentConceptId,
       pronunciationConfidence: _meanSignal(
         st.signals,
         (s) => s.pronunciationConfidence,
@@ -986,6 +997,14 @@ final teacherBrainProvider = FutureProvider<TeacherBrain?>((ref) async {
   );
 
   return brain;
+});
+
+/// The unified teacher's automatic choice (Phase 18) — which internal strategy
+/// to run and why, chosen from the Teacher Brain. Null until the brain is
+/// ready. The tutor screen uses this instead of a mode selector.
+final teachingChoiceProvider = Provider<TeachingChoice?>((ref) {
+  final brain = ref.watch(teacherBrainProvider).value;
+  return brain == null ? null : chooseTeachingStrategy(brain);
 });
 
 /// Today's personalized plan (ADR-0022): misconception repair first, then

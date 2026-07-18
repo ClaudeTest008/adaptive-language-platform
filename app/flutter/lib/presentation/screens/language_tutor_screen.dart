@@ -318,54 +318,84 @@ class _ModeSelector extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: AppSpace.lg),
-        Text('Choose a mode', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: AppSpace.sm),
-        GridView.count(
-          crossAxisCount: MediaQuery.of(context).size.width > 560 ? 3 : 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: AppSpace.sm,
-          crossAxisSpacing: AppSpace.sm,
-          childAspectRatio: 1.15,
+        const FadeInUp(delayMs: 60, child: _TodaysLessonCard()),
+      ],
+    );
+  }
+}
+
+/// The unified teacher (Phase 18): no mode selector. The Teacher Brain chooses
+/// today's strategy and focus; the learner just starts. The six internal
+/// strategies still exist — the teacher picks among them automatically.
+class _TodaysLessonCard extends ConsumerWidget {
+  const _TodaysLessonCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final choice = ref.watch(teachingChoiceProvider);
+    final info = choice == null
+        ? null
+        : _modes.firstWhere((m) => m.mode == choice.mode);
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpace.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (final (i, m) in _modes.indexed)
-              FadeInUp(
-                delayMs: 60 + i * 50,
-                child: Card(
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: () =>
-                        ref.read(tutorSessionProvider.notifier).start(m.mode),
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpace.md),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: scheme.primaryContainer,
-                            child:
-                                Icon(m.icon, color: scheme.onPrimaryContainer),
-                          ),
-                          const SizedBox(height: AppSpace.sm),
-                          Text(
-                            m.title,
-                            style: Theme.of(context).textTheme.titleSmall,
-                          ),
-                          const SizedBox(height: AppSpace.xs / 2),
-                          Text(
-                            m.subtitle,
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ],
-                      ),
-                    ),
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: scheme.primaryContainer,
+                  child: Icon(
+                    info?.icon ?? Icons.school,
+                    color: scheme.onPrimaryContainer,
                   ),
                 ),
+                const SizedBox(width: AppSpace.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Today's lesson", style: text.titleMedium),
+                      Text(
+                        'Your teacher chose this from your progress',
+                        style: text.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpace.md),
+            Text(
+              choice?.rationale ??
+                  'Getting your lesson ready from what you already know…',
+              style: text.bodyMedium,
+            ),
+            const SizedBox(height: AppSpace.lg),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: choice == null
+                    ? null
+                    : () => ref
+                          .read(tutorSessionProvider.notifier)
+                          .start(
+                            choice.mode,
+                            focusConceptId: choice.focusConceptId,
+                          ),
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: const Text("Start today's lesson"),
               ),
+            ),
           ],
         ),
-      ],
+      ),
     );
   }
 }

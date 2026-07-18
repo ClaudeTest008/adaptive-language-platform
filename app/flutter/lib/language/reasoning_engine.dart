@@ -1,6 +1,8 @@
+import 'connections.dart';
 import 'entities.dart';
 import 'misconceptions.dart';
 import 'notebook.dart';
+import 'relationships.dart';
 import 'teacher_brain.dart';
 
 /// Everything the reasoning engine needs to assemble a [TeacherBrain], gathered
@@ -24,11 +26,14 @@ class BrainInputs {
     required this.learningDna,
     required this.historyDays,
     required this.vocabularyPoolSize,
+    this.relations = const [],
+    this.recentlyActivated = const {},
     this.pronunciationConfidence,
     this.listeningRecognition,
     this.conversationAbility,
     this.previous,
     this.currentObjective = 'Warm-up review',
+    this.currentConceptId,
     this.secondaryObjective = 'Keep skills fresh',
     this.nextConceptName,
     this.interests = const [],
@@ -50,11 +55,20 @@ class BrainInputs {
   final List<String> learningDna;
   final List<String> historyDays;
   final int vocabularyPoolSize;
+
+  /// Curriculum relations, for deriving the connection graph.
+  final List<LanguageRelation> relations;
+
+  /// Concepts touched in the current plan (marked as recently activated).
+  final Set<String> recentlyActivated;
   final double? pronunciationConfidence;
   final double? listeningRecognition;
   final double? conversationAbility;
   final NotebookSnapshot? previous;
   final String currentObjective;
+
+  /// Concept id behind [currentObjective], so the teacher can focus on it.
+  final String? currentConceptId;
   final String secondaryObjective;
   final String? nextConceptName;
   final List<Interest> interests;
@@ -101,6 +115,16 @@ class OfflineReasoningEngine implements ReasoningEngine {
       cefr: cefr,
     );
 
+    final connections = buildConnectionGraph(
+      relations: i.relations,
+      conceptNames: i.conceptNames,
+      conceptMastery: i.conceptMastery,
+      recentlyActivated: i.recentlyActivated,
+    );
+    final suggestion = connections.suggestions.isEmpty
+        ? null
+        : connections.suggestions.first;
+
     final notebook = buildTeacherNotebook(
       mastery: i.skillMastery,
       misconceptions: i.misconceptions,
@@ -113,6 +137,7 @@ class OfflineReasoningEngine implements ReasoningEngine {
       conversationAbility: i.conversationAbility,
       previous: i.previous,
       nextConceptName: i.nextConceptName,
+      connectionSuggestion: suggestion,
     );
 
     return TeacherBrain(
@@ -127,12 +152,14 @@ class OfflineReasoningEngine implements ReasoningEngine {
       ),
       facts: facts,
       notebook: notebook,
+      connections: connections,
       interests: i.interests,
       learningDna: i.learningDna,
       objectives: LearnerObjectives(
         current: i.currentObjective,
         secondary: i.secondaryObjective,
         longTerm: i.longTermGoal,
+        currentConceptId: i.currentConceptId,
       ),
       lessonHistory: i.lessonHistory,
     );

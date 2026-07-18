@@ -198,24 +198,22 @@ void main() {
     expect(find.textContaining('Practice 2/'), findsOneWidget);
   });
 
-  testWidgets('tutor: mode selector starts a teacher session with real '
-      'context', (tester) async {
+  testWidgets('unified teacher auto-starts a lesson from real context', (
+    tester,
+  ) async {
     await tester.pumpWidget(_app(curriculum, const LanguageTutorScreen()));
     await _settle(tester);
 
-    // All six modes offered.
-    for (final title in [
-      'Teacher', 'Conversation', 'Coach', 'Socratic', 'Grammar', 'Immersion',
-    ]) {
-      expect(find.text(title), findsOneWidget);
-    }
-    // Context header knows the top misconception from the demo seed.
+    // Phase 18: no mode grid — the Teacher Brain chooses. The header still
+    // knows the top misconception, and today's lesson is offered directly.
+    expect(find.text('Choose a mode'), findsNothing);
     expect(find.textContaining('First up:'), findsOneWidget);
+    expect(find.text("Today's lesson"), findsOneWidget);
 
-    await tester.tap(find.text('Teacher'));
+    await tester.tap(find.text("Start today's lesson"));
     await _settle(tester);
 
-    // Session chips show assembled context.
+    // Session starts with assembled context, focused on the demo misconception.
     expect(find.text('Teacher mode'), findsOneWidget);
     expect(find.textContaining('Focus:'), findsOneWidget);
     expect(find.textContaining('misconceptions in context'), findsOneWidget);

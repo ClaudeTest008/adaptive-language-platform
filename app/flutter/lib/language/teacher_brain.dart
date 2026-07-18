@@ -1,3 +1,4 @@
+import 'connections.dart';
 import 'entities.dart';
 import 'notebook.dart';
 
@@ -78,11 +79,17 @@ class LearnerObjectives {
     required this.current,
     required this.secondary,
     required this.longTerm,
+    this.currentConceptId,
   });
 
   final String current;
   final String secondary;
   final String longTerm;
+
+  /// The concept id behind [current] (a misconception or repair target), so
+  /// the unified teacher can focus a session on it. Null when today's focus is
+  /// general review.
+  final String? currentConceptId;
 }
 
 /// The outcome of one completed lesson. Outcomes are stored — never the
@@ -172,6 +179,7 @@ class TeacherBrain {
     required this.identity,
     required this.facts,
     required this.notebook,
+    this.connections = const ConnectionGraph(),
     this.interests = const [],
     this.learningDna = const [],
     required this.objectives,
@@ -181,6 +189,10 @@ class TeacherBrain {
   final LearnerIdentity identity;
   final LearnerFacts facts;
   final TeacherNotebook notebook;
+
+  /// The learner's derived relationship graph — how what they know connects,
+  /// and which nearby concepts to teach next (Phase 18).
+  final ConnectionGraph connections;
   final List<Interest> interests;
   final List<String> learningDna;
   final LearnerObjectives objectives;

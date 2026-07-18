@@ -1,3 +1,4 @@
+import 'connections.dart';
 import 'entities.dart';
 import 'misconceptions.dart';
 
@@ -23,6 +24,7 @@ enum ObservationCategory {
   trend,
   focus,
   encouragement,
+  connection,
   plan,
 }
 
@@ -49,6 +51,7 @@ class TeacherObservation {
     this.kind = ObservationKind.observation,
     this.priority = 5,
     this.evidence = const [],
+    this.conceptIds = const [],
   });
 
   final String text;
@@ -61,6 +64,10 @@ class TeacherObservation {
   /// Facts that justify this note (may be empty for purely forward-looking
   /// plans). Never invented — sourced from the same metrics that produced it.
   final List<Evidence> evidence;
+
+  /// Optional connection-graph nodes this note refers to — lets the UI jump
+  /// from a note into the concepts behind it (Phase 18).
+  final List<String> conceptIds;
 }
 
 /// The rendered notebook: ranked observations plus the current CEFR estimate.
@@ -157,6 +164,7 @@ TeacherNotebook buildTeacherNotebook({
   double? conversationAbility,
   NotebookSnapshot? previous,
   String? nextConceptName,
+  ConnectionSuggestion? connectionSuggestion,
   int maxNotes = 7,
 }) {
   final avgMastery = _avg(mastery.values);
@@ -193,6 +201,22 @@ TeacherNotebook buildTeacherNotebook({
           Evidence(name, 'seen ${m.occurrences}×'),
           if (m.explanation.isNotEmpty) Evidence('Why', m.explanation),
         ],
+        conceptIds: [m.conceptId, ...m.relatedConceptIds],
+      ),
+    );
+  }
+
+  // Teaching through connections: build outward from a known anchor.
+  if (connectionSuggestion != null) {
+    final s = connectionSuggestion;
+    notes.add(
+      TeacherObservation(
+        'You already know ${s.anchorName} — '
+        "let's connect it to ${s.relatedNames.join(', ')}.",
+        category: ObservationCategory.connection,
+        priority: 2,
+        evidence: [Evidence(s.anchorName, 'known')],
+        conceptIds: [s.anchorId, ...s.relatedIds],
       ),
     );
   }

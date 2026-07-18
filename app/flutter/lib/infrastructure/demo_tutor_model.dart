@@ -111,7 +111,9 @@ class DemoTutorModel implements AiChatModel {
       'Great. What are your plans for today?',
     ];
     final beats = es ? esBeats : enBeats;
-    return beats[(turns - 1).clamp(0, beats.length - 1)];
+    // Rotate (never clamp): the conversation must not repeat the same
+    // question once the scene beats run out (Phase 21 duplicate-reply fix).
+    return beats[(turns - 1) % beats.length];
   }
 
   String _reactEs(String user) {
@@ -121,7 +123,11 @@ class DemoTutorModel implements AiChatModel {
       return '¡Ah! Recuerda: en español decimos «tengo sueño» o «estoy '
           'cansado», no «soy cansado». Bien dicho igualmente.';
     }
-    return '¡Muy bien, te entiendo!';
+    // Vary acknowledgements deterministically so consecutive turns never
+    // sound identical (Phase 21).
+    const acks = ['¡Muy bien, te entiendo!', 'Perfecto.', '¡Claro que sí!',
+        'Entiendo.'];
+    return acks[u.length % acks.length];
   }
 
   String _reactEn(String user) {
@@ -195,9 +201,19 @@ class DemoTutorModel implements AiChatModel {
         return '¡Hola! Vamos a hablar en español. Yo tengo hambre. '
             '¿Y tú? Usa «$v».';
       }
+      // Distinct question every turn (Phase 21 duplicate-reply fix), each
+      // reacting and connecting to the tener family the learner knows.
+      const beats = [
+        '¿Tú tienes frío o calor hoy?',
+        '¿Y tienes sueño por la mañana o por la noche?',
+        'Dime: ¿de qué tienes miedo?',
+        '¿Tienes sed ahora? ¿Qué te gusta beber?',
+        'Última pregunta: ¿tienes prisa hoy o tienes tiempo?',
+      ];
       final v = vocab.isEmpty ? 'tener sueño' : vocab[turns % vocab.length];
-      return '¡Muy bien, te entiendo! Ahora dime: ¿tú tienes frío o calor '
-          'hoy? Puedes usar «$v».';
+      final react = _reactEs(user);
+      return '$react ${beats[(turns - 1) % beats.length]} '
+          'Funciona igual que «tener hambre». Puedes usar «$v».';
     }
     if (opening) {
       final v = vocab.isNotEmpty ? vocab.first : 'hello';

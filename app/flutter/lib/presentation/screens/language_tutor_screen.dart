@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../language/pipeline.dart';
 import '../../language/tutor.dart';
 import '../language_providers.dart';
 import '../ui.dart';
@@ -429,10 +430,17 @@ class _SessionState extends ConsumerState<_Session> {
   int _spokenCount = 0;
 
   Future<void> _speak(String text) async {
+    // Strict language pipeline (Phase 21): only target-language sentences may
+    // reach the target-language voice. English support text is never
+    // synthesized with the Spanish voice.
+    final target = ref.read(selectedLanguageProvider);
+    final native = target == 'es' ? 'en' : 'es';
+    final safe = speechSafeText(text, target, native);
+    if (safe.isEmpty) return;
     final speech = ref.read(speechServiceProvider);
     if (mounted) setState(() => _conv = _ConvState.speaking);
     await speech.speak(
-      text,
+      safe,
       langCode: ref.read(languageBcp47Provider),
       speed: ref.read(speechSpeedProvider),
     );
@@ -562,6 +570,25 @@ class _SessionState extends ConsumerState<_Session> {
                     });
                   },
                 ),
+              // Immersion vs Mentor (Phase 21): mentor shows English support
+              // under Spanish replies; immersion hides it. Audio is Spanish
+              // either way.
+              Builder(builder: (context) {
+                final support = ref.watch(teacherSupportModeProvider);
+                final immersive = support == TeacherSupportMode.immersion;
+                return FilterChip(
+                  avatar: Icon(
+                    immersive ? Icons.public : Icons.school_outlined,
+                    size: 16,
+                  ),
+                  label: Text(immersive ? 'Immersion' : 'Mentor'),
+                  selected: immersive,
+                  onSelected: (v) =>
+                      ref.read(teacherSupportModeProvider.notifier).state = v
+                      ? TeacherSupportMode.immersion
+                      : TeacherSupportMode.mentor,
+                );
+              }),
             ],
           ),
         ),
@@ -570,15 +597,61 @@ class _SessionState extends ConsumerState<_Session> {
             padding: const EdgeInsets.all(AppSpace.lg),
             children: [
               for (final (isTutor, text) in session.transcript)
-                FadeInUp(
-                  child: _Bubble(
-                    isTutor: isTutor,
-                    text: text,
-                    onSpeak: isTutor && speech.available
-                        ? () => _speak(text)
-                        : null,
-                  ),
-                ),
+                Builder(builder: (context) {
+                  final target = ref.watch(selectedLanguageProvider);
+                  final native = target == 'es' ? 'en' : 'es';
+                  final mentor = ref.watch(teacherSupportModeProvider) ==
+                      TeacherSupportMode.mentor;
+                  final parts = isTutor
+                      ? splitTeacherReply(text, target, native)
+                      : null;
+                  // Immersion: show only the target-language body. Mentor:
+                  // target body + support underneath. Learner bubbles as-is.
+                  final bubbleText = parts == null
+                      ? text
+                      : parts.target.isEmpty
+                      ? text // fully-native line (e.g. notebook greeting)
+                      : parts.target;
+                  final supportText =
+                      (isTutor && mentor && parts != null &&
+                          parts.target.isNotEmpty)
+                      ? parts.support
+                      : '';
+                  return FadeInUp(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _Bubble(
+                          isTutor: isTutor,
+                          text: bubbleText,
+                          onSpeak: isTutor && speech.available
+                              ? () => _speak(text)
+                              : null,
+                        ),
+                        if (supportText.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              left: 44,
+                              right: 24,
+                              bottom: 8,
+                            ),
+                            child: Text(
+                              supportText,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                }),
               if (session.busy) const _TypingIndicator(),
             ],
           ),

@@ -9,6 +9,40 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 21 — Unified Language Pipeline + persistent AI teacher.
+  **Strict voice rule** (`lib/language/pipeline.dart`, pure): `speechSafeText`
+  gates everything bound for TTS — sentence-level language detection (small
+  deterministic function-word sets) keeps only target-language sentences, so
+  **English never reaches the Spanish voice**; `splitTeacherReply` separates
+  the spoken target body from native support text. **Immersion / Mentor
+  modes** (`teacherSupportModeProvider` + session chip): mentor shows English
+  support in italics under Spanish replies; immersion hides it — audio is
+  Spanish in both. **Tutor bug fixes**: duplicate replies (root cause — the
+  demo immersion strategy returned one fixed question every turn, and
+  conversation beats clamped at the last beat; both now rotate with distinct,
+  reacting, connection-referencing questions), a controller-level dedupe guard
+  (never the identical tutor line twice in a row), and **input sanitization**
+  (`sanitizeUserInput` strips control/escape artifacts like `\|Si` before the
+  tutor sees the message). **Teacher personality**: sessions open with
+  `teacherGreeting(brain)` — the brain's leading curiosity/observation (real
+  data, never canned) as the teacher's first line. **Adaptive feedback**
+  (`adaptiveFeedback`): scored-attempt phrasing that references connection
+  moments and recovery state. **Dynamic speaking practice**: with no explicit
+  focus, the speaking controller now asks the Teacher Brain — recently-active
+  + not-yet-known concepts first, drill order rotated by streak day, so
+  consecutive days practice different material (deterministic, no repeats).
+  **Reader integration (first producer)**: every word in the story reader is
+  long-pressable — `explainWord` teaches through connections first (known
+  neighbour, related concepts, mental-model insight), dictionary translation
+  second, and is honest ("we haven't met this word yet") for unknown words.
+  Local-LLM seam unchanged and confirmed: reasoning stays behind
+  `ReasoningEngine`/`AiChatModel`; prompts live outside UI. 268 tests (+11:
+  voice gate/split, sanitization, immersion-variety regression, greeting-from-
+  notebook, adaptive feedback, explainWord known/unknown), analyze clean,
+  Android debug build green. NOTE: `origin/feature/phase15-premium-offline-
+  voice-final` (real Piper + novella) appeared on the remote — not merged this
+  phase (conflict risk on touched speech/tutor files); merge as its own task.
+
 - 2026-07-18: Phase 20 — Learning Profile + Teaching Style Engine + Adaptive
   Pedagogy. The teacher now knows HOW the learner learns and adapts how it
   teaches — optimizing long-term learning over lesson completion.

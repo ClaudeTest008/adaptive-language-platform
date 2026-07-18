@@ -32,6 +32,7 @@ import '../language/lesson_generator.dart';
 import '../language/misconceptions.dart';
 import '../language/notebook.dart';
 import '../language/notebook_repository.dart';
+import '../language/pipeline.dart';
 import '../language/reasoning_engine.dart';
 import '../language/signals.dart';
 import '../language/teacher_brain.dart';
@@ -644,14 +645,32 @@ class SpeakingController extends Notifier<SpeakingState?> {
   void start({List<String> focusConceptIds = const [], int limit = 8}) {
     final curriculum = ref.read(curriculumProvider).value;
     if (curriculum == null) return;
-    state = SpeakingState(
-      drills: generateSpeakingDrills(
-        curriculum.graph,
-        focusConceptIds: focusConceptIds,
-        limit: limit,
-      ),
-      index: 0,
+    // Dynamic practice (Phase 21): with no explicit focus, ask the Teacher
+    // Brain — weak/recently-active concepts first, rotated by the learner's
+    // streak day so consecutive days practice different material. Still
+    // deterministic; no repeated fixed drill set.
+    var focus = focusConceptIds;
+    var offset = 0;
+    if (focus.isEmpty) {
+      final brain = ref.read(teacherBrainProvider).value;
+      if (brain != null) {
+        final weak = [
+          for (final e in brain.connections.nodes.entries)
+            if (!e.value.known && e.value.mastery > 0) e.key,
+        ];
+        focus = [...brain.connections.recentlyActivated, ...weak];
+        offset = brain.identity.streakDays;
+      }
+    }
+    final drills = generateSpeakingDrills(
+      curriculum.graph,
+      focusConceptIds: focus,
+      limit: limit,
     );
+    final rotated = drills.isEmpty
+        ? drills
+        : [...drills.skip(offset % drills.length), ...drills.take(offset % drills.length)];
+    state = SpeakingState(drills: rotated, index: 0);
   }
 
   /// Speaks the target so the learner hears it before attempting.
@@ -807,12 +826,27 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
       context: context,
       userMessage: 'Start the session.',
     );
-    state = state?.copyWith(transcript: [(true, reply.text)], busy: false);
+    // The teacher opens personally, from what it actually knows (Phase 21):
+    // the brain's leading curiosity/observation precedes the lesson opener.
+    final greeting = switch (ref.read(teacherBrainProvider).value) {
+      final b? => teacherGreeting(b),
+      _ => null,
+    };
+    state = state?.copyWith(
+      transcript: [
+        if (greeting != null) (true, greeting),
+        (true, reply.text),
+      ],
+      busy: false,
+    );
   }
 
-  Future<void> send(String message) async {
+  Future<void> send(String rawMessage) async {
+    // Input sanitization (Phase 21): strip control/escape artifacts like
+    // `\|Si` before anything else sees the message.
+    final message = sanitizeUserInput(rawMessage);
     final s = state;
-    if (s == null || s.busy || message.trim().isEmpty) return;
+    if (s == null || s.busy || message.isEmpty) return;
     state = s.copyWith(transcript: [...s.transcript, (false, message)], busy: true);
 
     // Conversation/Immersion: the learner's turn is production — score it
@@ -836,8 +870,17 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
       userMessage: message,
       history: history,
     );
+    // Dedupe guard (Phase 21): never show the identical tutor reply twice in
+    // a row — a repeated line reads as a bug, so acknowledge-and-advance.
+    final lastTutor = state?.transcript.lastWhere(
+      (t) => t.$1,
+      orElse: () => (true, ''),
+    );
+    final text = reply.text.trim() == lastTutor?.$2.trim()
+        ? '${reply.text} ¿Algo más que quieras contarme?'
+        : reply.text;
     state = state?.copyWith(
-      transcript: [...?state?.transcript, (true, reply.text)],
+      transcript: [...?state?.transcript, (true, text)],
       busy: false,
     );
   }
@@ -1010,6 +1053,12 @@ final teachingChoiceProvider = Provider<TeachingChoice?>((ref) {
   final brain = ref.watch(teacherBrainProvider).value;
   return brain == null ? null : chooseTeachingStrategy(brain);
 });
+
+/// Immersion vs Mentor (Phase 21): how much native-language support the
+/// teacher SHOWS. Audio is always target-language only, in both modes.
+final teacherSupportModeProvider = StateProvider<TeacherSupportMode>(
+  (ref) => TeacherSupportMode.mentor,
+);
 
 /// The Adaptive Lesson Generator's plan (Phase 19) — the orchestrator's
 /// "what next", derived from the Teacher Brain. Null until the brain is ready.

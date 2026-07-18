@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../language/pipeline.dart';
 import '../../language/story.dart';
 import '../language_providers.dart';
 import '../reading_state.dart';
@@ -322,15 +323,10 @@ class _LanguageStoryReaderScreenState
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   if (_mode != _ReaderMode.english)
-                                    Text(
-                                      p.text,
-                                      style: const TextStyle(
-                                        fontSize: 25,
-                                        height: 1.55,
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: -0.2,
-                                      ),
-                                    ),
+                                    // Phase 21: every word is long-pressable —
+                                    // the teacher explains it through
+                                    // connections, dictionary second.
+                                    _TappableTargetText(text: p.text),
                                   if (_mode == _ReaderMode.both) ...[
                                     const SizedBox(height: AppSpace.xl),
                                     Divider(
@@ -637,4 +633,107 @@ class _Option extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Target text where every word answers a long-press with a connection-first
+/// explanation from the Teacher Brain (Phase 21). Teach first, dictionary
+/// second — never a bare definition.
+class _TappableTargetText extends ConsumerWidget {
+  const _TappableTargetText({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    const style = TextStyle(
+      fontSize: 25,
+      height: 1.55,
+      fontWeight: FontWeight.w600,
+      letterSpacing: -0.2,
+    );
+    final words = text.split(' ');
+    return Wrap(
+      children: [
+        for (final w in words)
+          GestureDetector(
+            onLongPress: () => _showWordExplanation(context, ref, w),
+            child: Text('$w ', style: style),
+          ),
+      ],
+    );
+  }
+}
+
+void _showWordExplanation(BuildContext context, WidgetRef ref, String raw) {
+  final word = raw.replaceAll(RegExp(r'''[.,;:!?¡¿«»"'()…]'''), '');
+  if (word.isEmpty) return;
+  final brain = ref.read(teacherBrainProvider).value;
+  final curriculum = ref.read(curriculumProvider).value;
+  if (brain == null || curriculum == null) return;
+  final e = explainWord(word, brain, curriculum);
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (ctx) {
+      final scheme = Theme.of(ctx).colorScheme;
+      final text = Theme.of(ctx).textTheme;
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(word, style: text.titleLarge),
+              const SizedBox(height: 12),
+              if (e.teachLine != null) ...[
+                Text(e.teachLine!, style: text.bodyMedium),
+                const SizedBox(height: 8),
+              ],
+              if (e.mentalModelInsight != null) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.lightbulb, size: 18, color: scheme.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        e.mentalModelInsight!,
+                        style: text.bodySmall
+                            ?.copyWith(color: scheme.onSurfaceVariant),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+              if (e.relatedNames.isNotEmpty) ...[
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final r in e.relatedNames)
+                      Chip(label: Text(r), visualDensity: VisualDensity.compact),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+              if (e.translation != null)
+                Text(
+                  'Dictionary: ${e.translation}',
+                  style: text.bodySmall
+                      ?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+              if (e.isEmpty)
+                Text(
+                  "We haven't met this word in a lesson yet — it will join "
+                  'your map as you learn.',
+                  style: text.bodyMedium,
+                ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }

@@ -31,7 +31,9 @@ import '../language/lesson.dart';
 import '../language/misconceptions.dart';
 import '../language/notebook.dart';
 import '../language/notebook_repository.dart';
+import '../language/reasoning_engine.dart';
 import '../language/signals.dart';
+import '../language/teacher_brain.dart';
 import '../language/speaking.dart';
 import '../language/speech.dart';
 import '../language/story.dart';
@@ -883,56 +885,95 @@ double? _meanSignal(
   return xs.reduce((a, b) => a + b) / xs.length;
 }
 
-/// The live Teacher's Notebook (Phase 17): real observations built from the
-/// learner's current metrics, trended against the last saved session, and
-/// persisted so the teacher "remembers" across app restarts. Rebuilds when the
-/// learner's state changes and writes today's snapshot each time (one entry
-/// per day, so trend notes compare against a prior day, not this session).
-final teacherNotebookProvider = FutureProvider<TeacherNotebook>((ref) async {
+/// The reasoning engine that assembles the Teacher Brain. Offline and
+/// deterministic by default; a premium engine can replace only this provider
+/// without touching the model, persistence, or UI.
+final reasoningEngineProvider = Provider<ReasoningEngine>(
+  (ref) => const OfflineReasoningEngine(),
+);
+
+/// The live Teacher Brain (Phase 17) — the single source of truth about the
+/// learner, assembled each time the learner's state changes and persisted so
+/// the teacher "remembers" across app restarts. Facts come from the app's
+/// authoritative captures; observations are generated from those facts. Writes
+/// today's metrics snapshot each rebuild (one entry per day, so trends compare
+/// against a prior day, not this session).
+final teacherBrainProvider = FutureProvider<TeacherBrain?>((ref) async {
   final st = ref.watch(languageLearnerProvider);
   final curriculum = ref.watch(curriculumProvider).value;
   final mastery = ref.watch(languageSkillMasteryProvider);
+  final goals = ref.watch(learnerGoalsProvider);
   final repo = ref.watch(teacherNotebookRepositoryProvider);
-  if (curriculum == null) {
-    return const TeacherNotebook(observations: [], cefrEstimate: 'A1');
-  }
+  final engine = ref.watch(reasoningEngineProvider);
+  if (curriculum == null) return null;
 
-  // Next lesson = the first non-repair block the plan recommends.
   final blocks = ref.watch(dailyLessonProvider);
+  final repairBlock = blocks
+      .where((b) => b.kind == LessonBlockKind.repair)
+      .firstOrNull;
   final nextBlock = blocks
       .where((b) => b.kind != LessonBlockKind.repair)
       .firstOrNull;
-  final nextName = nextBlock == null
-      ? null
-      : (curriculum.graph[nextBlock.conceptIds.firstOrNull ?? '']?.name ??
-            nextBlock.title);
+
+  String? nameOf(String? id) =>
+      id == null ? null : (curriculum.graph[id]?.name ?? id);
+  final nextName =
+      nameOf(nextBlock?.conceptIds.firstOrNull) ?? nextBlock?.title;
+  final topMisconception = st.misconceptions.all.firstOrNull;
+  final currentObjective =
+      nameOf(repairBlock?.conceptIds.firstOrNull) ??
+      nameOf(topMisconception?.conceptId) ??
+      blocks.firstOrNull?.title ??
+      'Warm-up review';
 
   final conceptNames = {
     for (final e in curriculum.graph.nodes.entries) e.key: e.value.name,
   };
+  final vocabularyPoolSize = curriculum.graph.nodes.keys
+      .where((k) => k.contains(':vocabulary:'))
+      .length;
 
   final history = await repo.loadHistory();
   final today = _notebookDay(DateTime.now());
   final previous = history.where((s) => s.day != today).lastOrNull;
+  final historyDays = <String>{for (final s in history) s.day, today}.toList();
 
-  final notebook = buildTeacherNotebook(
-    mastery: mastery,
-    misconceptions: st.misconceptions.all,
-    accuracy: st.model.overallAccuracy,
-    totalAnswered: st.model.totalAnswered,
-    baseLevel: 'A1',
-    conceptNames: conceptNames,
-    pronunciationConfidence: _meanSignal(
-      st.signals,
-      (s) => s.pronunciationConfidence,
+  final brain = engine.assemble(
+    BrainInputs(
+      today: DateTime.now(),
+      nativeLanguage: curriculum.nativeLanguage,
+      targetLanguage: curriculum.languageCode,
+      targetLanguageName: curriculum.languageName,
+      baseLevel: 'A1',
+      longTermGoal:
+          'Reach ${goals.targetLevel.name.toUpperCase()} '
+          '${curriculum.languageName}',
+      skillMastery: mastery,
+      conceptMastery: st.conceptMastery,
+      conceptNames: conceptNames,
+      misconceptions: st.misconceptions.all,
+      accuracy: st.model.overallAccuracy,
+      totalAnswered: st.model.totalAnswered,
+      learningDna: st.traits,
+      historyDays: historyDays,
+      vocabularyPoolSize: vocabularyPoolSize,
+      pronunciationConfidence: _meanSignal(
+        st.signals,
+        (s) => s.pronunciationConfidence,
+      ),
+      listeningRecognition: _meanSignal(
+        st.signals,
+        (s) => s.listeningRecognition,
+      ),
+      conversationAbility: _meanSignal(
+        st.signals,
+        (s) => s.conversationAbility,
+      ),
+      previous: previous,
+      currentObjective: currentObjective,
+      secondaryObjective: nextName ?? 'Keep your skills fresh',
+      nextConceptName: nextName,
     ),
-    listeningRecognition: _meanSignal(
-      st.signals,
-      (s) => s.listeningRecognition,
-    ),
-    conversationAbility: _meanSignal(st.signals, (s) => s.conversationAbility),
-    previous: previous,
-    nextConceptName: nextName,
   );
 
   await repo.saveSnapshot(
@@ -944,7 +985,7 @@ final teacherNotebookProvider = FutureProvider<TeacherNotebook>((ref) async {
     ),
   );
 
-  return notebook;
+  return brain;
 });
 
 /// Today's personalized plan (ADR-0022): misconception repair first, then

@@ -444,10 +444,10 @@ class _ExpandableSection extends StatelessWidget {
   }
 }
 
-/// 1 · Teacher's Notebook — real observations generated live from the
-/// learner's metrics and persisted across sessions (Phase 17,
-/// `teacherNotebookProvider`). The live misconception card sits below it for
-/// tap-through detail on each detected interference.
+/// 1 · Teacher's Notebook — the notebook view of the Teacher Brain (Phase 17).
+/// Observations are generated live from the learner's facts and persisted
+/// across sessions; each is explainable — tap a note to see the evidence
+/// behind it. The live misconception card sits below for tap-through detail.
 class _TeacherNotebookCard extends ConsumerWidget {
   const _TeacherNotebookCard();
 
@@ -467,11 +467,11 @@ class _TeacherNotebookCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(teacherNotebookProvider);
+    final async = ref.watch(teacherBrainProvider);
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    final notebook = async.value;
-    if (notebook == null) {
+    final brain = async.value;
+    if (brain == null) {
       return const GlassCard(
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 12),
@@ -494,47 +494,129 @@ class _TeacherNotebookCard extends ConsumerWidget {
               Icon(Icons.auto_graph, size: 18, color: scheme.primary),
               const SizedBox(width: 8),
               Text(
-                'Working level: around ${notebook.cefrEstimate}',
+                'Working level: around ${brain.facts.cefr}',
                 style: text.labelLarge?.copyWith(
                   color: scheme.primary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
+              const Spacer(),
+              if (brain.identity.streakDays > 0)
+                _Pill(
+                  label: '${brain.identity.streakDays}-day streak',
+                  color: scheme.secondaryContainer,
+                  textColor: scheme.onSecondaryContainer,
+                ),
             ],
           ),
           const SizedBox(height: 10),
-          for (final o in notebook.observations)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 5),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    _icons[o.category] ?? Icons.edit_note,
-                    size: 18,
-                    color: o.kind == ObservationKind.plan
-                        ? scheme.primary
-                        : scheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      o.text,
-                      style: o.kind == ObservationKind.plan
-                          ? text.bodyMedium?.copyWith(
-                              color: scheme.primary,
-                              fontWeight: FontWeight.w600,
-                            )
-                          : text.bodyMedium,
+          for (final o in brain.notebook.observations)
+            InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: o.evidence.isEmpty
+                  ? null
+                  : () => _showObservationEvidence(context, o),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      _icons[o.category] ?? Icons.edit_note,
+                      size: 18,
+                      color: o.kind == ObservationKind.plan
+                          ? scheme.primary
+                          : scheme.onSurfaceVariant,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        o.text,
+                        style: o.kind == ObservationKind.plan
+                            ? text.bodyMedium?.copyWith(
+                                color: scheme.primary,
+                                fontWeight: FontWeight.w600,
+                              )
+                            : text.bodyMedium,
+                      ),
+                    ),
+                    if (o.evidence.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
         ],
       ),
     );
   }
+}
+
+/// Explainable AI: shows the facts that justify a notebook observation.
+void _showObservationEvidence(BuildContext context, TeacherObservation o) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (ctx) {
+      final scheme = Theme.of(ctx).colorScheme;
+      final text = Theme.of(ctx).textTheme;
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(o.text, style: text.titleSmall),
+              const SizedBox(height: 16),
+              Text(
+                'Based on',
+                style: text.labelMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              for (final e in o.evidence)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      Expanded(child: Text(e.label, style: text.bodyMedium)),
+                      Text(
+                        e.value,
+                        style: text.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (e.delta != null) ...[
+                        const SizedBox(width: 8),
+                        _Pill(
+                          label:
+                              '${e.delta! >= 0 ? '+' : ''}'
+                              '${(e.delta! * 100).round()}%',
+                          color: e.delta! >= 0
+                              ? scheme.secondaryContainer
+                              : scheme.errorContainer,
+                          textColor: e.delta! >= 0
+                              ? scheme.onSecondaryContainer
+                              : scheme.onErrorContainer,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 /// 2 · Today's Goals — daily target per skill with a progress bar.

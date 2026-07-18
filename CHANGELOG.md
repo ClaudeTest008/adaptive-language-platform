@@ -9,6 +9,33 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 17 (Teacher Brain) — elevate the notebook engine into the
+  application's central **Teacher Brain**: one derived, structured source of
+  truth about the learner that every future feature reads from. It is
+  *assembled* from the app's existing authoritative captures (learner model,
+  signals, misconceptions, Learning DNA, goals, persisted snapshots) — not a
+  parallel store — so there is one truth and many consumers (no duplicate
+  learner state). Cleanly separates **FACTS** (`LearnerFacts`: per-skill
+  level/confidence/trend, grammar buckets mastered/learning/weak/locked,
+  vocabulary + estimated known words, pronunciation, CEFR) from
+  **OBSERVATIONS** (the notebook — teacher interpretations generated from those
+  facts). Every observation now carries **evidence** and is explainable: tap a
+  note on the dashboard to see the facts behind it (e.g. Listening 78% +11% vs
+  Speaking 55%). New: `lib/language/teacher_brain.dart` (immutable model —
+  identity with day-streak + estimated vocabulary, skills, grammar, vocabulary,
+  pronunciation, objectives, lesson-outcome history, interests, Learning DNA;
+  pure `computeStreak`) and `lib/language/reasoning_engine.dart` (the
+  **`ReasoningEngine` interface** + deterministic offline `OfflineReasoningEngine`
+  — the single premium swap point; a cloud engine replaces only this, leaving
+  model/persistence/UI untouched). Providers: `reasoningEngineProvider` +
+  `teacherBrainProvider` (replaces `teacherNotebookProvider`; assembles the
+  brain from live state, writes today's snapshot). Offline-first throughout, no
+  network. Sections without a data source yet (interests auto-discovery,
+  per-phoneme pronunciation, writing skill, lesson outcomes) are typed but
+  empty with capture seams — never fabricated. 223 tests (+9: engine facts,
+  per-skill trend, grammar buckets, streak, estimated vocab, explainable-
+  evidence), analyze clean, Android debug build green.
+
 - 2026-07-18: Phase 17 — Teacher's Notebook engine (real + persistent; the
   app's first cross-session memory). Replaces the Phase 16 placeholder notes
   with observations generated **live** from the learner's own metrics, in a

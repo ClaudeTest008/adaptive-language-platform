@@ -7,6 +7,65 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
+### Fixed
+
+- 2026-07-18: Piper ANR crash — FIXED and verified on the physical device
+  (OnePlus CPH2037 / Android 12). Root cause (confirmed on-device):
+  synchronous ONNX `OfflineTts.generate()` ran on Flutter's UI isolate
+  (logcat showed all Piper work on tid == pid == main thread; after
+  "LOAD ok" no synthesis returned and the UI froze ~5 min → ANR).
+  Fix (`piper_speech_service.dart` only): a single long-lived **background
+  isolate** owns the Piper engine — model load + all inference. The UI
+  isolate sends text over a SendPort and receives a WAV path, then plays it,
+  so the main thread never runs inference. Also: model loads exactly once;
+  speech requests are serialized (a `_gen` token cancels the running one on
+  a new request/stop — no overlap); `stop()` is instant (playback wait now
+  resolves on `onPlayerStateChanged` stopped/completed, the 7 s timeout is
+  gone); temp WAVs, ports, isolate and AudioPlayer are disposed; the
+  one-time 67 MB extract moved off the UI thread via `compute()`; every op
+  is wrapped, logs its full stack, and falls back to device TTS (reported)
+  on failure — never crashes. On-device verification (logcat): isolate
+  spawned ×1; `LOAD model ok (loadCount=1)` ×1; synthesis runs on the
+  isolate (`synth req… (isolate)`, 0.35–2.5 s); 50× rapid Play/Stop with
+  barge-in — no crash, no ANR, no extra loads, no exceptions; full-passage
+  narration synthesizes + plays; barge-in stops instantly
+  (`stop() … instant barge-in`); the UI stays responsive during synthesis
+  (language toggle applied + re-rendered mid-synth). `flutter analyze`
+  clean; 204 tests green.
+
+### Changed
+
+- 2026-07-17: Piper voice STABILITY INVESTIGATION — diagnostics only, no
+  behavior/UI/logic change (fix deferred pending review). Added
+  unconditional `[PIPER]` logging (debugPrint survives release builds) at
+  every stage: init, ensureVoice (cache-hit / in-flight-join / load count),
+  download + extract (with full stack on failure), per-chunk synthesis
+  timing (`generate=Nms`, flags >800 ms as a main-isolate block), playback,
+  play-timeout detection, `speak()` concurrency counter (`active=N`, flags
+  `*** CONCURRENT SPEAK ***`), stop/pause, and a previously-UNHANDLED
+  exception path in `speak()` now logging its full stack trace. A 20×
+  play/stop stress run on the emulator surfaced the root causes (see
+  investigation report): unbounded concurrent `speak()` (peak active=8),
+  `stop()` not emitting `onPlayerComplete` so interrupted clauses block for
+  the full 7 s timeout, subscription/coroutine pile-up on a single shared
+  AudioPlayer, and main-isolate `tts.generate()` (the ANR risk on real
+  hardware). No fix applied yet.
+
+- 2026-07-17: Phase 15 revision — "floating voice sidebar" root-caused and
+  resolved, with receipts. The vertical floating pill (mic / backspace /
+  send / emoji / ☰) over the tutor is **not app UI**: grep proves zero
+  `OverlayEntry`/`Overlay`/`FloatingActionButton`/`Positioned` floating
+  code exists in `lib/presentation/`, and the tutor input row is exactly
+  [Mic][TextField][Send]. Opening the pill's own ☰ menu shows Gboard
+  items ("Show on-screen keyboard", "Switch to horizontal toolbar" …): it
+  is **Gboard's hardware-keyboard companion toolbar** — the emulator
+  reports the host's physical keyboard, so Gboard suppresses the on-screen
+  QWERTY and floats its toolbar instead. Fix (device-level):
+  `settings put secure show_ime_with_hard_keyboard 1` + Gboard restart —
+  the standard **docked QWERTY** now opens on field focus, cursor and
+  typing behave like a normal messaging app, and the pill is gone
+  (screenshot-verified). No app code changed; nothing existed to delete.
+
 ### Added
 
 - 2026-07-18: Phase 21 — Unified Language Pipeline + persistent AI teacher.
@@ -203,6 +262,31 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
   **Recommended next lesson** (one pick from today's plan). Dashboard widget
   tests updated to the new layout; all 203 tests pass, analyze clean, Android
   debug build green.
+- 2026-07-17: Phase 15 final — **real Piper offline-neural TTS + flagship
+  graded novel**. Piper now actually speaks: `PiperSpeechService` runs
+  Piper VITS voices on-device through sherpa_onnx (ONNX runtime; free,
+  open source, no API keys). The es-ES voice model
+  (`vits-piper-es_ES-davefx-medium`, 63 MB ONNX + espeak-ng data) is
+  downloaded on first use from the sherpa-onnx releases (progress bar in
+  Voice Settings), extracted (pure-Dart tar.bz2) and cached in app
+  documents — never bundled in git. Sentence-chunked synthesis → WAV →
+  audioplayers playback, with generation-token cancellation for instant
+  barge-in. Piper is the DEFAULT engine; device TTS remains a selectable
+  fallback in Voice Settings (learner's choice — never a silent
+  substitute). Verified on emulator via logcat: model downloaded
+  (63,149,192 bytes on device), `[PIPER] gen#4 chunk0 samples=39680
+  sr=22050` synthesis lines, chunk gaps matching audio duration
+  (playback), "Piper voice ready" status card. **Flagship novel:** "La
+  casa del faro" — an original graded A2 novella (7 chapters, 42 pages,
+  ~2,700 Spanish words + full English translation): recurring characters
+  (María, Don Andrés, Lucía), natural dialogue, chapter cliffhangers, an
+  emotional arc, optional end-of-book quiz. `Story` gains chapters
+  (`chapterTitles`/`chapterStarts`, pages flow continuously — reading is
+  never interrupted; completion card only after the final page); the
+  reader shows a "Capítulo N · title" header; library cards show chapter
+  counts. Verified on device: library card "17 min · 7 chapters", reader
+  at 1/42 with the chapter header and Piper narration playing. 204 tests
+  green.
 
 - 2026-07-17: Phase 15 — premium-voice architecture + immersive reading UX
   (UX only; core/providers-of-record untouched). **Speech-engine selection**

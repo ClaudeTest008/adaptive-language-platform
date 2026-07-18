@@ -55,6 +55,8 @@ class Story {
     required this.phrases,
     this.author = '',
     this.topics = const [],
+    this.chapterTitles = const [],
+    this.chapterStarts = const [],
     this.vocabulary = const [],
     this.questions = const [],
   });
@@ -67,6 +69,23 @@ class Story {
   /// Original author, for classics (empty for anonymous/original tales).
   final String author;
   final List<String> topics;
+
+  /// Multi-chapter novels: chapter titles + the page index each starts at
+  /// (parallel lists; empty for single-chapter stories). Pages flow
+  /// continuously through chapters — reading never stops between them.
+  final List<String> chapterTitles;
+  final List<int> chapterStarts;
+
+  bool get hasChapters => chapterTitles.isNotEmpty;
+
+  /// 0-based chapter for a page index (0 when the story has no chapters).
+  int chapterOf(int page) {
+    var c = 0;
+    for (var i = 0; i < chapterStarts.length; i++) {
+      if (page >= chapterStarts[i]) c = i;
+    }
+    return c;
+  }
 
   /// Rough reading time in minutes from the target-language word count
   /// (~130 wpm for a learner), floored at 1.
@@ -88,42 +107,67 @@ class Story {
   Set<String> get conceptIds => {for (final p in phrases) ...p.conceptIds};
 }
 
-/// Parses decoded stories JSON: `{ "stories": [ { id, title, level,
-/// topics, phrases: [ { text, translation, conceptIds } ] } ] }`.
-List<Story> parseStories(Map<String, dynamic> json) => [
-  for (final raw in (json['stories'] as List? ?? const []))
-    Story(
-      id: (raw as Map<String, dynamic>)['id'] as String,
-      title: raw['title'] as String,
-      author: raw['author'] as String? ?? '',
-      level: CefrLevel.values.byName(raw['level'] as String),
-      topics: [...(raw['topics'] as List? ?? const []).cast<String>()],
-      phrases: [
-        for (final p in (raw['phrases'] as List? ?? const []))
-          StoryPhrase(
-            text: (p as Map<String, dynamic>)['text'] as String,
-            translation: p['translation'] as String,
-            conceptIds:
-                [...(p['conceptIds'] as List? ?? const []).cast<String>()],
-          ),
-      ],
+StoryPhrase _phrase(Map<String, dynamic> p) => StoryPhrase(
+      text: p['text'] as String,
+      translation: p['translation'] as String,
+      conceptIds: [...(p['conceptIds'] as List? ?? const []).cast<String>()],
+    );
+
+/// Parses decoded stories JSON: `{ "stories": [ { id, title, level, topics,
+/// phrases: [...] } ] }`. Multi-chapter novels use `chapters:
+/// [ { title, phrases: [...] } ]` instead of a flat `phrases` list; their
+/// pages are flattened so reading flows continuously, with chapter titles
+/// and start indexes kept alongside.
+List<Story> parseStories(Map<String, dynamic> json) {
+  final out = <Story>[];
+  for (final raw in (json['stories'] as List? ?? const [])) {
+    final map = raw as Map<String, dynamic>;
+    final phrases = <StoryPhrase>[];
+    final chapterTitles = <String>[];
+    final chapterStarts = <int>[];
+    final chapters = map['chapters'] as List?;
+    if (chapters != null) {
+      for (final c in chapters) {
+        final cm = c as Map<String, dynamic>;
+        chapterTitles.add(cm['title'] as String);
+        chapterStarts.add(phrases.length);
+        for (final p in (cm['phrases'] as List? ?? const [])) {
+          phrases.add(_phrase(p as Map<String, dynamic>));
+        }
+      }
+    } else {
+      for (final p in (map['phrases'] as List? ?? const [])) {
+        phrases.add(_phrase(p as Map<String, dynamic>));
+      }
+    }
+    out.add(Story(
+      id: map['id'] as String,
+      title: map['title'] as String,
+      author: map['author'] as String? ?? '',
+      level: CefrLevel.values.byName(map['level'] as String),
+      topics: [...(map['topics'] as List? ?? const []).cast<String>()],
+      phrases: phrases,
+      chapterTitles: chapterTitles,
+      chapterStarts: chapterStarts,
       vocabulary: [
-        for (final v in (raw['vocabulary'] as List? ?? const []))
+        for (final v in (map['vocabulary'] as List? ?? const []))
           StoryVocab(
             word: (v as Map<String, dynamic>)['word'] as String,
             meaning: v['meaning'] as String,
           ),
       ],
       questions: [
-        for (final q in (raw['questions'] as List? ?? const []))
+        for (final q in (map['questions'] as List? ?? const []))
           StoryQuestion(
             prompt: (q as Map<String, dynamic>)['prompt'] as String,
             options: [...(q['options'] as List).cast<String>()],
             answerIndex: q['answer'] as int,
           ),
       ],
-    ),
-];
+    ));
+  }
+  return out;
+}
 
 /// Recommends the reading level for a learner. CEFR is the anchor; a
 /// learner who is struggling (many weak concepts) is nudged down one

@@ -249,7 +249,11 @@ class _BookCover extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              '${story.readingMinutes} min · ${story.phrases.length} ch',
+              story.hasChapters
+                  ? '${story.readingMinutes} min · '
+                      '${story.chapterTitles.length} chapters'
+                  : '${story.readingMinutes} min · '
+                      '${story.phrases.length} pages',
               style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
             if (showProgress || progress > 0) ...[

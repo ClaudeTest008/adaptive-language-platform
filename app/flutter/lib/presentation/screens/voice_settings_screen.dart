@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../infrastructure/piper_speech_service.dart';
 import '../../language/speech.dart';
 import '../language_providers.dart';
 import '../ui.dart';
@@ -40,12 +41,15 @@ class VoiceSettingsScreen extends ConsumerWidget {
                   value: SpeechEngine.piper,
                   selected: engine == SpeechEngine.piper,
                   title: 'Piper · offline neural',
-                  subtitle:
-                      'Free, on-device neural voice. Falls back to the device '
-                      'voice until the Piper model is installed.',
+                  subtitle: 'Free on-device neural voice (sherpa-onnx). '
+                      'Downloads a ~60 MB voice model on first use.',
                   onTap: () => ref.read(speechEngineProvider.notifier).state =
                       SpeechEngine.piper,
                 ),
+                if (engine == SpeechEngine.piper) ...[
+                  const SizedBox(height: AppSpace.sm),
+                  _PiperStatusCard(piper: ref.watch(piperSpeechProvider)),
+                ],
                 const SizedBox(height: AppSpace.sm),
                 _EngineOption(
                   value: SpeechEngine.androidNeural,
@@ -92,6 +96,83 @@ class VoiceSettingsScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Live Piper voice status: idle → tap to download → progress bar →
+/// extracting → loading → ready. Rebuilds off the service's notifiers.
+class _PiperStatusCard extends ConsumerWidget {
+  const _PiperStatusCard({required this.piper});
+
+  final PiperSpeechService piper;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    return AnimatedBuilder(
+      animation: Listenable.merge(
+        [piper.status, piper.progress, piper.statusDetail],
+      ),
+      builder: (context, _) {
+        final s = piper.status.value;
+        final (icon, label) = switch (s) {
+          PiperStatus.idle => (
+              Icons.download_rounded,
+              'Neural voice not installed yet — download ~60 MB',
+            ),
+          PiperStatus.downloading => (
+              Icons.downloading_rounded,
+              'Downloading… ${(piper.progress.value * 100).round()}%',
+            ),
+          PiperStatus.extracting => (Icons.archive_rounded, 'Unpacking voice…'),
+          PiperStatus.loading => (Icons.memory_rounded, 'Loading model…'),
+          PiperStatus.ready => (Icons.check_circle_rounded, 'Piper voice ready'),
+          PiperStatus.error => (Icons.error_rounded, piper.statusDetail.value),
+        };
+        return Container(
+          padding: const EdgeInsets.all(AppSpace.md),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(AppRadius.input),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 18, color: scheme.primary),
+                  const SizedBox(width: AppSpace.sm),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                  if (s == PiperStatus.idle || s == PiperStatus.error)
+                    TextButton(
+                      onPressed: () => piper
+                          .ensureVoice(ref.read(languageBcp47Provider)),
+                      child: const Text('Download'),
+                    ),
+                ],
+              ),
+              if (s == PiperStatus.downloading) ...[
+                const SizedBox(height: AppSpace.sm),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  child: LinearProgressIndicator(
+                    value: piper.progress.value == 0
+                        ? null
+                        : piper.progress.value,
+                    minHeight: 6,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }

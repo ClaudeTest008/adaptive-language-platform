@@ -1,0 +1,154 @@
+{
+  "stories": [
+    {
+      "id": "es-a2-novela-faro",
+      "title": "La casa del faro",
+      "author": "Novela original graduada",
+      "level": "a2",
+      "topics": ["novel", "mystery", "family", "sea"],
+      "vocabulary": [
+        { "word": "el faro", "meaning": "the lighthouse" },
+        { "word": "heredar", "meaning": "to inherit" },
+        { "word": "la llave", "meaning": "the key" },
+        { "word": "el desván", "meaning": "the attic" },
+        { "word": "la tormenta", "meaning": "the storm" },
+        { "word": "el marinero", "meaning": "the sailor" },
+        { "word": "la carta", "meaning": "the letter" },
+        { "word": "el manuscrito", "meaning": "the manuscript" },
+        { "word": "la orilla", "meaning": "the shore" },
+        { "word": "encender", "meaning": "to light / turn on" }
+      ],
+      "chapters": [
+        {
+          "title": "La llegada",
+          "phrases": [
+            { "text": "María Vega tiene veintiocho años y vive en Madrid. Trabaja en un periódico, pero no es feliz. Un martes por la mañana recibe una llamada que cambia su vida: su abuela Rosa ha muerto en un pequeño pueblo de la costa, y le ha dejado una casa. No una casa normal. La casa del faro.",
+              "translation": "María Vega is twenty-eight and lives in Madrid. She works at a newspaper, but she is not happy. One Tuesday morning she receives a call that changes her life: her grandmother Rosa has died in a small village on the coast, and she has left her a house. Not a normal house. The lighthouse house." },
+            { "text": "María no conoce bien el pueblo. Cuando era niña, pasaba allí los veranos, pero hace veinte años que no vuelve. Recuerda el olor del mar, las gaviotas y la voz de su abuela. Recuerda también una escalera de caracol que subía y subía hasta la luz.",
+              "translation": "María doesn't know the village well. When she was a child she spent her summers there, but she hasn't been back in twenty years. She remembers the smell of the sea, the seagulls, and her grandmother's voice. She also remembers a spiral staircase that climbed and climbed up to the light." },
+            { "text": "El viernes, María toma un tren y después un autobús. El viaje es largo. Por la ventana, la ciudad desaparece y llega el verde, y detrás del verde, el mar. El pueblo se llama San Telmo y tiene una calle principal, un puerto pequeño y un café que se llama La Sirena.",
+              "translation": "On Friday, María takes a train and then a bus. The journey is long. Through the window the city disappears and the green arrives, and behind the green, the sea. The village is called San Telmo and it has one main street, a small port, and a café called La Sirena." },
+            { "text": "La casa del faro está al final del pueblo, sobre las rocas. Es blanca, con una puerta azul y ventanas pequeñas. Detrás de la casa sube la torre del faro, alta y silenciosa. María abre la puerta con una llave vieja que le ha dado el abogado. Dentro, todo huele a sal y a tiempo.",
+              "translation": "The lighthouse house is at the end of the village, on the rocks. It is white, with a blue door and small windows. Behind the house rises the lighthouse tower, tall and silent. María opens the door with an old key the lawyer gave her. Inside, everything smells of salt and of time." },
+            { "text": "Esa noche, María no puede dormir. La cama de su abuela es cómoda, pero la casa está llena de ruidos: el viento, el mar, la madera vieja. A las dos de la mañana, se levanta para beber agua. Entonces lo ve por la ventana de la cocina.",
+              "translation": "That night, María cannot sleep. Her grandmother's bed is comfortable, but the house is full of noises: the wind, the sea, the old wood. At two in the morning she gets up to drink some water. Then she sees it through the kitchen window." },
+            { "text": "Hay una luz encendida en lo alto de la torre del faro. Una luz débil y amarilla, como una vela. Pero eso es imposible: el faro está cerrado desde hace años, y ella tiene la única llave. María mira la luz durante un minuto entero. Después, la luz se apaga.",
+              "translation": "There is a light on at the top of the lighthouse tower. A weak, yellow light, like a candle. But that is impossible: the lighthouse has been closed for years, and she has the only key. María watches the light for a whole minute. Then the light goes out." }
+          ]
+        },
+        {
+          "title": "El pueblo",
+          "phrases": [
+            { "text": "Por la mañana, el mar es azul y tranquilo, y la luz de la noche parece un sueño. María baja al pueblo para desayunar. En el café La Sirena hay tres pescadores, una estufa antigua y una mujer de unos cincuenta años detrás de la barra. Se llama Lucía y tiene la sonrisa más grande del pueblo.",
+              "translation": "In the morning the sea is blue and calm, and the light from the night feels like a dream. María goes down to the village for breakfast. In the café La Sirena there are three fishermen, an old stove, and a woman of about fifty behind the bar. Her name is Lucía and she has the biggest smile in the village." },
+            { "text": "—Tú eres la nieta de Rosa —dice Lucía. No es una pregunta—. Tienes sus ojos. Tu abuela venía aquí todos los días, a las diez, y pedía un café con leche y una tostada. Se sentaba en esa mesa, junto a la ventana, y escribía en un cuaderno azul.",
+              "translation": "\"You are Rosa's granddaughter,\" says Lucía. It is not a question. \"You have her eyes. Your grandmother came here every day, at ten, and ordered a coffee with milk and a piece of toast. She sat at that table, by the window, and wrote in a blue notebook.\"" },
+            { "text": "—¿Escribía? —pregunta María, sorprendida—. ¿Qué escribía? Lucía se encoge de hombros. —Nunca lo dijo. Cuando alguien preguntaba, cerraba el cuaderno y hablaba del tiempo. Tu abuela era la mujer más querida del pueblo, María. Y también la más misteriosa.",
+              "translation": "\"She wrote?\" asks María, surprised. \"What did she write?\" Lucía shrugs. \"She never said. When someone asked, she would close the notebook and talk about the weather. Your grandmother was the most loved woman in the village, María. And also the most mysterious.\"" },
+            { "text": "Un hombre mayor entra en el café. Es alto, delgado, con el pelo blanco y la piel oscura del sol y del mar. Todos lo saludan con respeto. —Don Andrés —dice Lucía en voz baja—, el último farero de San Telmo. Trabajó cuarenta años en tu faro, hija.",
+              "translation": "An older man comes into the café. He is tall, thin, with white hair and skin darkened by sun and sea. Everyone greets him with respect. \"Don Andrés,\" says Lucía quietly, \"the last lighthouse keeper of San Telmo. He worked forty years in your lighthouse, dear.\"" },
+            { "text": "María se acerca y se presenta. Don Andrés la mira durante un momento largo, como si mirara a otra persona. —Rosa hablaba mucho de ti —dice por fin—. Me alegro de que estés aquí. La casa necesita a alguien. Y hay cosas en esa casa que necesitan una respuesta.",
+              "translation": "María goes over and introduces herself. Don Andrés looks at her for a long moment, as if he were looking at someone else. \"Rosa talked about you a lot,\" he says at last. \"I am glad you are here. The house needs someone. And there are things in that house that need an answer.\"" },
+            { "text": "Esa tarde, María explora la casa. En el piso de arriba, al final del pasillo, encuentra una puerta pintada de azul, igual que la puerta de la calle. Intenta abrirla. Está cerrada con llave. María prueba la llave vieja del abogado, pero no entra. Su abuela nunca le habló de esta habitación.",
+              "translation": "That afternoon, María explores the house. Upstairs, at the end of the hallway, she finds a door painted blue, just like the front door. She tries to open it. It is locked. María tries the lawyer's old key, but it doesn't fit. Her grandmother never told her about this room." }
+          ]
+        },
+        {
+          "title": "El cuaderno azul",
+          "phrases": [
+            { "text": "El domingo llueve, y María decide ordenar el escritorio de su abuela. Hay facturas, fotos de veranos antiguos, postales de Madrid. Y debajo de todo, envuelto en un pañuelo, el cuaderno azul. A María le tiemblan un poco las manos cuando lo abre.",
+              "translation": "On Sunday it rains, and María decides to organize her grandmother's desk. There are bills, photos of old summers, postcards from Madrid. And underneath everything, wrapped in a scarf, the blue notebook. María's hands tremble a little when she opens it." },
+            { "text": "La primera página dice, con letra elegante: «La casa del faro. Una historia verdadera.» Las páginas siguientes están llenas de la letra pequeña y ordenada de Rosa. Es una novela. Su abuela estaba escribiendo una novela. Pero en la mitad del cuaderno, la historia se detiene de repente.",
+              "translation": "The first page says, in elegant handwriting: \"The Lighthouse House. A true story.\" The following pages are full of Rosa's small, neat handwriting. It is a novel. Her grandmother was writing a novel. But in the middle of the notebook, the story suddenly stops." },
+            { "text": "Dentro del cuaderno hay una carta. El sobre es viejo y está un poco amarillo. No tiene dirección. Solo una letra: «T.» María duda un momento. ¿Puede leer la carta de otra persona? Pero su abuela guardó esta carta durante años. Tiene que significar algo.",
+              "translation": "Inside the notebook there is a letter. The envelope is old and slightly yellow. It has no address. Only one letter: \"T.\" María hesitates for a moment. Can she read someone else's letter? But her grandmother kept this letter for years. It has to mean something." },
+            { "text": "«Querido T. —empieza la carta—. Esta noche el mar está negro y yo no puedo dormir. Todos dicen que debo olvidarte. Mi padre dice que el mar te ha llevado y que llorar no sirve para nada. Pero yo enciendo la luz del faro cada noche. Si estás vivo, en algún lugar, quiero que encuentres el camino a casa.»",
+              "translation": "\"Dear T.,\" the letter begins. \"Tonight the sea is black and I cannot sleep. Everyone says I must forget you. My father says the sea has taken you and that crying is useless. But I light the lighthouse lamp every night. If you are alive, somewhere, I want you to find your way home.\"" },
+            { "text": "La carta no tiene fecha, pero el papel parece de hace muchos años. María mira por la ventana hacia la torre oscura. Su abuela encendía la luz para alguien. ¿Quién era T.? ¿Y por qué nadie habló nunca de él? Dentro del sobre hay algo más: una fotografía pequeña, en blanco y negro.",
+              "translation": "The letter has no date, but the paper looks many years old. María looks out the window toward the dark tower. Her grandmother used to light the lamp for someone. Who was T.? And why did no one ever speak of him? Inside the envelope there is something else: a small black-and-white photograph." },
+            { "text": "En la foto hay un hombre joven delante de un barco de pesca. Sonríe con todo el rostro, con el pelo despeinado por el viento. En el barco se lee un nombre pintado a mano: «Estrella del Norte». Al día siguiente, María lleva la foto al café y se la enseña a Don Andrés. El anciano se pone pálido.",
+              "translation": "In the photo there is a young man in front of a fishing boat. He smiles with his whole face, his hair messy from the wind. On the boat, a hand-painted name can be read: \"Estrella del Norte\" — North Star. The next day, María takes the photo to the café and shows it to Don Andrés. The old man turns pale." }
+          ]
+        },
+        {
+          "title": "La historia de Tomás",
+          "phrases": [
+            { "text": "Don Andrés mira la fotografía durante mucho tiempo. Sus manos, grandes y llenas de años, la sostienen con cuidado, como si fuera de cristal. —¿Dónde has encontrado esto? —pregunta en voz baja. —En el cuaderno de mi abuela —responde María—. Junto a una carta para alguien llamado T.",
+              "translation": "Don Andrés looks at the photograph for a long time. His hands, large and full of years, hold it carefully, as if it were made of glass. \"Where did you find this?\" he asks quietly. \"In my grandmother's notebook,\" María answers. \"Next to a letter for someone called T.\"" },
+            { "text": "El anciano cierra los ojos. —Tomás —dice—. Se llamaba Tomás Ferreiro. Era mi mejor amigo, y era el amor de tu abuela. Esto fue hace sesenta años, niña. Otro mundo. Rosa tenía dieciocho años y Tomás veinte, y era el mejor marinero del pueblo.",
+              "translation": "The old man closes his eyes. \"Tomás,\" he says. \"His name was Tomás Ferreiro. He was my best friend, and he was your grandmother's love. This was sixty years ago, child. Another world. Rosa was eighteen and Tomás twenty, and he was the best sailor in the village.\"" },
+            { "text": "—El padre de Rosa era el farero, un hombre duro. No quería a Tomás para su hija: un pescador pobre, sin tierra, sin apellido importante. Los jóvenes se veían en secreto, aquí, en este café, cuando era de mi padre. Yo llevaba las cartas del uno al otro. Era su cartero secreto.",
+              "translation": "\"Rosa's father was the lighthouse keeper, a hard man. He didn't want Tomás for his daughter: a poor fisherman, without land, without an important family name. The young people met in secret, here, in this café, when it belonged to my father. I carried their letters back and forth. I was their secret postman.\"" },
+            { "text": "—En marzo de aquel año llegó la gran tormenta. Nadie la esperaba. Cinco barcos salieron por la mañana y por la noche volvieron cuatro. La «Estrella del Norte» no volvió. Buscamos durante días. El mar no devolvió nada: ni el barco, ni a los tres hombres que iban dentro.",
+              "translation": "\"In March of that year the great storm came. No one expected it. Five boats went out in the morning and at night four came back. The North Star did not return. We searched for days. The sea gave nothing back: not the boat, not the three men aboard.\"" },
+            { "text": "—Rosa no lloró delante de nadie. Pero cada noche, durante un año, subió a la torre y encendió la luz, aunque su padre se enfadaba. Después se casó con tu abuelo, que era un buen hombre. Y nunca, en sesenta años, volvió a decir el nombre de Tomás en voz alta.",
+              "translation": "\"Rosa didn't cry in front of anyone. But every night, for a year, she climbed the tower and lit the lamp, even though her father got angry. Later she married your grandfather, who was a good man. And never, in sixty years, did she say Tomás's name out loud again.\"" },
+            { "text": "María guarda silencio. Piensa en la luz que vio en la torre la primera noche. No se lo cuenta a Don Andrés. Pero entonces el anciano dice algo que le corta la respiración: —Hay algo más, niña. Algo que Rosa descubrió el año pasado. Tomás no murió en aquella tormenta.",
+              "translation": "María is silent. She thinks about the light she saw in the tower on the first night. She doesn't tell Don Andrés about it. But then the old man says something that takes her breath away: \"There is something else, child. Something Rosa discovered last year. Tomás did not die in that storm.\"" }
+          ]
+        },
+        {
+          "title": "La tormenta",
+          "phrases": [
+            { "text": "Antes de que Don Andrés pueda explicar más, entra Lucía con la radio en la mano. —Aviso de temporal —anuncia—. Esta noche, viento fuerza nueve. Cerrad bien las ventanas. Los pescadores se levantan y salen deprisa hacia el puerto para amarrar los barcos. La conversación tendrá que esperar.",
+              "translation": "Before Don Andrés can explain more, Lucía comes in with the radio in her hand. \"Storm warning,\" she announces. \"Tonight, force-nine winds. Close your windows well.\" The fishermen get up and hurry out to the port to tie down the boats. The conversation will have to wait." },
+            { "text": "Por la tarde, el cielo se pone del color del plomo. Las olas saltan por encima del puerto y las gaviotas desaparecen. María sube sola a la casa del faro. El viento empuja la puerta y silba por las ventanas. A las nueve de la noche se va la luz en todo el pueblo.",
+              "translation": "In the afternoon the sky turns the color of lead. The waves leap over the harbor wall and the seagulls disappear. María goes up alone to the lighthouse house. The wind pushes at the door and whistles through the windows. At nine at night the power goes out in the whole village." },
+            { "text": "Alguien llama a la puerta. Es Don Andrés, empapado, con una linterna y una caja de herramientas. —Los barcos no ven nada —grita sobre el viento—. La radio dice que hay un velero perdido cerca de la costa. Necesitamos el faro, María. Esta noche, tu faro tiene que funcionar.",
+              "translation": "Someone knocks at the door. It is Don Andrés, soaked, with a flashlight and a toolbox. \"The boats can't see anything,\" he shouts over the wind. \"The radio says there's a sailboat lost near the coast. We need the lighthouse, María. Tonight your lighthouse has to work.\"" },
+            { "text": "Suben juntos la escalera de caracol, ciento veinte escalones en la oscuridad. Arriba, la gran lámpara duerme bajo una sábana llena de polvo. Don Andrés trabaja con las manos seguras de sus cuarenta años de oficio: limpia, conecta, ajusta. —Reza para que el generador viva una noche más —murmura.",
+              "translation": "They climb the spiral staircase together, one hundred and twenty steps in the dark. At the top, the great lamp sleeps under a dusty sheet. Don Andrés works with the sure hands of his forty years of trade: he cleans, connects, adjusts. \"Pray the generator lives one more night,\" he murmurs." },
+            { "text": "El generador tose, arranca, y de pronto la luz nace otra vez sobre San Telmo. Un río blanco gira sobre el mar negro. María mira la tormenta desde lo alto y siente algo nuevo en el pecho: este faro es suyo, y esta noche está salvando a alguien. Una hora después, la radio confirma: el velero ha llegado al puerto.",
+              "translation": "The generator coughs, starts, and suddenly the light is born again over San Telmo. A white river turns over the black sea. María watches the storm from above and feels something new in her chest: this lighthouse is hers, and tonight it is saving someone. An hour later the radio confirms it: the sailboat has reached the port." },
+            { "text": "Cuando la tormenta se calma, Don Andrés saca algo del bolsillo interior de su abrigo. Una llave pequeña, dorada, atada a una cinta azul. —Rosa me la dio en el hospital, dos días antes de morir —dice—. Me hizo prometer una cosa: dársela a María cuando estuviera preparada. Creo que es esta noche. Es la llave de la habitación azul.",
+              "translation": "When the storm calms down, Don Andrés takes something from the inside pocket of his coat. A small golden key, tied to a blue ribbon. \"Rosa gave it to me in the hospital, two days before she died,\" he says. \"She made me promise one thing: to give it to María when she was ready. I think it is tonight. It is the key to the blue room.\"" }
+          ]
+        },
+        {
+          "title": "La habitación azul",
+          "phrases": [
+            { "text": "María sube sola al piso de arriba, con una vela en la mano. La llave dorada gira sin ruido, como si la cerradura la hubiera esperado siempre. La puerta azul se abre. Dentro no hay fantasmas. Hay una habitación pequeña y ordenada, con un escritorio, una silla y cientos de cartas.",
+              "translation": "María goes upstairs alone, a candle in her hand. The golden key turns without a sound, as if the lock had always been waiting for it. The blue door opens. Inside there are no ghosts. There is a small, tidy room, with a desk, a chair, and hundreds of letters." },
+            { "text": "Las cartas están atadas en paquetes con cintas de colores, ordenadas por años. Todas vienen del mismo lugar: Mar del Plata, Argentina. Todas están firmadas por la misma mano: «Tomás». María abre la primera, fechada hace casi sesenta años, y empieza a leer a la luz de la vela.",
+              "translation": "The letters are tied in bundles with colored ribbons, ordered by year. They all come from the same place: Mar del Plata, Argentina. They are all signed by the same hand: \"Tomás.\" María opens the first one, dated almost sixty years ago, and begins to read by candlelight." },
+            { "text": "«Querida Rosa: estoy vivo. Un barco italiano nos sacó del agua a Pedro y a mí. Cuando desperté, estábamos en alta mar, camino de América, y yo tenía una pierna rota y cuarenta de fiebre. Tardé cuatro meses en poder escribir. Sé lo que piensan todos en San Telmo. Déjales pensar. Tú y yo sabemos la verdad.»",
+              "translation": "\"Dear Rosa: I am alive. An Italian ship pulled Pedro and me out of the water. When I woke up we were on the open sea, on the way to America, and I had a broken leg and a fever of forty degrees. It took me four months before I could write. I know what everyone in San Telmo thinks. Let them think it. You and I know the truth.\"" },
+            { "text": "Carta a carta, la historia crece delante de sus ojos. Tomás quiso volver, pero no tenía dinero. Después Rosa le escribió: se había casado. Tomás se quedó en Argentina y también se casó, años más tarde. Pero nunca dejaron de escribirse. Dos vidas enteras, dos familias, un océano — y una amistad que no se rompió jamás.",
+              "translation": "Letter by letter, the story grows before her eyes. Tomás wanted to come back, but he had no money. Then Rosa wrote to him: she had married. Tomás stayed in Argentina and married too, years later. But they never stopped writing to each other. Two whole lives, two families, one ocean — and a friendship that never broke." },
+            { "text": "Sobre el escritorio hay un segundo cuaderno azul, gemelo del primero. María lo abre: es la continuación de la novela de Rosa, la parte que faltaba. En la primera página, su abuela escribió: «Para María. Toda familia tiene una historia escondida. Esta es la nuestra. Termínala tú, si tienes el valor.»",
+              "translation": "On the desk there is a second blue notebook, twin of the first. María opens it: it is the continuation of Rosa's novel, the missing part. On the first page her grandmother wrote: \"For María. Every family has a hidden story. This is ours. You finish it, if you have the courage.\"" },
+            { "text": "En el fondo del cajón queda una última carta, distinta de todas. El sobre es nuevo, el sello es reciente: llegó hace solo tres meses, cuando Rosa ya estaba enferma. La letra no es la de Tomás. Es una letra joven y redonda, y en el remite se lee un nombre desconocido: Elena Ferreiro.",
+              "translation": "At the bottom of the drawer there is one last letter, different from all the rest. The envelope is new, the stamp is recent: it arrived only three months ago, when Rosa was already ill. The handwriting is not Tomás's. It is a young, round handwriting, and on the return address there is an unknown name: Elena Ferreiro." }
+          ]
+        },
+        {
+          "title": "El final y el principio",
+          "phrases": [
+            { "text": "«Estimada señora Rosa —dice la carta de Elena—: usted no me conoce. Soy la nieta de Tomás Ferreiro. Mi abuelo murió en octubre, tranquilo, mirando el mar. En su mesilla encontramos todas sus cartas de usted, y una nota: 'Avisad a Rosa. Decidle que la luz del faro llegó hasta aquí.'»",
+              "translation": "\"Dear señora Rosa,\" says Elena's letter, \"you do not know me. I am Tomás Ferreiro's granddaughter. My grandfather died in October, at peace, looking at the sea. On his bedside table we found all your letters, and a note: 'Tell Rosa. Tell her the light of the lighthouse reached all the way here.'\"" },
+            { "text": "«Mi abuelo nos hablaba de San Telmo como otros hablan del paraíso. Del café La Sirena, de su amigo Andrés, del faro blanco sobre las rocas. Yo soy periodista, como usted fue maestra, y sueño con conocer algún día el pueblo de sus historias. Si usted quiere, me gustaría escribirle. Elena.»",
+              "translation": "\"My grandfather talked to us about San Telmo the way others talk about paradise. About the café La Sirena, his friend Andrés, the white lighthouse on the rocks. I am a journalist, as you were a teacher, and I dream of one day seeing the village from his stories. If you wish, I would like to write to you. Elena.\"" },
+            { "text": "María baja las escaleras despacio, con la carta en la mano y el corazón lleno. Su abuela leyó estas palabras antes de morir. Supo que su luz había cruzado el océano. Por eso escribió en el cuaderno: «Termínala tú». La historia no estaba acabada. Faltaba este final. O quizás este principio.",
+              "translation": "María walks down the stairs slowly, the letter in her hand and her heart full. Her grandmother read these words before she died. She knew her light had crossed the ocean. That is why she wrote in the notebook: \"You finish it.\" The story was not over. This ending was missing. Or perhaps this beginning." },
+            { "text": "Al día siguiente, María hace tres cosas. Primero llama a su periódico de Madrid y pide una excedencia de un año. Después va al café, se sienta en la mesa de su abuela, junto a la ventana, y le cuenta todo a Lucía y a Don Andrés, que llora y ríe al mismo tiempo. Y por la tarde escribe una carta que empieza así: «Querida Elena: soy María, la nieta de Rosa.»",
+              "translation": "The next day, María does three things. First she calls her newspaper in Madrid and asks for a year's leave. Then she goes to the café, sits at her grandmother's table by the window, and tells everything to Lucía and Don Andrés, who cries and laughs at the same time. And in the afternoon she writes a letter that begins: \"Dear Elena: I am María, Rosa's granddaughter.\"" },
+            { "text": "Los meses pasan. La casa del faro se llena de vida otra vez: libros nuevos, café caliente, un gato sin nombre que entra y decide quedarse. María escribe cada mañana en el segundo cuaderno azul. La novela de Rosa crece página a página, con las cartas de Tomás al lado, como un mapa del corazón.",
+              "translation": "The months pass. The lighthouse house fills with life again: new books, hot coffee, a nameless cat that walks in and decides to stay. María writes every morning in the second blue notebook. Rosa's novel grows page by page, with Tomás's letters beside it, like a map of the heart." },
+            { "text": "Una tarde de junio, un autobús se detiene en la plaza de San Telmo y baja una chica con una maleta y una letra joven y redonda. En el puerto, María la espera. No se conocen, y se reconocen. Esa noche, por primera vez en muchos años, la luz del faro se enciende sin tormenta. No para buscar a nadie. Solo para decir: bienvenida a casa.",
+              "translation": "One June afternoon, a bus stops in the square of San Telmo and a girl steps down with a suitcase and a young, round handwriting. At the port, María is waiting for her. They have never met, and they recognize each other. That night, for the first time in many years, the lighthouse lamp is lit without a storm. Not to search for anyone. Just to say: welcome home." }
+          ]
+        }
+      ],
+      "questions": [
+        { "prompt": "¿Por qué viaja María a San Telmo?",
+          "options": ["Por vacaciones", "Hereda la casa del faro de su abuela", "Por trabajo del periódico"], "answer": 1 },
+        { "prompt": "¿Quién era Tomás?",
+          "options": ["El padre de María", "El amor de juventud de Rosa", "El abogado de la familia"], "answer": 1 },
+        { "prompt": "¿Qué descubre María en la habitación azul?",
+          "options": ["Que Tomás sobrevivió y escribió cartas toda su vida", "Un tesoro de oro", "Que la casa está en venta"], "answer": 0 },
+        { "prompt": "¿Quién llega al pueblo al final?",
+          "options": ["Tomás", "Elena, la nieta de Tomás", "El padre de Rosa"], "answer": 1 }
+      ]
+    }
+  ]
+}

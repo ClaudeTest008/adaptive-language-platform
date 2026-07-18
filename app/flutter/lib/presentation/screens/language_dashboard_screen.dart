@@ -82,16 +82,61 @@ class LanguageDashboardScreen extends ConsumerWidget {
               const SizedBox(height: AppSpace.md),
               const FadeInUp(delayMs: 80, child: _TutorHeroCard()),
               const SizedBox(height: AppSpace.lg),
+              // 1 · Teacher's Notes — the notebook leads, so the home reads
+              // as "my teacher knows me" before "I have another lesson".
               const FadeInUp(
                 delayMs: 140,
                 child: _ExpandableSection(
-                  icon: Icons.today,
-                  title: "Today's plan",
-                  subtitle: 'Repair first',
+                  icon: Icons.menu_book,
+                  title: "Teacher's Notes",
+                  subtitle: 'What your teacher has noticed',
                   initiallyExpanded: true,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      _TeacherNotebookCard(),
+                      SizedBox(height: AppSpace.sm),
+                      _TeacherNotesCard(),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpace.md),
+              // 2 · Today's Goals — daily targets per skill.
+              const FadeInUp(
+                delayMs: 200,
+                child: _ExpandableSection(
+                  icon: Icons.flag_outlined,
+                  title: "Today's goals",
+                  subtitle: 'Daily targets',
+                  child: _TodaysGoalsCard(),
+                ),
+              ),
+              const SizedBox(height: AppSpace.md),
+              // 3 · Progress Summary — mastery by skill (no XP).
+              const FadeInUp(
+                delayMs: 260,
+                child: _ExpandableSection(
+                  icon: Icons.insights,
+                  title: 'Progress summary',
+                  subtitle: 'Mastery by skill',
+                  child: _SkillMasteryCard(),
+                ),
+              ),
+              const SizedBox(height: AppSpace.md),
+              // 4 · Current Focus — the active lesson, with the full plan.
+              const FadeInUp(
+                delayMs: 320,
+                child: _ExpandableSection(
+                  icon: Icons.center_focus_strong_outlined,
+                  title: 'Current focus',
+                  subtitle: 'Your active lesson',
+                  initiallyExpanded: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _CurrentFocusCard(),
+                      SizedBox(height: AppSpace.sm),
                       _LessonPreviewCard(),
                       SizedBox(height: AppSpace.sm),
                       _PracticeCta(),
@@ -100,62 +145,14 @@ class LanguageDashboardScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AppSpace.md),
+              // 5 · Recommended Next Lesson — one pick from progress.
               const FadeInUp(
-                delayMs: 200,
+                delayMs: 380,
                 child: _ExpandableSection(
-                  icon: Icons.insights,
-                  title: 'Skill mastery',
-                  subtitle: '10 skills',
-                  child: _SkillMasteryCard(),
-                ),
-              ),
-              const SizedBox(height: AppSpace.md),
-              const FadeInUp(
-                delayMs: 260,
-                child: _ExpandableSection(
-                  icon: Icons.school,
-                  title: 'Teacher notes',
-                  subtitle: 'Native-language interference',
-                  child: _TeacherNotesCard(),
-                ),
-              ),
-              const SizedBox(height: AppSpace.md),
-              const FadeInUp(
-                delayMs: 320,
-                child: _ExpandableSection(
-                  icon: Icons.menu_book_outlined,
-                  title: 'Reading',
-                  subtitle: 'Matched to your level',
-                  child: _ReadingRecommendation(),
-                ),
-              ),
-              const SizedBox(height: AppSpace.md),
-              const FadeInUp(
-                delayMs: 360,
-                child: _ExpandableSection(
-                  icon: Icons.mic_none_outlined,
-                  title: 'Speaking',
-                  subtitle: 'Pronunciation drills',
-                  child: _LaunchTile(
-                    label: 'Start speaking practice',
-                    icon: Icons.record_voice_over,
-                    tab: 2,
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpace.md),
-              const FadeInUp(
-                delayMs: 400,
-                child: _ExpandableSection(
-                  icon: Icons.forum_outlined,
-                  title: 'Conversation',
-                  subtitle: 'Talk with your AI tutor',
-                  child: _LaunchTile(
-                    label: 'Start a conversation',
-                    icon: Icons.forum,
-                    tab: 3,
-                    conversation: true,
-                  ),
+                  icon: Icons.lightbulb_outline,
+                  title: 'Recommended next lesson',
+                  subtitle: 'Chosen from your progress',
+                  child: _RecommendedNextLessonCard(),
                 ),
               ),
               const SizedBox(height: AppSpace.xl),
@@ -446,98 +443,254 @@ class _ExpandableSection extends StatelessWidget {
   }
 }
 
-/// Full-width launcher inside a dashboard section — jumps to a home tab,
-/// optionally starting a tutor conversation first.
-class _LaunchTile extends ConsumerWidget {
-  const _LaunchTile({
-    required this.label,
-    required this.icon,
-    required this.tab,
-    this.conversation = false,
-  });
-
-  final String label;
-  final IconData icon;
-  final int tab;
-  final bool conversation;
+/// 1 · Teacher's Notes notebook. Placeholder-sourced today (see
+/// `teacherNotesProvider`); the live misconception card sits below it so the
+/// notebook already reflects real detected interference.
+class _TeacherNotebookCard extends ConsumerWidget {
+  const _TeacherNotebookCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return SizedBox(
-      width: double.infinity,
-      child: FilledButton.tonalIcon(
-        style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: AppSpace.md),
-        ),
-        icon: Icon(icon),
-        label: Text(label),
-        onPressed: () {
-          if (conversation) {
-            ref
-                .read(tutorSessionProvider.notifier)
-                .start(TutorMode.conversation);
-          }
-          ref.read(homeTabProvider.notifier).state = tab;
-        },
+    final notes = ref.watch(teacherNotesProvider);
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final n in notes)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    n.kind == TeacherNoteKind.plan
+                        ? Icons.arrow_forward
+                        : Icons.edit_note,
+                    size: 18,
+                    color: n.kind == TeacherNoteKind.plan
+                        ? scheme.primary
+                        : scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      n.text,
+                      style: n.kind == TeacherNoteKind.plan
+                          ? text.bodyMedium?.copyWith(
+                              color: scheme.primary,
+                              fontWeight: FontWeight.w600,
+                            )
+                          : text.bodyMedium,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
 }
 
-/// Top story for the learner's level, with a one-tap read.
-class _ReadingRecommendation extends ConsumerWidget {
-  const _ReadingRecommendation();
+/// 2 · Today's Goals — daily target per skill with a progress bar.
+class _TodaysGoalsCard extends StatelessWidget {
+  const _TodaysGoalsCard();
+
+  // ponytail: placeholder daily progress; wire to per-skill daily activity
+  // once the engine tracks minutes-per-skill-per-day.
+  static const _goals = <({String label, IconData icon, double value})>[
+    (label: 'Reading', icon: Icons.menu_book, value: 0.6),
+    (label: 'Listening', icon: Icons.headphones, value: 0.35),
+    (label: 'Speaking', icon: Icons.record_voice_over, value: 0.5),
+    (label: 'Conversation', icon: Icons.forum, value: 0.2),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      child: Column(
+        children: [
+          for (final g in _goals)
+            _GoalBar(label: g.label, icon: g.icon, value: g.value),
+        ],
+      ),
+    );
+  }
+}
+
+class _GoalBar extends StatelessWidget {
+  const _GoalBar({
+    required this.label,
+    required this.icon,
+    required this.value,
+  });
+
+  final String label;
+  final IconData icon;
+  final double value;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: scheme.onSurfaceVariant),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 104,
+            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          ),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: value,
+                minHeight: 10,
+                color: scheme.primary,
+                backgroundColor: scheme.surfaceContainerHighest,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 40,
+            child: Text(
+              '${(value * 100).round()}%',
+              textAlign: TextAlign.end,
+              style: Theme.of(context)
+                  .textTheme
+                  .labelLarge
+                  ?.copyWith(color: scheme.primary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 4 · Current Focus — the active lesson, named for the learner, with an
+/// estimate and how many activities remain. Numbers come from the live
+/// daily-lesson engine.
+class _CurrentFocusCard extends ConsumerWidget {
+  const _CurrentFocusCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
-    final stories = ref.watch(storiesProvider).value ?? const [];
-    if (stories.isEmpty) {
-      return Text(
-        'No stories for your level yet.',
-        style: Theme.of(context).textTheme.bodyMedium,
-      );
-    }
-    final s = stories.first;
-    return InkWell(
-      borderRadius: BorderRadius.circular(AppRadius.input),
-      onTap: () => context.push('/story/${Uri.encodeComponent(s.id)}'),
-      child: Row(
+    final text = Theme.of(context).textTheme;
+    final blocks = ref.watch(dailyLessonProvider);
+    final learner = ref.watch(languageLearnerProvider);
+    final curriculum = ref.watch(curriculumProvider).value;
+    final top = learner.misconceptions.all.firstOrNull;
+    final focusName = top != null && curriculum != null
+        ? (curriculum.graph[top.conceptId]?.name ?? top.conceptId)
+        : (blocks.firstOrNull?.title ?? 'Warm-up review');
+    final minutes = blocks.fold(0, (s, b) => s + b.minutes);
+    final remaining = blocks.length;
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [scheme.tertiaryContainer, scheme.primaryContainer],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: scheme.primaryContainer,
+                child: Icon(
+                  Icons.center_focus_strong,
+                  size: 18,
+                  color: scheme.onPrimaryContainer,
+                ),
               ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(Icons.menu_book, color: scheme.onTertiaryContainer),
+              const SizedBox(width: 12),
+              Expanded(child: Text(focusName, style: text.titleSmall)),
+            ],
           ),
-          const SizedBox(width: AppSpace.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  s.title,
-                  style: Theme.of(context).textTheme.titleSmall,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _Pill(
+                label: '~$minutes min to complete',
+                color: scheme.secondaryContainer,
+                textColor: scheme.onSecondaryContainer,
+              ),
+              _Pill(
+                label: '$remaining activities left',
+                color: scheme.secondaryContainer,
+                textColor: scheme.onSecondaryContainer,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 5 · Recommended Next Lesson — one pick derived from today's plan (the
+/// first non-repair block), with a one-tap start. Falls back to a sensible
+/// placeholder when the plan is all repair.
+class _RecommendedNextLessonCard extends ConsumerWidget {
+  const _RecommendedNextLessonCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final blocks = ref.watch(dailyLessonProvider);
+    final rec = blocks
+        .where((b) => b.kind != LessonBlockKind.repair)
+        .firstOrNull;
+    final title = rec?.title ?? 'Imperfect tense';
+    final reason = rec?.reason ?? 'Builds on what you practiced today.';
+    final minutes = rec?.minutes ?? 10;
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: scheme.tertiaryContainer,
+                child: Icon(
+                  Icons.lightbulb,
+                  size: 18,
+                  color: scheme.onTertiaryContainer,
                 ),
-                Text(
-                  '${s.level.name.toUpperCase()} · ${s.phrases.length} pages',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
-                ),
-              ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Text(title, style: text.titleSmall)),
+              _Pill(
+                label: '$minutes min',
+                color: scheme.tertiaryContainer,
+                textColor: scheme.onTertiaryContainer,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            reason,
+            style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.tonalIcon(
+              onPressed: rec == null
+                  ? null
+                  : () => _launchBlock(context, ref, rec),
+              icon: const Icon(Icons.play_arrow),
+              label: const Text('Start lesson'),
             ),
           ),
-          const Icon(Icons.chevron_right),
         ],
       ),
     );

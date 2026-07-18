@@ -9,6 +9,22 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 16 — Lab home redesign (dashboard only; tutor, Piper,
+  Whisper, and the AI/adaptive engine untouched). The home now reads as
+  "my teacher knows me" instead of a wall of launch cards. **Removed the
+  large Reading / Speaking / Conversation cards from the dashboard** — the
+  features are unchanged and still reached from the bottom navigation
+  (Library / Speaking / Tutor). The dashboard is rebuilt around five
+  teacher-focused sections: **Teacher's Notes** (a persistent notebook,
+  placeholder-sourced via the new `teacherNotesProvider` swap point, with the
+  live misconception card folded in), **Today's Goals** (Reading / Listening
+  / Speaking / Conversation daily progress bars), **Progress summary**
+  (per-skill mastery, no XP), **Current focus** (the active lesson named for
+  the learner, with estimate + remaining activities, over the live plan), and
+  **Recommended next lesson** (one pick from today's plan). Dashboard widget
+  tests updated to the new layout; all 203 tests pass, analyze clean, Android
+  debug build green.
+
 - 2026-07-17: Phase 15 — premium-voice architecture + immersive reading UX
   (UX only; core/providers-of-record untouched). **Speech-engine selection**
   behind the seam: `speechEngineProvider` picks Piper (offline neural,

@@ -853,6 +853,39 @@ final languageSkillMasteryProvider = Provider<Map<LanguageSkill, double>>((
   return skillMastery(st.conceptMastery, curriculum.graph);
 });
 
+// ---------- Teacher's Notes (Phase 16) ----------
+
+/// One line in the Teacher's Notes notebook — a plain-language observation
+/// or a forward-looking plan, in the teacher's own voice.
+enum TeacherNoteKind { observation, plan }
+
+class TeacherNote {
+  const TeacherNote(this.text, {this.kind = TeacherNoteKind.observation});
+
+  final String text;
+  final TeacherNoteKind kind;
+}
+
+/// Placeholder Teacher's Notes for the dashboard notebook. This provider is
+/// the swap point: an AI observer will replace the body with notes generated
+/// from the learner's real history (misconceptions, signals, Learning DNA).
+/// Until then the dashboard also folds in live detected misconceptions, so
+/// the notebook is never purely static.
+// ponytail: static placeholder now; swap the body for an AI generator later.
+final teacherNotesProvider = Provider<List<TeacherNote>>(
+  (ref) => const [
+    TeacherNote('You still confuse por vs para.'),
+    TeacherNote('Listening is improving faster than speaking.'),
+    TeacherNote('You rarely use the past tense naturally.'),
+    TeacherNote('Vocabulary retention is excellent.'),
+    TeacherNote('Next lesson: Imperfect tense.', kind: TeacherNoteKind.plan),
+    TeacherNote(
+      'Future conversations will focus on travel.',
+      kind: TeacherNoteKind.plan,
+    ),
+  ],
+);
+
 /// Today's personalized plan (ADR-0022): misconception repair first, then
 /// spaced-repetition reviews, weak skills, pronunciation, story, talk —
 /// budgeted by available time and shaped by Learning DNA.

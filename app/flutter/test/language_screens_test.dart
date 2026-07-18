@@ -60,34 +60,28 @@ void main() {
     // Tutor hero opens with the top misconception to repair.
     expect(find.textContaining('Wants to clear up:'), findsOneWidget);
 
-    // Today's plan leads, misconception repair first.
-    await tester.scrollUntilVisible(find.text("Today's plan"), 150);
-    await tester.pump();
-    expect(find.textContaining('Repair:'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.textContaining('minutes today'),
-      150,
-    );
+    // Teacher's Notes lead the dashboard (Phase 16, expanded by default):
+    // placeholder teacher voice + the live detected misconception
+    // (tener, seen 2×).
+    await tester.scrollUntilVisible(find.text("Teacher's Notes"), 150);
+    await tester.scrollUntilVisible(find.textContaining('por vs para'), 120);
+    await tester.scrollUntilVisible(find.text('2×').first, 150);
+    expect(find.text('2×'), findsWidgets);
+    expect(find.textContaining('tener', findRichText: true), findsWidgets);
 
-    // Independent per-skill mastery bars — section collapses by default,
-    // so expand it first (premium compact dashboard, Phase 12 UX).
-    await tester.scrollUntilVisible(find.text('Skill mastery'), 150);
-    await tester.tap(find.text('Skill mastery'));
+    // Progress summary: independent per-skill mastery, collapsed by default.
+    await tester.scrollUntilVisible(find.text('Progress summary'), 150);
+    await tester.tap(find.text('Progress summary'));
     await _settle(tester);
     await tester.scrollUntilVisible(find.text('Vocabulary'), 120);
     expect(find.text('Vocabulary'), findsOneWidget);
     expect(find.text('Grammar'), findsOneWidget);
 
-    // Teacher notes: tener misconception with explanation + occurrences.
-    await tester.scrollUntilVisible(find.text('Teacher notes'), 150);
-    await tester.tap(find.text('Teacher notes'));
-    await _settle(tester);
-    await tester.scrollUntilVisible(find.text('2×').first, 150);
-    expect(find.text('2×'), findsWidgets);
-    expect(
-      find.textContaining('tener', findRichText: true),
-      findsWidgets,
-    );
+    // Current focus (expanded) surfaces the live plan: repair first + minutes.
+    await tester.scrollUntilVisible(find.textContaining('Repair:'), 150);
+    expect(find.textContaining('Repair:'), findsOneWidget);
+    await tester.scrollUntilVisible(find.textContaining('minutes today'), 150);
+    expect(find.textContaining('minutes today'), findsWidgets);
   });
 
   testWidgets('language selector switches curriculum and reseeds learner', (
@@ -130,9 +124,7 @@ void main() {
     await _settle(tester);
     await tester.tap(find.text('Spanish').last);
     await _settle(tester);
-    await tester.scrollUntilVisible(find.text('Teacher notes'), 150);
-    await tester.tap(find.text('Teacher notes'));
-    await _settle(tester);
+    await tester.scrollUntilVisible(find.text("Teacher's Notes"), 150);
     await tester.scrollUntilVisible(find.text('2×').first, 150);
     expect(find.text('2×'), findsWidgets);
     expect(find.text('4×'), findsNothing);

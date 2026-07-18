@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../infrastructure/piper_speech_service.dart';
 import '../../language/pipeline.dart';
 import '../../language/story.dart';
 import '../language_providers.dart';
@@ -43,6 +44,26 @@ class _LanguageStoryReaderScreenState
     _pageController.dispose();
     ref.read(speechServiceProvider).stop();
     super.dispose();
+  }
+
+  bool _prefetched = false;
+
+  /// Phase 28: warm the Piper cache for the current + next page in the
+  /// background, so pressing Play (or turning the page) is instant. Best-effort
+  /// and Piper-only; no-op for the device fallback or in tests.
+  void _prefetchAround(Story story, int i) {
+    final speech = ref.read(speechServiceProvider);
+    if (speech is! PiperSpeechService) return;
+    final texts = <String>[
+      for (var k = i; k <= i + 1 && k < story.phrases.length; k++)
+        story.phrases[k].text,
+    ];
+    if (texts.isEmpty) return;
+    speech.prefetch(
+      texts,
+      langCode: ref.read(languageBcp47Provider),
+      speed: _speed,
+    );
   }
 
   Future<void> _playParagraph(String text, String bcp47) async {
@@ -157,6 +178,13 @@ class _LanguageStoryReaderScreenState
     final bcp47 = ref.watch(languageBcp47Provider);
     final speech = ref.read(speechServiceProvider);
     final isLast = _phrase + 1 >= story.phrases.length;
+
+    // Prefetch audio for the opening page once the story is loaded.
+    if (!_prefetched) {
+      _prefetched = true;
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _prefetchAround(story, _phrase));
+    }
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -309,6 +337,7 @@ class _LanguageStoryReaderScreenState
                               _phrase = i;
                               _playing = false;
                             });
+                            _prefetchAround(story, i);
                           },
                           itemBuilder: (context, i) {
                             final p = story.phrases[i];

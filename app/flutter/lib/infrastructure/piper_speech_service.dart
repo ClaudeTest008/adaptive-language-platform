@@ -31,7 +31,9 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa;
 
+import '../language/audio_cache.dart';
 import '../language/speech.dart';
+import 'piper_audio_cache.dart';
 
 /// Download/initialization state, surfaced in Voice Settings.
 enum PiperStatus { idle, downloading, extracting, loading, ready, error }
@@ -163,6 +165,17 @@ class PiperSpeechService implements SpeechService {
   String? _tmpDir;
   String? _docsDir;
   bool _disposed = false;
+
+  // Persistent audio cache (Phase 28): identical audio is synthesized once and
+  // reused, so playback is instant on repeat. Initialized lazily once the
+  // documents dir is known. ~200 MB budget.
+  PiperAudioCache? _cache;
+  static const int _cacheMaxBytes = 200 * 1024 * 1024;
+  String? _playingKey; // never evicted while playing
+
+  /// System metrics (NOT learner data): cache hit rate, cached size.
+  double get cacheHitRate => _cache?.hitRate ?? 0;
+  int cacheSizeBytes() => _cache?.sizeBytes() ?? 0;
 
   final ValueNotifier<PiperStatus> status = ValueNotifier(PiperStatus.idle);
   final ValueNotifier<double> progress = ValueNotifier(0);
@@ -323,14 +336,35 @@ class PiperSpeechService implements SpeechService {
       }
       final normalized = spokenText(text);
       if (normalized.isEmpty) return;
+      _cache ??= PiperAudioCache('$_docsDir/piper_cache');
+      final voiceDir = _voices[_base(langCode)]?.dir ?? 'default';
       for (final s in _sentences(normalized)) {
         if (myGen != _gen || _disposed) return; // barge-in
-        final path = await _synthesize(s, speed, myGen);
-        if (path == null || myGen != _gen || _disposed) return;
-        await _playFile(path, myGen);
+        final key = audioCacheKey(
+          text: s,
+          langCode: langCode,
+          voice: voiceDir,
+          speed: speed,
+        );
+        String? path;
+        if (_cache!.contains(key)) {
+          // Cache hit — instant, no synthesis.
+          _cache!.touch(key);
+          path = _cache!.pathFor(key);
+        } else {
+          final tmp = await _synthesize(s, speed, myGen);
+          if (tmp == null || myGen != _gen || _disposed) return;
+          path = await _cache!.store(key, tmp);
+          _playingKey = key;
+          unawaited(_cache!.cleanup(maxBytes: _cacheMaxBytes, keep: key));
+        }
+        _playingKey = key;
+        // Cached files are never deleted after play — the cache owns them.
+        await _playFile(path, myGen, deleteAfter: false);
         if (myGen != _gen || _disposed) return;
         await Future<void>.delayed(const Duration(milliseconds: 180));
       }
+      _playingKey = null;
     } catch (e, st) {
       _log('speak EXCEPTION $e');
       _log('speak stack:\n$st');
@@ -373,7 +407,8 @@ class PiperSpeechService implements SpeechService {
 
   /// Play a WAV, completing the instant it finishes OR is stopped (no long
   /// timeout, so barge-in returns immediately).
-  Future<void> _playFile(String path, int myGen) async {
+  Future<void> _playFile(String path, int myGen,
+      {bool deleteAfter = true}) async {
     final done = Completer<void>();
     late final StreamSubscription<PlayerState> sub;
     sub = _player.onPlayerStateChanged.listen((s) {
@@ -391,8 +426,44 @@ class PiperSpeechService implements SpeechService {
       _log('play error $e');
     } finally {
       await sub.cancel();
-      _deleteQuiet(path);
+      if (deleteAfter) _deleteQuiet(path);
     }
+  }
+
+  /// Background pre-generation (Phase 28): synthesize [texts] into the cache
+  /// WITHOUT playing, so the next Play is instant. Best-effort and cancelable —
+  /// it aborts the moment a real playback (or stop) advances the generation
+  /// token, so it never delays what the learner actually pressed Play on.
+  Future<void> prefetch(
+    List<String> texts, {
+    String langCode = 'es-ES',
+    double speed = 1.0,
+  }) async {
+    if (!_engineReady || _disposed) return;
+    final startGen = _gen;
+    _cache ??= PiperAudioCache('$_docsDir/piper_cache');
+    final voiceDir = _voices[_base(langCode)]?.dir ?? 'default';
+    for (final text in texts) {
+      final normalized = spokenText(text);
+      if (normalized.isEmpty) continue;
+      for (final s in _sentences(normalized)) {
+        if (_disposed || _gen != startGen) return; // playback started → stop
+        final key = audioCacheKey(
+          text: s, langCode: langCode, voice: voiceDir, speed: speed);
+        if (_cache!.contains(key)) continue; // already cached
+        final tmp = await _synthesize(s, speed, startGen);
+        if (tmp == null || _gen != startGen) return;
+        await _cache!.store(key, tmp);
+      }
+    }
+    unawaited(_cache!.cleanup(maxBytes: _cacheMaxBytes, keep: _playingKey));
+  }
+
+  /// Drops only this voice's cached audio (e.g. on a voice change), keeping
+  /// every other voice intact.
+  Future<void> invalidateVoice(String langCode) async {
+    final voiceDir = _voices[_base(langCode)]?.dir ?? 'default';
+    await _cache?.invalidateVoice(langCode: langCode, voice: voiceDir);
   }
 
   List<String> _sentences(String text) {

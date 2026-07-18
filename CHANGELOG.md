@@ -68,6 +68,39 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 28 — Real Piper audio cache + prefetch (playback
+  performance; **NOT device-verified — see below**). Wires the pure
+  `audio_cache.dart` policy into the real `PiperSpeechService` so identical
+  (text, language, voice, speed) audio is synthesized ONCE and reused offline —
+  the library should feel like a music app, not an AI generating audio every
+  play. **Persistent cache** (`infrastructure/piper_audio_cache.dart`):
+  hash-named WAVs on disk (`$docs/piper_cache`), `contains`/`store`/`touch`,
+  `cleanup` (LRU via `evictionPlan`, ~200 MB budget, never evicts the file
+  currently playing), `invalidateVoice` (voice-scoped — a voice change drops
+  only its own audio; the cache key filename now carries readable lang+voice
+  prefixes), `clear`, and system metrics (`hitRate`, `sizeBytes` — explicitly
+  NOT learner data, never enters the Teacher Brain). **Service wiring**
+  (surgical): `speak()` now checks the cache before synthesizing and stores +
+  reuses after — the background isolate, generation/barge-in token, serialized
+  playback and ANR-fix path are UNCHANGED; cached files are no longer deleted
+  after play (`_playFile` gained `deleteAfter`, false for cache). **Prefetch**:
+  `PiperSpeechService.prefetch(texts)` synthesizes ahead into the cache without
+  playing, aborting the instant a real Play/stop advances the token so it never
+  delays the learner. The story reader prefetches the current + next page on
+  open and page-turn (best-effort, Piper-only). 361 tests (+8: cache key
+  stability + voice-prefix scoping, `PiperAudioCache` store/reuse/LRU-keeps-
+  playing/voice-invalidation/clear/no-op-when-cached via real temp dirs),
+  analyze clean, Android debug build green.
+
+  **HONEST — device verification NOT performed.** This environment has no
+  physical Android device (and can't hear audio), so the required on-device
+  checks (first vs cached playback latency, chapter/voice switching, prefetch,
+  large-book playback, cache cleanup, cold/warm start, no-ANR under rapid
+  play/stop) were NOT run. The change is deliberately surgical and preserves
+  the device-verified ANR/barge-in isolate logic, but it touches the most
+  safety-critical file in the repo and MUST be verified on hardware before this
+  is trusted. No latency numbers are claimed.
+
 - 2026-07-18: Phase 27 — PDF/EPUB backend + Learning Workspace. Turns imported
   books into structured, measurable teaching material. **Book Ingestion Engine**
   (`lib/language/book_ingestion.dart`, pure, no learner data): normalizes raw

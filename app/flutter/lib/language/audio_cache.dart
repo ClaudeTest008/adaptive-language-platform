@@ -24,8 +24,19 @@ String audioCacheKey({
     hash = (hash ^ unit) & mask;
     hash = (hash * prime) & mask;
   }
-  return 'tts_${langCode}_${hash.toRadixString(16).padLeft(16, '0')}.wav';
+  // The filename carries readable lang + voice tags so a voice/language change
+  // can invalidate only its own audio (prefix match), leaving the rest cached.
+  return 'tts_${_slug(langCode)}_${_slug(voice)}_'
+      '${hash.toRadixString(16).padLeft(16, '0')}.wav';
 }
+
+/// The filename prefix for all audio of one (language, voice) — used to
+/// invalidate exactly that voice's cache and nothing else.
+String audioCacheVoicePrefix({required String langCode, required String voice}) =>
+    'tts_${_slug(langCode)}_${_slug(voice)}_';
+
+String _slug(String s) =>
+    s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
 
 /// One cached audio file's bookkeeping.
 class AudioCacheEntry {

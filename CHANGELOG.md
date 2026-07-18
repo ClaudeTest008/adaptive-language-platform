@@ -68,6 +68,36 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 24 — Teacher Intelligence & Conversation Engine. Makes the
+  AI decide like a real teacher, not a chatbot. `lib/language/teacher_intelligence.dart`
+  (pure, deterministic, offline; consumes ONLY the Teacher Brain — no UI, no
+  persistence, no learner state of its own): `TeacherIntelligenceEngine`
+  decides WHAT to teach, WHY and WHEN (the pedagogy). Produces `TeacherDecision`,
+  `TeacherResponsePlan`, `ConversationState` (lesson stage / objective / active
+  concept / confidence / energy — all derived, no duplicate state),
+  `TeachingMoment` (connection-first, often Socratic), `TeachingOpportunity`
+  (ranked: recovery → active misconception → connection → mental-model
+  discovery → curiosity), `CorrectionPlan` (ONE weak point, praise-first, why
+  anchored to a family the learner already holds), `ConversationMemory` (real
+  "Remember…" references from connections/history, never invented),
+  `ReflectionPlan` (improved / needs-work / next / homework from measured
+  trends). Encodes the core philosophy: **invisible teaching** (discovery
+  moments show-and-ask rather than announce "today we learn X"), **Socratic
+  guidance** ("what do these have in common?"), **connection-first** (every
+  moment names the family / ties to known ground), **adaptive pacing**
+  (slow-down / review / story / challenge / recover — from difficulty fit +
+  motivation + profile, never random). A future local LLM (P25) will consume
+  this to word responses naturally — it never decides pedagogy; this engine
+  remains the teacher. Providers: `teacherIntelligenceProvider` +
+  `teacherPlanProvider` (the next-turn plan, derived from the live brain).
+  Light integration: the tutor now opens with a genuine memory reference when
+  one exists (persistent-teacher feel), additive to the Phase 21 greeting.
+  Nothing fabricated — empty/null when the brain lacks data. 306 tests (+14:
+  lesson arc/pacing, conversation state, teaching decisions incl. recovery,
+  Socratic discovery, connection-first moments, adaptive correction + none-when-
+  clean, memory/reflection from real data, full-plan closing stage, determinism,
+  empty-brain non-fabrication), analyze clean, Android debug build green.
+
 - 2026-07-18: Phase 23 — Local Whisper architecture + speaking analytics
   (offline speech understanding). Piper gives offline speech OUT; this adds the
   offline speech-IN counterpart behind a clean seam. **Whisper subsystem**

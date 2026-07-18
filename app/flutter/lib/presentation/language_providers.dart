@@ -37,6 +37,7 @@ import '../language/notebook_repository.dart';
 import '../language/pipeline.dart';
 import '../language/reasoning_engine.dart';
 import '../language/speaking_session.dart';
+import '../language/teacher_intelligence.dart';
 import '../language/whisper/whisper_model_manager.dart';
 import '../language/whisper/whisper_pipeline.dart';
 import '../language/whisper/whisper_repository.dart';
@@ -861,13 +862,17 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
     );
     // The teacher opens personally, from what it actually knows (Phase 21):
     // the brain's leading curiosity/observation precedes the lesson opener.
-    final greeting = switch (ref.read(teacherBrainProvider).value) {
-      final b? => teacherGreeting(b),
-      _ => null,
-    };
+    // Phase 24: a genuine memory reference ("Remember…") makes the teacher
+    // feel persistent — drawn from real connections/history, never invented.
+    final brain = ref.read(teacherBrainProvider).value;
+    final greeting = brain == null ? null : teacherGreeting(brain);
+    final memory = brain == null
+        ? null
+        : ref.read(teacherIntelligenceProvider).memory(brain)?.reference;
     state = state?.copyWith(
       transcript: [
         if (greeting != null) (true, greeting),
+        if (memory != null) (true, memory),
         (true, reply.text),
       ],
       busy: false,
@@ -1088,6 +1093,21 @@ final teacherBrainProvider = FutureProvider<TeacherBrain?>((ref) async {
   );
 
   return brain;
+});
+
+/// The Teacher Intelligence Engine (Phase 24) — decides WHAT/WHY/WHEN to teach
+/// from the brain. A future local LLM (P25) consumes this to word responses;
+/// it never decides pedagogy. Pure and offline.
+final teacherIntelligenceProvider = Provider<TeacherIntelligenceEngine>(
+  (ref) => const TeacherIntelligenceEngine(),
+);
+
+/// The teacher's plan for the next turn, derived from the live brain. Null
+/// until the brain is ready.
+final teacherPlanProvider = Provider<TeacherResponsePlan?>((ref) {
+  final brain = ref.watch(teacherBrainProvider).value;
+  if (brain == null) return null;
+  return ref.watch(teacherIntelligenceProvider).plan(brain);
 });
 
 /// The unified teacher's automatic choice (Phase 18) — which internal strategy

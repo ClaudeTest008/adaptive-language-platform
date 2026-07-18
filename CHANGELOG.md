@@ -9,6 +9,31 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 17 — Teacher's Notebook engine (real + persistent; the
+  app's first cross-session memory). Replaces the Phase 16 placeholder notes
+  with observations generated **live** from the learner's own metrics, in a
+  teacher's voice — nothing is fabricated: a note only appears when its signal
+  has actually been measured. `lib/language/notebook.dart` (pure, deterministic
+  `buildTeacherNotebook`) derives: recurring grammar mistakes (named from the
+  concept graph, with occurrence counts), vocabulary mastery vs the working
+  level, strongest/weakest skills, listening-vs-speaking balance, pronunciation
+  confidence, a **session-over-session trend** (up / steady / slipped), a
+  coarse **CEFR estimate** ("around A1"), and the **next lesson** from the plan.
+  **Persistence:** `TeacherNotebookRepository` seam
+  (`lib/language/notebook_repository.dart`) with an in-memory default and a
+  `shared_preferences` disk adapter
+  (`lib/infrastructure/prefs_notebook_repository.dart`) — one metrics snapshot
+  per day, capped, so trends compare against a prior day. Adds the
+  `shared_preferences` dependency (first real on-disk persistence; offline, no
+  account). Providers: `teacherNotebookProvider` (FutureProvider building the
+  live notebook + writing today's snapshot) and
+  `teacherNotebookRepositoryProvider` (swap point for Firestore later). The
+  dashboard's Teacher's Notes card renders the live notebook (category icons,
+  working-level header, plan lines highlighted); the tappable misconception
+  card remains below it. 214 tests (11 new: engine, trend, CEFR, snapshot
+  JSON, merge/cap, in-memory + prefs round-trip), analyze clean, Android debug
+  build green.
+
 - 2026-07-18: Phase 16 — Lab home redesign (dashboard only; tutor, Piper,
   Whisper, and the AI/adaptive engine untouched). The home now reads as
   "my teacher knows me" instead of a wall of launch cards. **Removed the

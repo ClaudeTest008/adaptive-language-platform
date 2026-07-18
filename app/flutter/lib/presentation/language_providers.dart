@@ -20,6 +20,7 @@ import '../infrastructure/language_content_repository.dart';
 import '../infrastructure/language_repositories.dart';
 import '../infrastructure/piper_speech_service.dart';
 import '../infrastructure/platform_speech_service.dart';
+import '../infrastructure/prefs_notebook_repository.dart';
 import '../language/conversation.dart';
 import '../language/content_merge.dart';
 import '../language/curriculum.dart';
@@ -28,6 +29,8 @@ import '../language/exercises.dart';
 import '../language/ingestion.dart';
 import '../language/lesson.dart';
 import '../language/misconceptions.dart';
+import '../language/notebook.dart';
+import '../language/notebook_repository.dart';
 import '../language/signals.dart';
 import '../language/speaking.dart';
 import '../language/speech.dart';
@@ -853,38 +856,96 @@ final languageSkillMasteryProvider = Provider<Map<LanguageSkill, double>>((
   return skillMastery(st.conceptMastery, curriculum.graph);
 });
 
-// ---------- Teacher's Notes (Phase 16) ----------
+// ---------- Teacher's Notebook (Phase 17) ----------
 
-/// One line in the Teacher's Notes notebook — a plain-language observation
-/// or a forward-looking plan, in the teacher's own voice.
-enum TeacherNoteKind { observation, plan }
+/// Persistent store for the notebook's cross-session memory. Disk-backed on
+/// device; tests override this with an in-memory repository.
+final teacherNotebookRepositoryProvider = Provider<TeacherNotebookRepository>(
+  (ref) => PrefsTeacherNotebookRepository(),
+);
 
-class TeacherNote {
-  const TeacherNote(this.text, {this.kind = TeacherNoteKind.observation});
+String _notebookDay(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-'
+    '${d.month.toString().padLeft(2, '0')}-'
+    '${d.day.toString().padLeft(2, '0')}';
 
-  final String text;
-  final TeacherNoteKind kind;
+/// Mean of a per-concept signal across the concepts that have measured it;
+/// null when nothing has been measured yet.
+double? _meanSignal(
+  LanguageSignalsStore signals,
+  double? Function(LanguageConceptSignals) pick,
+) {
+  final xs = <double>[
+    for (final s in signals.byConcept.values)
+      if (pick(s) != null) pick(s)!,
+  ];
+  if (xs.isEmpty) return null;
+  return xs.reduce((a, b) => a + b) / xs.length;
 }
 
-/// Placeholder Teacher's Notes for the dashboard notebook. This provider is
-/// the swap point: an AI observer will replace the body with notes generated
-/// from the learner's real history (misconceptions, signals, Learning DNA).
-/// Until then the dashboard also folds in live detected misconceptions, so
-/// the notebook is never purely static.
-// ponytail: static placeholder now; swap the body for an AI generator later.
-final teacherNotesProvider = Provider<List<TeacherNote>>(
-  (ref) => const [
-    TeacherNote('You still confuse por vs para.'),
-    TeacherNote('Listening is improving faster than speaking.'),
-    TeacherNote('You rarely use the past tense naturally.'),
-    TeacherNote('Vocabulary retention is excellent.'),
-    TeacherNote('Next lesson: Imperfect tense.', kind: TeacherNoteKind.plan),
-    TeacherNote(
-      'Future conversations will focus on travel.',
-      kind: TeacherNoteKind.plan,
+/// The live Teacher's Notebook (Phase 17): real observations built from the
+/// learner's current metrics, trended against the last saved session, and
+/// persisted so the teacher "remembers" across app restarts. Rebuilds when the
+/// learner's state changes and writes today's snapshot each time (one entry
+/// per day, so trend notes compare against a prior day, not this session).
+final teacherNotebookProvider = FutureProvider<TeacherNotebook>((ref) async {
+  final st = ref.watch(languageLearnerProvider);
+  final curriculum = ref.watch(curriculumProvider).value;
+  final mastery = ref.watch(languageSkillMasteryProvider);
+  final repo = ref.watch(teacherNotebookRepositoryProvider);
+  if (curriculum == null) {
+    return const TeacherNotebook(observations: [], cefrEstimate: 'A1');
+  }
+
+  // Next lesson = the first non-repair block the plan recommends.
+  final blocks = ref.watch(dailyLessonProvider);
+  final nextBlock = blocks
+      .where((b) => b.kind != LessonBlockKind.repair)
+      .firstOrNull;
+  final nextName = nextBlock == null
+      ? null
+      : (curriculum.graph[nextBlock.conceptIds.firstOrNull ?? '']?.name ??
+            nextBlock.title);
+
+  final conceptNames = {
+    for (final e in curriculum.graph.nodes.entries) e.key: e.value.name,
+  };
+
+  final history = await repo.loadHistory();
+  final today = _notebookDay(DateTime.now());
+  final previous = history.where((s) => s.day != today).lastOrNull;
+
+  final notebook = buildTeacherNotebook(
+    mastery: mastery,
+    misconceptions: st.misconceptions.all,
+    accuracy: st.model.overallAccuracy,
+    totalAnswered: st.model.totalAnswered,
+    baseLevel: 'A1',
+    conceptNames: conceptNames,
+    pronunciationConfidence: _meanSignal(
+      st.signals,
+      (s) => s.pronunciationConfidence,
     ),
-  ],
-);
+    listeningRecognition: _meanSignal(
+      st.signals,
+      (s) => s.listeningRecognition,
+    ),
+    conversationAbility: _meanSignal(st.signals, (s) => s.conversationAbility),
+    previous: previous,
+    nextConceptName: nextName,
+  );
+
+  await repo.saveSnapshot(
+    NotebookSnapshot(
+      day: today,
+      mastery: mastery,
+      accuracy: st.model.overallAccuracy,
+      misconceptionTotal: st.misconceptions.all.length,
+    ),
+  );
+
+  return notebook;
+});
 
 /// Today's personalized plan (ADR-0022): misconception repair first, then
 /// spaced-repetition reviews, weak skills, pronunciation, story, talk —

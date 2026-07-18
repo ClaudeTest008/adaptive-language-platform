@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../language/entities.dart';
 import '../../language/lesson.dart';
+import '../../language/notebook.dart';
 import '../../language/tutor.dart';
 import '../language_providers.dart';
 import '../providers.dart';
@@ -443,41 +444,83 @@ class _ExpandableSection extends StatelessWidget {
   }
 }
 
-/// 1 · Teacher's Notes notebook. Placeholder-sourced today (see
-/// `teacherNotesProvider`); the live misconception card sits below it so the
-/// notebook already reflects real detected interference.
+/// 1 · Teacher's Notebook — real observations generated live from the
+/// learner's metrics and persisted across sessions (Phase 17,
+/// `teacherNotebookProvider`). The live misconception card sits below it for
+/// tap-through detail on each detected interference.
 class _TeacherNotebookCard extends ConsumerWidget {
   const _TeacherNotebookCard();
 
+  static const _icons = {
+    ObservationCategory.grammar: Icons.account_tree,
+    ObservationCategory.vocabulary: Icons.style,
+    ObservationCategory.listening: Icons.headphones,
+    ObservationCategory.speaking: Icons.record_voice_over,
+    ObservationCategory.pronunciation: Icons.graphic_eq,
+    ObservationCategory.reading: Icons.menu_book,
+    ObservationCategory.conversation: Icons.forum,
+    ObservationCategory.trend: Icons.trending_up,
+    ObservationCategory.focus: Icons.center_focus_strong,
+    ObservationCategory.encouragement: Icons.emoji_events,
+    ObservationCategory.plan: Icons.arrow_forward,
+  };
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notes = ref.watch(teacherNotesProvider);
+    final async = ref.watch(teacherNotebookProvider);
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final notebook = async.value;
+    if (notebook == null) {
+      return const GlassCard(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ),
+      );
+    }
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final n in notes)
+          Row(
+            children: [
+              Icon(Icons.auto_graph, size: 18, color: scheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Working level: around ${notebook.cefrEstimate}',
+                style: text.labelLarge?.copyWith(
+                  color: scheme.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          for (final o in notebook.observations)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 5),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(
-                    n.kind == TeacherNoteKind.plan
-                        ? Icons.arrow_forward
-                        : Icons.edit_note,
+                    _icons[o.category] ?? Icons.edit_note,
                     size: 18,
-                    color: n.kind == TeacherNoteKind.plan
+                    color: o.kind == ObservationKind.plan
                         ? scheme.primary
                         : scheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      n.text,
-                      style: n.kind == TeacherNoteKind.plan
+                      o.text,
+                      style: o.kind == ObservationKind.plan
                           ? text.bodyMedium?.copyWith(
                               color: scheme.primary,
                               fontWeight: FontWeight.w600,

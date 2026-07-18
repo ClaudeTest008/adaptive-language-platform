@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:adaptive_exam_platform/language/curriculum.dart';
+import 'package:adaptive_exam_platform/language/notebook_repository.dart';
 import 'package:adaptive_exam_platform/language/speech.dart';
 import 'package:adaptive_exam_platform/presentation/language_providers.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_concept_screen.dart';
@@ -33,6 +34,10 @@ Widget _app(Curriculum c, Widget home) => ProviderScope(
     curriculumProvider.overrideWith((ref) => Future.value(c)),
     // Tests never touch the real TTS/STT plugins.
     speechServiceProvider.overrideWithValue(NoopSpeechService()),
+    // In-memory notebook store — no shared_preferences plugin under test.
+    teacherNotebookRepositoryProvider.overrideWithValue(
+      InMemoryTeacherNotebookRepository(),
+    ),
   ],
   child: MaterialApp(home: home),
 );
@@ -60,11 +65,14 @@ void main() {
     // Tutor hero opens with the top misconception to repair.
     expect(find.textContaining('Wants to clear up:'), findsOneWidget);
 
-    // Teacher's Notes lead the dashboard (Phase 16, expanded by default):
-    // placeholder teacher voice + the live detected misconception
-    // (tener, seen 2×).
+    // Teacher's Notes lead the dashboard (expanded by default): the live
+    // notebook engine estimates a working level and folds in the detected
+    // misconception (tener, seen 2×) via the card below it.
     await tester.scrollUntilVisible(find.text("Teacher's Notes"), 150);
-    await tester.scrollUntilVisible(find.textContaining('por vs para'), 120);
+    await tester.scrollUntilVisible(
+      find.textContaining('Working level: around'),
+      120,
+    );
     await tester.scrollUntilVisible(find.text('2×').first, 150);
     expect(find.text('2×'), findsWidgets);
     expect(find.textContaining('tener', findRichText: true), findsWidgets);
@@ -95,6 +103,10 @@ void main() {
             final code = ref.watch(selectedLanguageProvider);
             return _curriculumFor(code);
           }),
+          speechServiceProvider.overrideWithValue(NoopSpeechService()),
+          teacherNotebookRepositoryProvider.overrideWithValue(
+            InMemoryTeacherNotebookRepository(),
+          ),
         ],
         child: const MaterialApp(home: LanguageDashboardScreen()),
       ),

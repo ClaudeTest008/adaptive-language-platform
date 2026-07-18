@@ -60,6 +60,14 @@ class PiperSpeechService implements SpeechService {
   bool _bindingsReady = false;
   int _gen = 0;
 
+  // ---- Diagnostics only (Phase-15 stability investigation). No behavior
+  // change: these counters/logs expose concurrency, leaks and exceptions in
+  // the phone's logcat. debugPrint is NOT stripped in release builds.
+  int _active = 0; // concurrent speak() bodies in flight
+  int _seq = 0; // monotonic speak id
+  int _loads = 0; // how many times a voice model was actually loaded
+  static void _log(String m) => debugPrint('[PIPER] $m');
+
   /// Live status + download progress (0..1) for Voice Settings.
   final ValueNotifier<PiperStatus> status = ValueNotifier(PiperStatus.idle);
   final ValueNotifier<double> progress = ValueNotifier(0);
@@ -78,7 +86,15 @@ class PiperSpeechService implements SpeechService {
   /// download when missing; concurrent callers share one in-flight future.
   Future<void> ensureVoice(String langCode) {
     final base = _base(langCode);
-    if (_engines.containsKey(base)) return Future.value();
+    if (_engines.containsKey(base)) {
+      _log('ensureVoice($base): cache hit (loads=$_loads)');
+      return Future.value();
+    }
+    if (_inflight.containsKey(base)) {
+      _log('ensureVoice($base): joining in-flight load');
+      return _inflight[base]!;
+    }
+    _log('ensureVoice($base): starting load');
     return _inflight[base] ??= _loadVoice(base).whenComplete(
       () => _inflight.remove(base),
     );
@@ -116,13 +132,16 @@ class PiperSpeechService implements SpeechService {
         ),
       );
       _engines[base] = sherpa.OfflineTts(config);
+      _loads++;
       status.value = PiperStatus.ready;
       statusDetail.value = 'Piper voice ready (${voice.dir})';
-      if (kDebugMode) debugPrint('[PIPER] ready: ${voice.dir}');
-    } catch (e) {
+      _log('LOAD ok: ${voice.dir} (total model loads this session=$_loads; '
+          'expected 1 per language)');
+    } catch (e, st) {
       status.value = PiperStatus.error;
       statusDetail.value = 'Voice setup failed: $e';
-      if (kDebugMode) debugPrint('[PIPER] error: $e');
+      _log('LOAD FAILED base=$base ex=$e');
+      _log('LOAD FAILED stack:\n$st');
     }
   }
 
@@ -157,10 +176,11 @@ class PiperSpeechService implements SpeechService {
         out.parent.createSync(recursive: true);
         out.writeAsBytesSync(f.content as List<int>);
       }
-      if (kDebugMode) {
-        debugPrint('[PIPER] downloaded+extracted ${voice.dir} '
-            '($received bytes)');
-      }
+      _log('DOWNLOAD ok ${voice.dir} ($received bytes)');
+    } catch (e, st) {
+      _log('DOWNLOAD FAILED ${voice.url} ex=$e');
+      _log('DOWNLOAD FAILED stack:\n$st');
+      rethrow;
     } finally {
       client.close();
     }
@@ -175,48 +195,81 @@ class PiperSpeechService implements SpeechService {
     double speed = 1.0,
   }) async {
     final myGen = ++_gen;
-    final base = _base(langCode);
-    // First use: start (or join) the voice download. Never falls back to
-    // another TTS — until the model is ready, we stay silent and Voice
-    // Settings shows the download progress.
-    await ensureVoice(langCode);
-    final tts = _engines[base];
-    if (tts == null || myGen != _gen) return;
-    final normalized = spokenText(text);
-    if (normalized.isEmpty) return;
-    // Sentence-chunked synthesis: keeps latency low, gives natural breaths,
-    // and lets a barge-in cancel between chunks.
-    final chunks = _sentences(normalized);
-    final tmp = await getTemporaryDirectory();
-    for (final (i, s) in chunks.indexed) {
-      if (myGen != _gen) return; // barge-in
-      final audio = tts.generate(text: s, sid: 0, speed: speed);
-      if (myGen != _gen || audio.samples.isEmpty) return;
-      final wav = '${tmp.path}/piper_$myGen$i.wav';
-      sherpa.writeWave(
-        filename: wav,
-        samples: audio.samples,
-        sampleRate: audio.sampleRate,
-      );
-      if (kDebugMode) {
-        debugPrint('[PIPER] gen#$myGen chunk$i samples=${audio.samples.length}'
-            ' sr=${audio.sampleRate} <<$s>>');
+    final id = ++_seq;
+    _active++;
+    final sw = Stopwatch()..start();
+    _log('speak#$id START gen=$myGen active=$_active len=${text.length} '
+        'speed=$speed ${_active > 1 ? '*** CONCURRENT SPEAK ***' : ''}');
+    try {
+      final base = _base(langCode);
+      // First use: start (or join) the voice download. Never falls back to
+      // another TTS — until the model is ready, we stay silent and Voice
+      // Settings shows the download progress.
+      await ensureVoice(langCode);
+      final tts = _engines[base];
+      if (tts == null || myGen != _gen) {
+        _log('speak#$id EXIT early (tts=${tts != null} '
+            'superseded=${myGen != _gen})');
+        return;
       }
-      if (myGen != _gen) return;
-      final done = Completer<void>();
-      late final StreamSubscription<void> sub;
-      sub = _player.onPlayerComplete.listen((_) {
-        if (!done.isCompleted) done.complete();
-      });
-      await _player.play(DeviceFileSource(wav));
-      await done.future.timeout(
-        Duration(seconds: 5 + audio.samples.length ~/ audio.sampleRate),
-        onTimeout: () {},
-      );
-      await sub.cancel();
-      if (i < chunks.length - 1) {
-        await Future<void>.delayed(const Duration(milliseconds: 200));
+      final normalized = spokenText(text);
+      if (normalized.isEmpty) return;
+      // Sentence-chunked synthesis: keeps latency low, gives natural breaths,
+      // and lets a barge-in cancel between chunks.
+      final chunks = _sentences(normalized);
+      final tmp = await getTemporaryDirectory();
+      for (final (i, s) in chunks.indexed) {
+        if (myGen != _gen) {
+          _log('speak#$id BARGE-IN before chunk$i (gen $myGen!=$_gen)');
+          return;
+        }
+        final gsw = Stopwatch()..start();
+        final audio = tts.generate(text: s, sid: 0, speed: speed);
+        gsw.stop();
+        // generate() runs synchronously on THIS isolate: this ms figure is
+        // main-thread block time — the ANR risk on a real phone.
+        _log('speak#$id chunk$i generate=${gsw.elapsedMilliseconds}ms '
+            'samples=${audio.samples.length} sr=${audio.sampleRate}'
+            '${gsw.elapsedMilliseconds > 800 ? ' *** MAIN-ISOLATE BLOCK ***' : ''}');
+        if (myGen != _gen || audio.samples.isEmpty) return;
+        final wav = '${tmp.path}/piper_$myGen$i.wav';
+        sherpa.writeWave(
+          filename: wav,
+          samples: audio.samples,
+          sampleRate: audio.sampleRate,
+        );
+        if (myGen != _gen) return;
+        final done = Completer<void>();
+        late final StreamSubscription<void> sub;
+        sub = _player.onPlayerComplete.listen((_) {
+          if (!done.isCompleted) done.complete();
+        });
+        await _player.play(DeviceFileSource(wav));
+        final timeout = Duration(
+          seconds: 5 + audio.samples.length ~/ audio.sampleRate,
+        );
+        var timedOut = false;
+        await done.future.timeout(timeout, onTimeout: () => timedOut = true);
+        // A timeout here means onPlayerComplete never fired — e.g. stop()
+        // was called (stop() does NOT emit complete). Diagnostic for the
+        // "coroutine lingers for the whole timeout on barge-in" leak.
+        if (timedOut) {
+          _log('speak#$id chunk$i PLAY TIMEOUT after ${timeout.inSeconds}s '
+              '(onPlayerComplete never fired — stopped or hung)');
+        }
+        await sub.cancel();
+        if (i < chunks.length - 1) {
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+        }
       }
+      _log('speak#$id DONE in ${sw.elapsedMilliseconds}ms');
+    } catch (e, st) {
+      // Previously UNHANDLED — an exception here escaped as an unhandled
+      // async error. Log the full trace so the crash is attributable.
+      _log('speak#$id EXCEPTION ex=$e');
+      _log('speak#$id stack:\n$st');
+    } finally {
+      _active--;
     }
   }
 
@@ -239,18 +292,26 @@ class PiperSpeechService implements SpeechService {
   @override
   Future<void> stop() async {
     _gen++; // cancels the synthesis/playback loop instantly (barge-in)
+    _log('stop() gen->$_gen active=$_active');
     try {
       await _player.stop();
-    } catch (_) {}
+    } catch (e, st) {
+      _log('stop() player.stop ex=$e');
+      _log('stop() stack:\n$st');
+    }
     await _sttFallback.stop();
   }
 
   @override
   Future<void> pause() async {
     _gen++;
+    _log('pause() gen->$_gen active=$_active');
     try {
       await _player.pause();
-    } catch (_) {}
+    } catch (e, st) {
+      _log('pause() player.pause ex=$e');
+      _log('pause() stack:\n$st');
+    }
   }
 
   @override

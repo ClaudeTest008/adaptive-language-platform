@@ -7,7 +7,23 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
-### Fixed
+### Changed
+
+- 2026-07-17: Piper voice STABILITY INVESTIGATION — diagnostics only, no
+  behavior/UI/logic change (fix deferred pending review). Added
+  unconditional `[PIPER]` logging (debugPrint survives release builds) at
+  every stage: init, ensureVoice (cache-hit / in-flight-join / load count),
+  download + extract (with full stack on failure), per-chunk synthesis
+  timing (`generate=Nms`, flags >800 ms as a main-isolate block), playback,
+  play-timeout detection, `speak()` concurrency counter (`active=N`, flags
+  `*** CONCURRENT SPEAK ***`), stop/pause, and a previously-UNHANDLED
+  exception path in `speak()` now logging its full stack trace. A 20×
+  play/stop stress run on the emulator surfaced the root causes (see
+  investigation report): unbounded concurrent `speak()` (peak active=8),
+  `stop()` not emitting `onPlayerComplete` so interrupted clauses block for
+  the full 7 s timeout, subscription/coroutine pile-up on a single shared
+  AudioPlayer, and main-isolate `tts.generate()` (the ANR risk on real
+  hardware). No fix applied yet.
 
 - 2026-07-17: Phase 15 revision — "floating voice sidebar" root-caused and
   resolved, with receipts. The vertical floating pill (mic / backspace /

@@ -68,6 +68,48 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 26 — Curriculum Intelligence Engine + Conversation
+  Continuity Engine. Two new pure/offline/deterministic engines; neither
+  stores learner state, contains UI, or persists anything. **Curriculum
+  Intelligence** (`lib/language/curriculum_intelligence.dart`): the teacher now
+  understands the LANGUAGE, not just the learner — it reasons over the
+  *existing* `LanguageKnowledgeGraph` (prerequisites, typed relations, tiers,
+  CEFR) plus the brain; no second graph is built. `CurriculumNode` gives every
+  concept a learner-relative view (prerequisites, successors/unlocks,
+  connections, difficulty, estimated effort, teaching value, mastery). Queries:
+  `missingPrerequisite` (weakest unmet prereq), `blockingConcept` (weak concept
+  gating the most successors), `almostMastered` (cheapest win), `nextToStudy`
+  (focus prereq → blocker → almost-mastered → highest-value frontier).
+  **Learning journeys**: engaged domains become `LearningJourney`s (stages in
+  difficulty order, measured progress, current stage, milestone) — "we've been
+  working on travel", not "lesson 12"; untouched domains produce no journey.
+  **Conversation Continuity** (`lib/language/conversation_continuity.dart`):
+  remembers CONVERSATIONS, not the learner (the brain owns that). Typed threads
+  — `ConversationArc/Topic`, `OpenQuestion` (asked, unanswered), `TeacherPromise`
+  ("next time…"), `PendingExercise`, `RoleplayState`, `ConversationSummary`,
+  `ConversationContinuation`. Extracted deterministically from the real
+  transcript; an answered question is not open; an empty conversation resumes
+  nothing — the teacher starts fresh rather than pretend to remember.
+  **Error taxonomy** (`lib/language/error_taxonomy.dart`): 16 typed
+  `ErrorCategory`s classified from captured fields (false friend, English
+  transfer, verb tense, article gender, preposition, memory lapse vs careless
+  by prior mastery + speed, confidence via spoken signals, …), each mapped to a
+  distinct `ErrorTeachingStrategy`. **TeacherPacket**
+  (`lib/language/teacher_packet.dart`): the ONLY thing a language generator may
+  receive — plan + continuation + conversation state + current curriculum node
+  + journey + known/unknown concepts + connection opportunities + mental model
+  + reflection + correction/language policies + teaching style + objective +
+  summary; `serializeTeacherPacket` (deterministic, omits what is absent) and
+  `packetPrompt` merge it into the P25 prompt builder — no UI knows the format,
+  the LLM stays "dumb". 334 tests (+14: curriculum traversal/prereq resolution/
+  next-to-study determinism/journeys + none-fabricated, continuity extraction/
+  priority continuation/empty-no-memory/answered-not-open, taxonomy
+  classification + distinct strategies, packet derivation + deterministic
+  serialization + policy-intact prompt), analyze clean, Android debug build
+  green. Engines are library-level this phase (consumed by the packet/prompt
+  path); tutor-flow wiring lands with real GGUF inference (P30) to protect
+  verified conversation flows. NOT device-verified.
+
 - 2026-07-18: Phase 25 — Local LLM integration (offline). Adds the first
   on-device language-generation layer behind a clean seam. Principle:
   **TeacherBrain decides (WHAT/WHY/WHEN), the LLM only words (HOW), the pipeline

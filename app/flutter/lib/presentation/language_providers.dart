@@ -34,7 +34,6 @@ import '../language/entities.dart';
 import '../language/exercises.dart';
 import '../language/ingestion.dart';
 import '../language/lesson.dart';
-import '../language/lesson_generator.dart';
 import '../language/message_intent.dart';
 import '../language/misconceptions.dart';
 import '../language/notebook.dart';
@@ -46,7 +45,6 @@ import '../language/local_llm/llm_model_manager.dart';
 import '../language/local_llm/llm_pipeline.dart';
 import '../language/local_llm/llm_prompt_builder.dart';
 import '../language/local_llm/llm_repository.dart';
-import '../language/local_llm/local_llm.dart';
 import '../infrastructure/prefs_teacher_memory_repository.dart';
 import '../language/conversation_continuity.dart';
 import '../language/lesson_outcomes.dart';
@@ -1499,10 +1497,6 @@ final llmModelManagerProvider = Provider<LlmModelManager>(
   ),
 );
 
-/// The on-device LLM seam (`AiChatModel`). Not-ready until a GGUF model is
-/// loaded on device; the deterministic voice below words the plan meanwhile.
-final localLlmProvider = Provider<LocalLlm>((ref) => const LocalLlm());
-
 /// The response pipeline: TeacherBrain → plan → prompt → voice → language
 /// policy. Words the teacher's decision offline, without repetition.
 final llmPipelineProvider = Provider<LlmPipeline>((ref) => const LlmPipeline());
@@ -1564,14 +1558,6 @@ final ggufTeacherVoiceProvider =
 final teacherIntelligenceProvider = Provider<TeacherIntelligenceEngine>(
   (ref) => const TeacherIntelligenceEngine(),
 );
-
-/// The teacher's plan for the next turn, derived from the live brain. Null
-/// until the brain is ready.
-final teacherPlanProvider = Provider<TeacherResponsePlan?>((ref) {
-  final brain = ref.watch(teacherBrainProvider).value;
-  if (brain == null) return null;
-  return ref.watch(teacherIntelligenceProvider).plan(brain);
-});
 
 // ---------- Roleplay + lesson outcomes (Phase 30) ----------
 
@@ -1695,13 +1681,6 @@ final readerProfileProvider = FutureProvider<ReaderProfile>((ref) async {
   );
 });
 
-/// The single most important reading recommendation, or null.
-final topReadingRecommendationProvider = Provider<Recommendation?>((ref) {
-  final profile = ref.watch(readerProfileProvider).value;
-  final recs = profile?.recommendations ?? const [];
-  return recs.isEmpty ? null : recs.first;
-});
-
 // ---------- Connection optimization (Phase 34) ----------
 
 /// The connection-network optimization report — weak/strong/suggested bridges,
@@ -1714,19 +1693,6 @@ final connectionOptimizationProvider =
   if (brain == null || curriculum == null) return null;
   final memory = await ref.watch(teacherMemorySummaryProvider.future);
   return optimizeConnections(brain, curriculum.graph, memory: memory);
-});
-
-/// The clusters view of the optimization report.
-final connectionClustersProvider =
-    Provider<List<ConnectionCluster>>((ref) =>
-        ref.watch(connectionOptimizationProvider).value?.clusters ?? const []);
-
-/// The single highest-value suggested bridge, or null.
-final bridgeRecommendationProvider = Provider<SuggestedBridge?>((ref) {
-  final bridges =
-      ref.watch(connectionOptimizationProvider).value?.suggestedBridges ??
-          const [];
-  return bridges.isEmpty ? null : bridges.first;
 });
 
 // ---------- Recommendations + journeys (Phase 32/33/34) ----------
@@ -1753,12 +1719,6 @@ final recommendationsProvider =
       return a.id.compareTo(b.id);
     });
   return merged;
-});
-
-/// The single most important recommendation (or null).
-final topRecommendationProvider = Provider<Recommendation?>((ref) {
-  final list = ref.watch(recommendationsProvider).value ?? const [];
-  return list.isEmpty ? null : list.first;
 });
 
 /// Each engaged domain's journey with assessed health + prediction.
@@ -1877,23 +1837,6 @@ final importedBooksProvider = FutureProvider<List<Story>>((ref) async {
   ];
 });
 
-/// Relationships between the learner's imported books (Phase 27): measured
-/// topic + vocabulary overlap, so the teacher can say "you've seen this in
-/// another book". Empty until at least two books are imported.
-final bookRelationshipsProvider =
-    FutureProvider<List<BookRelationship>>((ref) async {
-  ref.watch(experienceRevisionProvider);
-  final books = await ref.watch(experienceRepositoryProvider).loadImportedBooks();
-  final fingerprints = [
-    for (final e in books.entries)
-      BookFingerprint.fromIngested(
-        e.key,
-        ingestBook(title: e.value.title, author: '', text: e.value.text),
-      ),
-  ];
-  return relateBooks(fingerprints);
-});
-
 /// Records finished stories: mines vocabulary against the learner's real
 /// knowledge, persists the measured record, refreshes everything derived
 /// from it (brain lesson history, interests, notebook). State = writes done.
@@ -1967,18 +1910,6 @@ final teacherSupportModeProvider = StateProvider<TeacherSupportMode>(
 final tutorTranslateProvider = StateProvider<bool>((ref) {
   ref.watch(selectedLanguageProvider); // a language switch resets the toggle
   return false;
-});
-
-/// The Adaptive Lesson Generator's plan (Phase 19) — the orchestrator's
-/// "what next", derived from the Teacher Brain. Null until the brain is ready.
-/// Reading/speaking/tutor surfaces read their recommendations from here.
-final lessonPlanProvider = Provider<LessonPlan?>((ref) {
-  final brain = ref.watch(teacherBrainProvider).value;
-  if (brain == null) return null;
-  final stories = ref.watch(storiesProvider).value ?? const [];
-  final recs = ref.watch(recommendationsProvider).value ?? const [];
-  return const AdaptiveLessonGenerator()
-      .generate(brain, stories: stories, recommendations: recs);
 });
 
 /// Today's personalized plan (ADR-0022): misconception repair first, then

@@ -3,7 +3,7 @@
 ## Active
 
 - Phase 8 infra: Firestore repository swap behind the existing seams (curriculum/review/signals/goals stores → real persistence), then Firebase integration + RC checklists. See `PRODUCTION_CHECKLIST.md`.
-- Delete unrouted exam-era screens (dashboard/practice/mock/bookmarks/search/admin studio) together with the `adaptive_exam_platform` → `adaptive_language_platform` package rename (single sweep; ADR-0019 retired them from navigation).
+- Package rename `adaptive_exam_platform` → `adaptive_language_platform` (Android namespace/Kotlin package churn — confirm-first; the exam-era screen deletion half of this sweep landed 2026-07-19).
 
 - Phase 3: tutor history persistence seam (`tutorHistory` shape in docs/database/05) + session summaries feeding Learning DNA.
 
@@ -19,6 +19,8 @@
 - Remove demo seed once real learner accounts persist language state (Firestore swap, Phase 8).
 
 ## Done
+
+- [x] Tech-debt sweep part 1 — presentation dead code: 7 unrouted exam screens deleted, `providers.dart` reduced to the 5 live providers, exam session controllers + their test removed (462→460), `widgets.dart` trimmed to CenteredBody, 8 orphan language providers removed (engines kept + tested); core layers untouched; 460 tests green, analyze clean, apk built (2026-07-19).
 
 - [x] Phase 8 — Production readiness demo slice: approved content merges into live curriculum/stories (`mergeApprovedContent`/`storyFromApproved` + `approvedContentProvider`), learner goals (minutes + target level) driving the lesson engine + story cap + tutor goal via `/goals`, `PRODUCTION_CHECKLIST.md`, ADR-0026; 195 tests green; emulator-verified (goals re-budget the plan to 50 min, A2 stories surface) (2026-07-17).
 

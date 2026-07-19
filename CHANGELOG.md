@@ -7,6 +7,29 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
+### Removed
+
+- **Exam-era dead code sweep (tech debt, part 1 — presentation layer).**
+  Deleted the seven retired exam screens that no route or import referenced
+  since the ADR-0019 rebrand: `admin_studio_screen`, `dashboard_screen`,
+  `mock_exam_screen`, `practice_screen`, `practice_setup_screen`,
+  `search_screen`, `bookmarks_screen`. `providers.dart` rewritten to only
+  what live code consumes (auth repository/state, theme mode, onboarding
+  gate, study repository for Settings "clear data") — the exam session
+  controllers (`PracticeController`, `MockExamController`), content-studio
+  providers, and exam adaptive-engine wiring went with their screens, as did
+  `test/mock_exam_controller_test.dart` (tests of the deleted controller;
+  462 → 460 tests). `widgets.dart` trimmed to `CenteredBody` (the only
+  widget still used). Removed eight orphan language providers that nothing
+  watched (`localLlmProvider`, `teacherPlanProvider`,
+  `topReadingRecommendationProvider`, `connectionClustersProvider`,
+  `bridgeRecommendationProvider`, `topRecommendationProvider`,
+  `bookRelationshipsProvider`, `lessonPlanProvider`) — their underlying
+  engines are untouched and still unit-tested. Core layers (`lib/adaptive/`,
+  `lib/ai/`, `lib/application/`, `lib/domain/`, `lib/infrastructure/`)
+  deliberately untouched per the core-extend-never-rewrite rule; the
+  package rename remains a separate task.
+
 ### Added
 
 - **Translate button on the AI Tutor screen.** A circular Translate action

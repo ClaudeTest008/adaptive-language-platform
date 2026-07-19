@@ -46,6 +46,7 @@ import '../infrastructure/prefs_teacher_memory_repository.dart';
 import '../language/conversation_continuity.dart';
 import '../language/lesson_outcomes.dart';
 import '../language/roleplay_engine.dart';
+import '../language/connection_optimization.dart';
 import '../language/learning_journey_engine.dart';
 import '../language/reader_intelligence.dart';
 import '../language/reading_analytics.dart';
@@ -1300,19 +1301,50 @@ final topReadingRecommendationProvider = Provider<Recommendation?>((ref) {
   return recs.isEmpty ? null : recs.first;
 });
 
-// ---------- Recommendations + journeys (Phase 32/33) ----------
+// ---------- Connection optimization (Phase 34) ----------
+
+/// The connection-network optimization report — weak/strong/suggested bridges,
+/// isolated concepts, cluster health, an explainable score. Derived over the
+/// existing graph + memory each rebuild; no new graph, no storage.
+final connectionOptimizationProvider =
+    FutureProvider<ConnectionOptimizationReport?>((ref) async {
+  final brain = ref.watch(teacherBrainProvider).value;
+  final curriculum = ref.watch(curriculumProvider).value;
+  if (brain == null || curriculum == null) return null;
+  final memory = await ref.watch(teacherMemorySummaryProvider.future);
+  return optimizeConnections(brain, curriculum.graph, memory: memory);
+});
+
+/// The clusters view of the optimization report.
+final connectionClustersProvider =
+    Provider<List<ConnectionCluster>>((ref) =>
+        ref.watch(connectionOptimizationProvider).value?.clusters ?? const []);
+
+/// The single highest-value suggested bridge, or null.
+final bridgeRecommendationProvider = Provider<SuggestedBridge?>((ref) {
+  final bridges =
+      ref.watch(connectionOptimizationProvider).value?.suggestedBridges ??
+          const [];
+  return bridges.isEmpty ? null : bridges.first;
+});
+
+// ---------- Recommendations + journeys (Phase 32/33/34) ----------
 
 /// Ranked, explainable recommendations derived from the brain + long-term
-/// memory + reader intelligence (Phase 33 merges reading recs into the ONE
-/// recommendation list). No storage — recomputed each brain rebuild.
+/// memory + reader intelligence + connection optimization — all merged into
+/// the ONE recommendation list (no second recommendation system). No storage.
 final recommendationsProvider =
     FutureProvider<List<Recommendation>>((ref) async {
   final brain = ref.watch(teacherBrainProvider).value;
   if (brain == null) return const [];
   final memory = await ref.watch(teacherMemorySummaryProvider.future);
   final reader = await ref.watch(readerProfileProvider.future);
-  final merged = [...recommend(brain, memory: memory), ...reader.recommendations]
-    ..sort((a, b) {
+  final opt = await ref.watch(connectionOptimizationProvider.future);
+  final merged = [
+    ...recommend(brain, memory: memory),
+    ...reader.recommendations,
+    ...?opt?.recommendations,
+  ]..sort((a, b) {
       final p = a.priority.compareTo(b.priority);
       if (p != 0) return p;
       final u = b.urgency.compareTo(a.urgency);

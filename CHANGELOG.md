@@ -68,6 +68,36 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 34 — Connection Optimization Engine. Pure, deterministic,
+  offline; the teacher improves how it reasons over the EXISTING language
+  network — no new graph, no duplicate state. `lib/language/connection_optimization.dart`:
+  `optimizeConnections(brain, graph, {memory})` reasons over `brain.connections`
+  + the curriculum `LanguageKnowledgeGraph` + the long-term memory summary and
+  produces a `ConnectionOptimizationReport` — **weak** bridges (low-strength
+  edges), **strong** bridges, **suggested** bridges (teaching = reinforce a
+  known concept through an unmet neighbour, review = reconnect a forgotten
+  concept through an existing edge; future/phonology/etymology/culture/
+  pronunciation/idiom are typed `BridgeKind` seams, never emitted until real
+  data backs them), **isolated concepts** (engaged but edge-less),
+  **ConnectionCluster**s (theme, health, density = intra-edges/possible pairs,
+  mastery, coverage, future value, recommendation), overall **density** and
+  **ConnectionHealth** (healthy/growing/weak/fragmented/stalled/recovering/
+  unknown), and an **explainable optimization score** with a breakdown
+  (coverage / density / reinforcement / memory stability). It never synthesizes
+  an edge — it only *recommends* bridges; an empty graph yields an empty report.
+  Bridge/cluster/isolation findings become **ordinary Recommendations that
+  merge into the ONE recommendation list** — so Teacher Intelligence and the
+  Adaptive Lesson Generator (which already consume recommendations, Phase 33)
+  act on them with no new decision wiring. **TeacherPacket expanded** (additive):
+  optimization summary serialized (CONNECTIONS / BRIDGE / ISOLATED, omitted when
+  empty). Providers: `connectionOptimizationProvider`, `connectionClustersProvider`,
+  `bridgeRecommendationProvider`; `recommendationsProvider` now also merges the
+  optimization recommendations. 419 tests (+7: empty-graph no-fabrication,
+  teaching bridges from hidden connections, cluster health/density, explainable
+  + deterministic score, memory-consumption review bridge, recommendation
+  merge + determinism, packet expansion + omission), analyze clean, Android
+  debug build green. Fully offline/deterministic; no native/device.
+
 - 2026-07-18: Phase 33 — Reading Completion & Reader Intelligence + closed the
   Phase 32 seam. **Phase 32 follow-up (done first)**: the Recommendation Engine
   is now actually consumed by teaching decisions — `chooseTeachingStrategy` and

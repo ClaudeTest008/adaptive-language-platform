@@ -1,3 +1,4 @@
+import 'connection_optimization.dart';
 import 'conversation_continuity.dart';
 import 'curriculum_intelligence.dart';
 import 'learning_journey_engine.dart';
@@ -44,6 +45,7 @@ class TeacherPacket {
     this.recommendations = const [],
     this.journeyReport,
     this.reader,
+    this.optimization,
   });
 
   final TeacherResponsePlan plan;
@@ -87,6 +89,10 @@ class TeacherPacket {
   /// Reader intelligence (Phase 33) — reading confidence, difficulty fit,
   /// habits, insights, prediction; null when the learner has not read.
   final ReaderProfile? reader;
+
+  /// Connection-network optimization (Phase 34) — weak/strong/suggested
+  /// bridges, cluster health, optimization score; null when no graph yet.
+  final ConnectionOptimizationReport? optimization;
 }
 
 /// Assembles the packet from the brain + engines + live conversation. All
@@ -107,6 +113,7 @@ TeacherPacket buildTeacherPacket({
   List<Recommendation> recommendations = const [],
   JourneyReport? journeyReport,
   ReaderProfile? reader,
+  ConnectionOptimizationReport? optimization,
 }) {
   final plan = intelligence.plan(brain, turn: context.turns.length);
   final summary = summarizeConversation(context);
@@ -163,6 +170,8 @@ TeacherPacket buildTeacherPacket({
     recommendations: recommendations.take(3).toList(),
     journeyReport: journeyReport,
     reader: (reader == null || reader.isEmpty) ? null : reader,
+    optimization:
+        (optimization == null || optimization.isEmpty) ? null : optimization,
   );
 }
 
@@ -259,6 +268,17 @@ String serializeTeacherPacket(TeacherPacket p) {
     if (rd.insights.isNotEmpty) b.writeln('READING: ${rd.insights.first}');
     if (rd.prediction.nextReviewWords.isNotEmpty) {
       b.writeln('REVIEW WORDS: ${rd.prediction.nextReviewWords.join(', ')}');
+    }
+  }
+  final opt = p.optimization;
+  if (opt != null && !opt.isEmpty) {
+    b.writeln('CONNECTIONS: health ${opt.health.name} · score '
+        '${opt.optimizationScore} · ${opt.suggestedBridges.length} bridges');
+    if (opt.suggestedBridges.isNotEmpty) {
+      b.writeln('BRIDGE: ${opt.suggestedBridges.first.reason}');
+    }
+    if (opt.isolatedConcepts.isNotEmpty) {
+      b.writeln('ISOLATED: ${opt.isolatedConcepts.take(3).join(', ')}');
     }
   }
   return b.toString().trim();

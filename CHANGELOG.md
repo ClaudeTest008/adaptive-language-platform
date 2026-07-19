@@ -9,6 +9,19 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- **Phase 35 (increment 8) — Roleplay session loop + persistence.** The
+  Phase 30 roleplay engine becomes playable: `TutorSessionController.
+  startRoleplay()` selects the scene from the brain, resumes a matching
+  interrupted scene from teacher memory, and persists progress from turn one
+  (the missing `saveRoleplay` producer now exists). Each learner turn advances
+  one stage (`advanceRoleplay`), persists the new index, and appends the
+  engine-authored stage prompt; completing the arc marks the scene done. The
+  dashboard scene card gains Start/Resume. `TutorSessionState` carries
+  `RoleplayProgress` (session-scoped; persistence via the existing
+  teacher-memory repository — no new store). 429 tests (+1 regression: stage
+  advance, persistence from turn one, interrupt→resume at saved stage,
+  completion persisted). analyze clean; apk debug green. Not device-verified.
+
 - **Phase 35 (increment 7) — Packet teacher path ACTIVATED in the live tutor.**
   Every tutor reply now flows TeacherBrain → TeacherIntelligence plan →
   DeterministicTeacherVoice → language-pipeline speech gate (`LlmPipeline`,

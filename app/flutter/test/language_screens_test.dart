@@ -411,6 +411,67 @@ void main() {
     expect(s2.transcript.last.$2, s.transcript.last.$2);
   });
 
+  test('roleplay session advances stages and persists progress', () async {
+    final memoryRepo = InMemoryTeacherMemoryRepository();
+    final container = ProviderContainer(
+      overrides: [
+        curriculumProvider.overrideWith((ref) => Future.value(curriculum)),
+        speechServiceProvider.overrideWithValue(NoopSpeechService()),
+        teacherNotebookRepositoryProvider.overrideWithValue(
+          InMemoryTeacherNotebookRepository(),
+        ),
+        experienceRepositoryProvider.overrideWithValue(
+          InMemoryExperienceRepository(),
+        ),
+        teacherMemoryRepositoryProvider.overrideWithValue(memoryRepo),
+      ],
+    );
+    addTearDown(container.dispose);
+    await container.read(curriculumProvider.future);
+    for (var i = 0; i < 30; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      if (container.read(teacherBrainProvider).value != null) break;
+    }
+
+    final tutor = container.read(tutorSessionProvider.notifier);
+    await tutor.startRoleplay();
+    var s = container.read(tutorSessionProvider)!;
+    expect(s.roleplay, isNotNull);
+    expect(s.roleplay!.currentStageIndex, 0);
+    // Producer proven: the scene is persisted from turn one.
+    expect(await memoryRepo.loadRoleplay(), isNotNull);
+    // The stage prompt (engine-authored) opens the scene.
+    expect(s.transcript.any((t) => t.$2.contains('Empecemos')), isTrue);
+
+    await tutor.send('Hola, buenos días.');
+    s = container.read(tutorSessionProvider)!;
+    expect(s.roleplay!.currentStageIndex, 1);
+    expect((await memoryRepo.loadRoleplay())!.stageIndex, 1);
+
+    // Interruption + restart resumes at the saved stage, same scene kind.
+    tutor.reset();
+    await tutor.startRoleplay();
+    s = container.read(tutorSessionProvider)!;
+    expect(s.roleplay!.currentStageIndex, 1);
+    expect(s.transcript.any((t) => t.$2.contains('Seguimos donde lo dejamos')),
+        isTrue);
+
+    // Playing every remaining stage completes and persists done.
+    for (var i = 0; i < 5 && !(container.read(tutorSessionProvider)!
+        .roleplay!.done); i++) {
+      await tutor.send('Claro, sigo con la escena.');
+    }
+    expect(container.read(tutorSessionProvider)!.roleplay!.done, isTrue);
+    expect((await memoryRepo.loadRoleplay())!.done, isTrue);
+    expect(
+      container
+          .read(tutorSessionProvider)!
+          .transcript
+          .any((t) => t.$2.contains('Escena completada')),
+      isTrue,
+    );
+  });
+
   testWidgets('language selector switches curriculum and reseeds learner', (
     tester,
   ) async {

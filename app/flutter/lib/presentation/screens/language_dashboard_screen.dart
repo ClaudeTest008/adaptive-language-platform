@@ -1109,6 +1109,19 @@ class _RoleplaySuggestionCard extends ConsumerWidget {
             scene.rationale,
             style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
           ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.tonalIcon(
+              onPressed: () {
+                // Phase 35: start (or resume) the scene in the tutor.
+                ref.read(tutorSessionProvider.notifier).startRoleplay();
+                ref.read(homeTabProvider.notifier).state = 3;
+              },
+              icon: const Icon(Icons.play_arrow),
+              label: Text(scene.resumed ? 'Resume scene' : 'Start scene'),
+            ),
+          ),
         ],
       ),
     );

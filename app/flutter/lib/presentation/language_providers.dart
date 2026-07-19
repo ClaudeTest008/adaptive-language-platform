@@ -825,6 +825,7 @@ class TutorSessionState {
     this.transcript = const [],
     this.busy = false,
     this.conversation = const ConversationContext(),
+    this.roleplay,
   });
 
   final TutorMode mode;
@@ -839,16 +840,23 @@ class TutorSessionState {
   /// memory, which lives in the brain/teacher memory.
   final ConversationContext conversation;
 
+  /// Active roleplay scene (Phase 30/35) — null outside roleplay sessions.
+  /// Progress persists via the teacher-memory repository, so an interrupted
+  /// scene resumes next time.
+  final RoleplayProgress? roleplay;
+
   TutorSessionState copyWith({
     List<(bool, String)>? transcript,
     bool? busy,
     ConversationContext? conversation,
+    RoleplayProgress? roleplay,
   }) => TutorSessionState(
     mode: mode,
     context: context,
     transcript: transcript ?? this.transcript,
     busy: busy ?? this.busy,
     conversation: conversation ?? this.conversation,
+    roleplay: roleplay ?? this.roleplay,
   );
 }
 
@@ -929,6 +937,51 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
     );
   }
 
+  /// Starts (or resumes) a roleplay scene (Phase 30/35). The engine selects
+  /// the scenario from the brain; a matching interrupted scene saved in
+  /// teacher memory resumes at its stage. Requires the brain (packet path).
+  Future<void> startRoleplay() async {
+    final brain = ref.read(teacherBrainProvider).value;
+    final context = assembleTutorContext(ref);
+    if (brain == null || context == null) return;
+    final repo = ref.read(teacherMemoryRepositoryProvider);
+    final saved = await repo.loadRoleplay();
+    final scenario =
+        selectRoleplay(brain, continuation: const ConversationContinuation());
+    final resumeIndex = (saved != null &&
+            !saved.done &&
+            saved.kind == scenario.kind &&
+            saved.stageIndex < scenario.stages.length)
+        ? saved.stageIndex
+        : 0;
+    final progress = RoleplayProgress(
+      scenario: scenario,
+      currentStageIndex: resumeIndex,
+    );
+    // Persist immediately — the scene survives an interruption from turn one.
+    await repo.saveRoleplay(RoleplayMemory(
+      title: scenario.title,
+      kind: scenario.kind,
+      stageIndex: resumeIndex,
+      done: false,
+      day: _notebookDay(DateTime.now()),
+    ));
+    final stage = progress.currentStage;
+    state = TutorSessionState(
+      mode: TutorMode.conversation,
+      context: context,
+      roleplay: progress,
+      transcript: [
+        (
+          true,
+          '${scenario.title} — ${scenario.setting}. ${scenario.rationale}'
+        ),
+        if (resumeIndex > 0) (true, 'Seguimos donde lo dejamos.'),
+        if (stage != null) (true, stage.prompt.text),
+      ],
+    );
+  }
+
   Future<void> send(String rawMessage) async {
     // Input sanitization (Phase 21): strip control/escape artifacts like
     // `\|Si` before anything else sees the message.
@@ -986,10 +1039,38 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
     final text = replyText.trim() == lastTutor?.$2.trim()
         ? '$replyText ¿Algo más que quieras contarme?'
         : replyText;
+
+    // Roleplay loop (Phase 30/35): each learner turn moves the scene one
+    // stage forward (measured participation); progress persists so an
+    // interrupted scene resumes. Stage prompts are engine-authored.
+    RoleplayProgress? nextRoleplay;
+    String? stageLine;
+    final rp = s.roleplay;
+    if (rp != null && !rp.done) {
+      nextRoleplay = advanceRoleplay(rp);
+      stageLine = nextRoleplay.done
+          ? '¡Escena completada! Lo hiciste muy bien.'
+          : nextRoleplay.currentStage?.prompt.text;
+      await ref.read(teacherMemoryRepositoryProvider).saveRoleplay(
+            RoleplayMemory(
+              title: rp.scenario.title,
+              kind: rp.scenario.kind,
+              stageIndex: nextRoleplay.currentStageIndex,
+              done: nextRoleplay.done,
+              day: _notebookDay(DateTime.now()),
+            ),
+          );
+    }
+
     state = state?.copyWith(
-      transcript: [...?state?.transcript, (true, text)],
+      transcript: [
+        ...?state?.transcript,
+        (true, text),
+        if (stageLine != null) (true, stageLine),
+      ],
       busy: false,
       conversation: nextConversation,
+      roleplay: nextRoleplay,
     );
   }
 

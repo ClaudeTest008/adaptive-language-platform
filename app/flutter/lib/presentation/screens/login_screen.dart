@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -46,6 +47,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
         );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// DEBUG BUILDS ONLY: one-tap test account so device verification never
+  /// repeats manual registration. `kDebugMode` is a compile-time constant —
+  /// in release builds this method and its button are tree-shaken out
+  /// entirely; it can never ship. It uses the normal demo auth repository
+  /// (register → auto sign-in; falls back to sign-in when the account
+  /// already exists this run). No production credentials involved.
+  Future<void> _devLogin() async {
+    if (!kDebugMode) return;
+    setState(() => _busy = true);
+    final auth = ref.read(authRepositoryProvider);
+    const email = 'dev@test.local';
+    const password = 'devtest123';
+    try {
+      await auth.register(
+        displayName: 'Dev',
+        email: email,
+        password: password,
+      );
+    } on Exception {
+      try {
+        await auth.signIn(email: email, password: password);
+      } on Exception catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString())),
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -162,6 +196,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   TextButton(
                     onPressed: _forgotPassword,
                     child: const Text('Forgot password?'),
+                  ),
+                // Compile-time gate: this button does not exist in release.
+                if (kDebugMode)
+                  TextButton(
+                    key: const Key('devLogin'),
+                    onPressed: _busy ? null : _devLogin,
+                    child: const Text('Dev login (debug only)'),
                   ),
               ],
             ),

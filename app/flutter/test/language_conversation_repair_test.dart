@@ -5,6 +5,7 @@ import 'package:adaptive_exam_platform/infrastructure/prefs_experience_repositor
 import 'package:adaptive_exam_platform/language/curriculum.dart';
 import 'package:adaptive_exam_platform/language/message_intent.dart';
 import 'package:adaptive_exam_platform/language/notebook_repository.dart';
+import 'package:adaptive_exam_platform/language/pipeline.dart';
 import 'package:adaptive_exam_platform/language/speech.dart';
 import 'package:adaptive_exam_platform/language/teacher_memory.dart';
 import 'package:adaptive_exam_platform/language/tutor.dart';
@@ -72,7 +73,7 @@ void main() {
       expect(
           extractLearnerFacts(
               'I am learning Spanish because my wife is Mexican.'),
-          {'reason': 'my wife is Mexican'});
+          {'reason': 'my wife is Mexican', 'wife': 'Mexican'});
       // Nothing stated → nothing stored.
       expect(extractLearnerFacts('The weather is nice.'), isEmpty);
     });
@@ -119,6 +120,7 @@ void main() {
         'city': 'London',
         'children': 'two',
         'reason': 'my wife is Mexican',
+        'wife': 'Mexican',
       });
 
       Future<String> ask(String q) async {
@@ -182,6 +184,75 @@ void main() {
           isTrue);
       // …and the prompt builder now exposes them as chat history.
       // (LlmPrompt.history mapping is asserted in language_local_llm_test.)
+    });
+
+    test('TTS gate: English never reaches the Spanish voice (clause-level)',
+        () {
+      // The exact line observed spoken on device before the fix.
+      const leaked = 'Muy bien. Afinemos una cosa: One thing to tighten: '
+          'Physical and emotional states. It follows the same pattern as '
+          'Present tense, Verbs, Regular -ar verbs.';
+      final spoken = speechSafeText(leaked, 'es', 'en');
+      expect(spoken, contains('Muy bien'));
+      expect(spoken, isNot(contains('tighten')));
+      expect(spoken, isNot(contains('Physical')));
+      expect(spoken, isNot(contains('Present tense')));
+      // Bilingual fact answer: Spanish spoken, English only shown.
+      final fact = speechSafeText(
+          'Te llamas John. — Your name is John.', 'es', 'en');
+      expect(fact, contains('Te llamas John'));
+      expect(fact, isNot(contains('Your name')));
+      // Learner-driven confusion moment: Spanish lead spoken, English support
+      // dropped from speech (still on screen via splitTeacherReply.support).
+      final confusion = speechSafeText(
+          'Tranquilo, lo explico de otra manera con un ejemplo. '
+          '— No problem: a simpler explanation, with a concrete example.',
+          'es',
+          'en');
+      expect(confusion, contains('Tranquilo'));
+      expect(confusion, isNot(contains('simpler')));
+    });
+
+    test('wife fact + pronominal reason compose deterministically', () async {
+      final c = await _boot();
+      final tutor = c.read(tutorSessionProvider.notifier);
+      await tutor.start(TutorMode.teacher);
+      await tutor.send('My wife is Mexican.');
+      await tutor.send('I am learning Spanish because of her.');
+      await tutor.send('Why am I learning Spanish?');
+      final reply = c.read(tutorSessionProvider)!.transcript.last.$2;
+      expect(reply, contains('esposa'));
+      expect(reply, contains('wife'));
+      expect(reply, contains('Mexican'));
+    });
+
+    test('speaking practice prefers fresh material after completion',
+        () async {
+      final c = ProviderContainer(overrides: [
+        curriculumProvider.overrideWith((ref) => Future.value(parseCurriculum(
+            jsonDecode(File('assets/curriculum/es-for-en.json')
+                .readAsStringSync()) as Map<String, dynamic>))),
+        speechServiceProvider
+            .overrideWithValue(NoopSpeechService(scriptedTranscript: 'hola')),
+        teacherNotebookRepositoryProvider
+            .overrideWithValue(InMemoryTeacherNotebookRepository()),
+        experienceRepositoryProvider
+            .overrideWithValue(InMemoryExperienceRepository()),
+        teacherMemoryRepositoryProvider
+            .overrideWithValue(InMemoryTeacherMemoryRepository()),
+      ]);
+      addTearDown(c.dispose);
+      await c.read(curriculumProvider.future);
+      final speaking = c.read(speakingProvider.notifier);
+      speaking.start();
+      final firstTarget = c.read(speakingProvider)!.current.target;
+      await speaking.attempt(); // scripted transcript scores the drill
+      speaking.next(); // marks it completed
+      speaking.reset();
+      speaking.start();
+      final nextTarget = c.read(speakingProvider)!.current.target;
+      // The completed phrase never immediately leads the queue again.
+      expect(nextTarget, isNot(equals(firstTarget)));
     });
 
     test('the whole conversation is deterministic', () async {

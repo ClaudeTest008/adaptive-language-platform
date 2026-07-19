@@ -688,10 +688,37 @@ class SpeakingState {
 }
 
 class SpeakingController extends Notifier<SpeakingState?> {
+  static const _doneKey = 'speaking_completed_v1';
+
+  /// Targets the learner has already completed (persisted): fresh material is
+  /// always preferred; completed phrases drop to the back of the queue for
+  /// light spaced repetition — never an immediate loop.
+  final Set<String> _done = {};
+  bool _doneLoaded = false;
+
   @override
   SpeakingState? build() {
     ref.watch(selectedLanguageProvider);
+    _loadDone();
     return null;
+  }
+
+  Future<void> _loadDone() async {
+    if (_doneLoaded) return;
+    _doneLoaded = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _done.addAll(prefs.getStringList(_doneKey) ?? const []);
+    } catch (_) {
+      // No prefs plugin (tests) → in-run only.
+    }
+  }
+
+  Future<void> _persistDone() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_doneKey, _done.toList()..sort());
+    } catch (_) {}
   }
 
   void start({List<String> focusConceptIds = const [], int limit = 8}) {
@@ -714,15 +741,21 @@ class SpeakingController extends Notifier<SpeakingState?> {
         offset = brain.identity.streakDays;
       }
     }
+    // Ask for more than we show, so fresh material can displace completed
+    // phrases instead of the session looping the same list (repetition fix).
     final drills = generateSpeakingDrills(
       curriculum.graph,
       focusConceptIds: focus,
-      limit: limit,
+      limit: limit * 3,
     );
     final rotated = drills.isEmpty
         ? drills
         : [...drills.skip(offset % drills.length), ...drills.take(offset % drills.length)];
-    state = SpeakingState(drills: rotated, index: 0);
+    // Fresh-first, completed-last (stable order → deterministic), then cap.
+    final fresh = [for (final d in rotated) if (!_done.contains(d.target)) d];
+    final repeats = [for (final d in rotated) if (_done.contains(d.target)) d];
+    final queue = [...fresh, ...repeats].take(limit).toList();
+    state = SpeakingState(drills: queue, index: 0);
   }
 
   /// Speaks the target so the learner hears it before attempting.
@@ -771,6 +804,10 @@ class SpeakingController extends Notifier<SpeakingState?> {
   void next() {
     final s = state;
     if (s == null || !s.attempted) return;
+    // An attempted drill counts as completed — it will not lead the queue
+    // again (spaced repetition keeps it reachable at the back).
+    _done.add(s.current.target);
+    _persistDone();
     if (s.index + 1 < s.drills.length) {
       state = s.copyWith(index: s.index + 1, clearAttempt: true);
     } else {

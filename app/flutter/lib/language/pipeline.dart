@@ -26,12 +26,18 @@ const Map<String, Set<String>> _functionWords = {
   'en': {
     'the', 'is', 'are', 'was', 'you', 'your', 'this', 'that', 'and', 'but',
     'have', 'has', 'not', 'with', 'for', 'means', 'use', 'when', 'what',
-    'how', 'now', 'today', 'we', 'it', 'to', 'of', 'in',
+    'how', 'now', 'today', 'we', 'it', 'to', 'of', 'in', 'a', 'an',
+    'she', 'he', 'because', 'my', 'english',
   },
   'es': {
     'el', 'la', 'los', 'las', 'es', 'son', 'está', 'estás', 'tú', 'yo',
     'y', 'pero', 'tiene', 'tienes', 'tengo', 'no', 'con', 'para', 'por',
     'qué', 'cómo', 'ahora', 'hoy', 'un', 'una', 'de', 'en', 'muy', 'dime',
+    // Conversational coverage (voice-gate accuracy): pronouns/clitics and
+    // high-frequency words the teacher's own lines actually use.
+    'te', 'se', 'tu', 'mi', 'su', 'le', 'lo', 'del', 'al',
+    'vamos', 'hola', 'gracias', 'sí', 'más', 'aquí', 'eres', 'vives',
+    'llamas', 'gusta', 'otra', 'otro', 'bien',
   },
 };
 
@@ -48,10 +54,28 @@ int _hits(String sentence, String lang) {
 bool isNativeSentence(String sentence, String targetLang, String nativeLang) {
   final native = _hits(sentence, nativeLang);
   final target = _hits(sentence, targetLang);
-  return native >= 2 && native > target;
+  if (native >= 2 && native > target) return true;
+  // Content-heavy native fragments ("Physical and emotional states") carry
+  // too few function words to trip the vote. For an accented target language
+  // (es): a multi-word, all-ASCII clause with ZERO target hits is native —
+  // real Spanish almost always shows a function word or an accented letter.
+  if (targetLang == 'es' &&
+      target == 0 &&
+      native >= 1 &&
+      sentence.trim().split(RegExp(r'\s+')).length >= 2 &&
+      !RegExp(r'[áéíóúüñ¿¡]', caseSensitive: false).hasMatch(sentence)) {
+    return true;
+  }
+  return false;
 }
 
-final _sentenceSplit = RegExp(r'(?<=[.!?…])\s+|\n+');
+/// Sentence boundaries AND clause boundaries (colon/semicolon/dash): the
+/// English-speech leak came from mixed clauses like "Muy bien. Afinemos una
+/// cosa: One thing to tighten: …" being voted as ONE sentence — the Spanish
+/// head outvoted the English tail, which then rode into the Spanish TTS.
+/// Gating each clause separately keeps speech pure without touching what is
+/// shown on screen.
+final _sentenceSplit = RegExp(r'(?<=[.!?…])\s+|\n+|(?<=[:;])\s+|\s+[—–]\s+');
 
 /// A teacher reply split into what is spoken and what is only shown.
 class TeacherReplyParts {
@@ -73,10 +97,21 @@ TeacherReplyParts splitTeacherReply(
 ) {
   final target = <String>[];
   final support = <String>[];
+  var lastWasSupport = false;
   for (final s in reply.split(_sentenceSplit)) {
     final t = s.trim();
     if (t.isEmpty) continue;
-    (isNativeSentence(t, targetLang, nativeLang) ? support : target).add(t);
+    var native = isNativeSentence(t, targetLang, nativeLang);
+    // Zero-evidence ASCII clauses ("Grammar note:", "gustar works backwards")
+    // vote for neither side. Two deterministic tie-breakers keep them out of
+    // the target voice: a colon-terminal ASCII intro reads as a support label,
+    // and a clause directly continuing a support clause stays support.
+    if (!native && targetLang == 'es' && _hits(t, targetLang) == 0 &&
+        !RegExp(r'[áéíóúüñ¿¡]', caseSensitive: false).hasMatch(t)) {
+      if (t.endsWith(':') || lastWasSupport) native = true;
+    }
+    (native ? support : target).add(t);
+    lastWasSupport = native;
   }
   return TeacherReplyParts(
     target: target.join(' '),

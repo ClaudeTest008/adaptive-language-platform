@@ -9,6 +9,37 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- **Tutor polish: dev login, watertight Spanish-only speech, female voice,
+  speaking progression.** (1) Debug-only "Dev login" button (`kDebugMode`
+  compile-time gate — tree-shaken from release; dev@test.local via the normal
+  demo auth; device-verified one-tap). (2) English can no longer reach the
+  Spanish TTS: the voice gate now splits on clause boundaries (:/;/—) so a
+  Spanish head can't smuggle an English tail; zero-evidence ASCII clauses are
+  caught by three deterministic tie-breakers (no-target-hits heuristic,
+  colon-terminal support labels, support-continuation); the es/en function-word
+  sets grew for conversational coverage; teacher moment lines and fact answers
+  are now authored Spanish-first with "— In English: …" support that stays
+  on screen only. Regression-tested against the exact line heard on device.
+  (3) Spanish voice switched to the only documented single-speaker FEMALE
+  Piper voice on the sherpa release: es_MX-claude-high (67.2 MB, high tier;
+  sharvard rejected — two speakers, genders undocumented; tradeoff: Mexican
+  accent replaces Castilian male). (4) Speaking practice no longer loops:
+  completed phrases persist (speaking_completed_v1) and drop to the back of
+  the queue; fresh material always leads (3× candidate pool, deterministic
+  order). (5) Learner-facts upgrade: wife/husband extraction + pronominal
+  reason composition ("because of her" + "my wife is Mexican" → "Por tu
+  esposa. — Because of your wife: she is Mexican" — device-verified live).
+  454 tests (+3). analyze clean; apk debug green. DEVICE (CPH2037, partial):
+  dev login, greeting arc (GGUF "¡Hola! Me alegro de verte…"), wife-reason
+  composed answer, honest-unknown answer, bilingual bubble+support rendering,
+  dedupe variation all verified on hardware; NOT device-verified: female
+  voice audio (cannot audibly confirm via adb; model downloads on next voice
+  use), speaking-progression flow, roleplay scene, 20-turn continuation —
+  covered by the deterministic suite. Known: 0.5B GGUF echoes its previous
+  reply on plain statements (model-tier; dedupe guard varies the display);
+  prompt grew to ~packet+history → replies 20–27 s (candidates identified
+  for later trimming: cap packet lists, drop empty sections, cap history).
+
 - **Conversation repair — the tutor now reacts to what the learner says.**
   Fixes all six investigated defects. (1) Conversation history finally reaches
   the model: `LlmPrompt.history` carries prior turns and the GGUF path sends

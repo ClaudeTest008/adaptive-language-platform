@@ -48,7 +48,12 @@ class _PiperVoice {
 }
 
 const _voices = {
-  'es': _PiperVoice('vits-piper-es_ES-davefx-medium', 'es_ES-davefx-medium.onnx'),
+  // Female Spanish voice (Part 3): es_MX-claude-high — the only documented
+  // single-speaker FEMALE Spanish Piper voice on the sherpa-onnx release
+  // (es_ES-sharvard is two-speaker with undocumented speaker genders, so the
+  // female sid cannot be chosen deterministically). Tradeoff: Mexican accent
+  // replaces the previous Castilian male (davefx). 67.2 MB, high quality.
+  'es': _PiperVoice('vits-piper-es_MX-claude-high', 'es_MX-claude-high.onnx'),
   'en': _PiperVoice('vits-piper-en_US-amy-medium', 'en_US-amy-medium.onnx'),
 };
 

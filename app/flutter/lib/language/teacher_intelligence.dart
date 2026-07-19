@@ -573,9 +573,11 @@ class TeacherIntelligenceEngine {
       case LearnerIntent.confusion:
         return TeachingMoment(
           intent: TeacherIntent.discover,
-          message: 'No problem — let me say that a simpler way, with a '
-              'concrete example${anchor == null ? '' : ', starting from '
-                  '$anchor which you already know'}.',
+          message: 'Tranquilo, lo explico de otra manera con un ejemplo'
+              '${anchor == null ? '' : ', empezando por $anchor'}. '
+              '— In English: no problem, a simpler explanation with a concrete example'
+              '${anchor == null ? '' : ' starting from $anchor, which you '
+                  'already know'}.',
           conceptIds: focusId == null ? const [] : [focusId],
           rationale: 'The learner said they did not understand — re-explain '
               'differently, never repeat the same wording.',
@@ -583,17 +585,17 @@ class TeacherIntelligenceEngine {
       case LearnerIntent.exampleRequest:
         return TeachingMoment(
           intent: TeacherIntent.practice,
-          message: 'Claro — here is a fresh example, different from the last '
-              'one. Try reading it aloud.',
+          message: 'Claro, aquí tienes otro ejemplo distinto. Léelo en voz '
+              'alta. — A fresh example, different from the last one.',
           conceptIds: focusId == null ? const [] : [focusId],
           rationale: 'The learner asked for another example — give a new one.',
         );
       case LearnerIntent.grammarRequest:
         return TeachingMoment(
           intent: TeacherIntent.connect,
-          message: 'Good question. Let me explain it the way it actually '
-              'works in real speech${anchor == null ? '' : ' — it connects '
-                  'to $anchor'}.',
+          message: 'Buena pregunta, vamos a verlo con calma'
+              '${anchor == null ? '' : ', conectándolo con $anchor'}. '
+              '— In English: good question, here is how it actually works in real speech.',
           conceptIds: focusId == null ? const [] : [focusId],
           rationale: 'The learner asked for a grammar explanation.',
         );
@@ -601,8 +603,8 @@ class TeacherIntelligenceEngine {
       case LearnerIntent.translationRequest:
         return TeachingMoment(
           intent: TeacherIntent.connect,
-          message: 'Vamos a verlo — I will give you the word and one natural '
-              'sentence that uses it.',
+          message: 'Vamos a verlo con una frase natural. — I will give you '
+              'the word and one natural sentence that uses it.',
           rationale: 'The learner asked about a word or translation.',
         );
       case LearnerIntent.roleplayRequest:

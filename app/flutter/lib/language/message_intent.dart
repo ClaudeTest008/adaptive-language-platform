@@ -116,6 +116,10 @@ Map<String, String> extractLearnerFacts(String raw) {
   take('children',
       RegExp(r'\bi have (\w+) (?:children|kids|sons|daughters)\b',
           caseSensitive: false));
+  take('wife',
+      RegExp(r'\bmy wife is ([\wáéíóúñ -]+)', caseSensitive: false));
+  take('husband',
+      RegExp(r'\bmy husband is ([\wáéíóúñ -]+)', caseSensitive: false));
   take('interest',
       RegExp(r'\bi (?:like|love|enjoy) ((?:playing |watching )?[\wáéíóúñ -]+)',
           caseSensitive: false));
@@ -123,6 +127,11 @@ Map<String, String> extractLearnerFacts(String raw) {
       'reason',
       RegExp(
           r"\bi(?:'m| am)? ?learning spanish because ([\wáéíóúñ ',.-]+)",
+          caseSensitive: false));
+  // "I am learning Spanish because of her/him" — pronominal, still explicit.
+  take(
+      'reason',
+      RegExp(r'\blearning spanish (because of (?:her|him|them|my family))\b',
           caseSensitive: false));
   take('goal', RegExp(r'\bmy goal is (?:to )?([\wáéíóúñ ,-]+)',
       caseSensitive: false));
@@ -162,15 +171,26 @@ String? answerFromFacts(String raw, Map<String, String> facts) {
       _ => "You haven't told me that yet — cuéntame.",
     };
   }
+  // Pronominal reason ("because of her") resolves through the explicitly
+  // stated spouse fact — both were literally said; nothing is invented.
+  if (key == 'reason' &&
+      RegExp(r'because of (her|him)$').hasMatch(v) &&
+      (facts['wife'] != null || facts['husband'] != null)) {
+    final who = facts['wife'] != null ? 'wife' : 'husband';
+    final esWho = who == 'wife' ? 'esposa' : 'esposo';
+    return 'Por tu $esWho. — Because of your $who: '
+        '${who == 'wife' ? 'she' : 'he'} is ${facts[who]}.';
+  }
+  // Spanish leads (that part is spoken); English support follows on screen.
   return switch (key) {
-    'name' => 'Your name is $v — te llamas $v.',
-    'city' => 'You live in $v — vives en $v.',
-    'country' => 'You are from $v.',
-    'children' => 'You have $v children — tienes $v hijos.',
-    'interest' => 'You told me you like $v — te gusta.',
-    'reason' => 'You are learning Spanish because $v.',
-    'job' => 'You work as $v.',
-    'goal' => 'Your goal is $v.',
+    'name' => 'Te llamas $v. — Your name is $v.',
+    'city' => 'Vives en $v. — You live in $v.',
+    'country' => 'Eres de $v. — You are from $v.',
+    'children' => 'Tienes $v hijos. — You have $v children.',
+    'interest' => 'Te gusta $v. — You told me you like $v.',
+    'reason' => 'Me lo contaste. — You are learning Spanish because $v.',
+    'job' => 'Trabajas como $v. — You work as $v.',
+    'goal' => 'Tu meta: $v. — Your goal is $v.',
     _ => v,
   };
 }
@@ -179,7 +199,8 @@ String? answerFromFacts(String raw, Map<String, String> facts) {
 String factsBrief(Map<String, String> facts) {
   if (facts.isEmpty) return '';
   final order = [
-    'name', 'city', 'country', 'job', 'children', 'interest', 'reason', 'goal',
+    'name', 'city', 'country', 'job', 'children', 'wife', 'husband',
+    'interest', 'reason', 'goal',
   ];
   final parts = [
     for (final k in order)

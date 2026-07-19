@@ -1,11 +1,14 @@
 import 'conversation_continuity.dart';
 import 'curriculum_intelligence.dart';
+import 'lesson_outcomes.dart';
 import 'local_llm/llm_memory.dart';
 import 'local_llm/llm_prompt_builder.dart';
 import 'pipeline.dart';
 import 'relationships.dart';
+import 'roleplay_engine.dart';
 import 'teacher_brain.dart';
 import 'teacher_intelligence.dart';
+import 'teaching_style.dart';
 
 /// TeacherPacket (Phase 26): the ONLY thing a language generator may receive.
 /// The local LLM never sees the raw Teacher Brain — this packet carries the
@@ -29,6 +32,10 @@ class TeacherPacket {
     this.teachingStyle,
     required this.objective,
     required this.summary,
+    this.roleplay,
+    this.lessonOutcomeSummary,
+    this.recentEvents = const [],
+    this.reflectionSummary,
   });
 
   final TeacherResponsePlan plan;
@@ -46,6 +53,18 @@ class TeacherPacket {
   final String? teachingStyle;
   final String objective;
   final ConversationSummary summary;
+
+  /// The active/selected roleplay scenario (Phase 30), when one is running.
+  final RoleplayScenario? roleplay;
+
+  /// One-line summary of the most recent completed lesson.
+  final String? lessonOutcomeSummary;
+
+  /// Recent typed teacher events, most-relevant first (evidence strings).
+  final List<String> recentEvents;
+
+  /// One-line reflection summary from the last lesson.
+  final String? reflectionSummary;
 }
 
 /// Assembles the packet from the brain + engines + live conversation. All
@@ -59,6 +78,9 @@ TeacherPacket buildTeacherPacket({
   TeacherIntelligenceEngine intelligence = const TeacherIntelligenceEngine(),
   CurriculumIntelligenceEngine curriculum =
       const CurriculumIntelligenceEngine(),
+  RoleplayScenario? roleplay,
+  LessonResult? lastLesson,
+  TeacherReflection? reflection,
 }) {
   final plan = intelligence.plan(brain, turn: context.turns.length);
   final summary = summarizeConversation(context);
@@ -95,6 +117,22 @@ TeacherPacket buildTeacherPacket({
     teachingStyle: brain.pedagogy?.style.name,
     objective: brain.objectives.current,
     summary: summary,
+    roleplay: roleplay,
+    lessonOutcomeSummary: lastLesson == null
+        ? null
+        : '${lastLesson.objective}: '
+            '${lastLesson.conceptsMastered.length} mastered, '
+            '${lastLesson.conceptsStruggled.length} to review',
+    recentEvents: lastLesson == null
+        ? const []
+        : [for (final e in lastLesson.events.take(4)) '${e.kind.name}: ${e.evidence}'],
+    reflectionSummary: reflection == null
+        ? null
+        : [
+            if (reflection.whatImproved.isNotEmpty)
+              'improved: ${reflection.whatImproved.first}',
+            if (reflection.nextAdjustment != null) reflection.nextAdjustment,
+          ].whereType<String>().join(' · '),
   );
 }
 
@@ -133,6 +171,20 @@ String serializeTeacherPacket(TeacherPacket p) {
   }
   if (p.mentalModelInsight != null) {
     b.writeln('MENTAL MODEL: ${p.mentalModelInsight}');
+  }
+  if (p.roleplay != null) {
+    b.writeln('ROLEPLAY: ${p.roleplay!.title} '
+        '(${p.roleplay!.difficulty.name}${p.roleplay!.resumed ? ', resumed' : ''}) '
+        '— ${p.roleplay!.rationale}');
+  }
+  if (p.lessonOutcomeSummary != null) {
+    b.writeln('LAST LESSON: ${p.lessonOutcomeSummary}');
+  }
+  if (p.reflectionSummary != null && p.reflectionSummary!.isNotEmpty) {
+    b.writeln('REFLECTION (last): ${p.reflectionSummary}');
+  }
+  for (final e in p.recentEvents) {
+    b.writeln('EVENT: $e');
   }
   if (p.reflection != null) {
     b.writeln('REFLECTION: ${[

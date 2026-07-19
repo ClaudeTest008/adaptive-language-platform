@@ -68,6 +68,40 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 30 — Adaptive Roleplay + typed Lesson Outcomes + Teacher
+  Events (teaching itself becomes data). Three new pure, deterministic, offline
+  engines, all derived from the Teacher Brain — no new learner state, no
+  duplicate curriculum, nothing fabricated. **Adaptive Roleplay Engine**
+  (`lib/language/roleplay_engine.dart`): `selectRoleplay(brain, {continuation})`
+  chooses a scenario deterministically — recovery/strained → a gentle
+  conversation, an interrupted roleplay is resumed from the continuation,
+  otherwise the kind comes from the learner's top interest
+  (travel→airport, food→restaurant, …) and difficulty from confidence +
+  difficulty-fit. Scenarios EVOLVE through a five-stage arc (open → ask →
+  handle-a-mistake → unexpected → natural), not isolated drills; `advanceRoleplay`,
+  `roleplayFeedback` (advances only on a solid attempt), `completeRoleplay`.
+  **Typed Lesson Outcome Engine** (`lib/language/lesson_outcomes.dart`):
+  `buildLessonResult` turns measured speaking sessions + reading records + brain
+  state into a rich `LessonResult` (concepts practiced/mastered/struggled,
+  connections reinforced, speaking/reading evidence, difficulty, observations,
+  strengths/weaknesses) and DERIVES typed events; `toOutcome()` converts to the
+  brain's compact `LessonOutcome`; `reflectFromLesson` finally gives
+  `TeacherReflection` a real producer. Every field is null/empty when
+  unmeasured. **Teacher Event System** (`lib/language/teacher_events.dart`): 15
+  typed events (`ConceptLearned`, `MisconceptionResolved`, `SpeakingImproved`,
+  `ConnectionDiscovered`, `RoleplayCompleted`, `LessonFinished`, …) as a sealed
+  hierarchy carrying day + concept ids + measured evidence + source +
+  confidence — no loose strings, JSON-serializable. **TeacherPacket expanded**
+  (additive): now carries the roleplay scenario, last-lesson summary, recent
+  events and reflection summary, serialized for the local LLM (omitted when
+  absent). **Integration**: `roleplaySelectionProvider` (the teacher's chosen
+  scenario, live from the brain) and `lessonResultsProvider` feed the brain's
+  history additively (empty until a lesson-end producer records results). 381
+  tests (+11: roleplay selection/determinism/recovery/resume/advance/feedback,
+  lesson result + events + empty-no-fabrication, reflection producer, event
+  JSON, packet expansion + omission), analyze clean, Android debug build green.
+  Fully offline/deterministic — no native or device work in this phase.
+
 - 2026-07-18: Phase 29 — Speaking analytics upgrade + P28 cache review +
   robustness (**real Whisper inference NOT delivered — see honesty note**).
   Mandatory P28 review done: the cache logic is correct (LRU keeps the playing

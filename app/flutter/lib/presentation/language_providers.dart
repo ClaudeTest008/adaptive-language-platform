@@ -42,6 +42,9 @@ import '../language/local_llm/llm_model_manager.dart';
 import '../language/local_llm/llm_pipeline.dart';
 import '../language/local_llm/llm_repository.dart';
 import '../language/local_llm/local_llm.dart';
+import '../language/conversation_continuity.dart';
+import '../language/lesson_outcomes.dart';
+import '../language/roleplay_engine.dart';
 import '../language/speaking_session.dart';
 import '../language/teacher_intelligence.dart';
 import '../infrastructure/llm_downloader.dart';
@@ -1039,9 +1042,13 @@ final teacherBrainProvider = FutureProvider<TeacherBrain?>((ref) async {
   final readingRecords = await ref.watch(readingRecordsProvider.future);
   // Phase 23: speaking sessions (Whisper/fallback) feed lesson history too.
   final speakingSessions = ref.watch(speakingSessionsProvider);
+  // Phase 30: typed lesson results also feed the history (empty until a
+  // lesson-end producer records them).
+  final lessonResults = ref.watch(lessonResultsProvider);
   final lessonHistory = [
     ...outcomesFromRecords(readingRecords),
     for (final s in speakingSessions) speakingOutcome(s, today),
+    for (final r in lessonResults) r.toOutcome(),
   ];
 
   final brain = engine.assemble(
@@ -1138,6 +1145,35 @@ final teacherPlanProvider = Provider<TeacherResponsePlan?>((ref) {
   final brain = ref.watch(teacherBrainProvider).value;
   if (brain == null) return null;
   return ref.watch(teacherIntelligenceProvider).plan(brain);
+});
+
+// ---------- Roleplay + lesson outcomes (Phase 30) ----------
+
+/// Completed lesson results this run — measured evidence the Teacher Brain
+/// derives outcomes from. Empty by default (a lesson-end producer appends
+/// here; cross-session persistence is a documented seam). Not a learner store.
+class LessonResultsController extends Notifier<List<LessonResult>> {
+  @override
+  List<LessonResult> build() {
+    ref.watch(selectedLanguageProvider); // reset on language switch
+    return const [];
+  }
+
+  void add(LessonResult r) => state = [...state, r];
+}
+
+final lessonResultsProvider =
+    NotifierProvider<LessonResultsController, List<LessonResult>>(
+      LessonResultsController.new,
+    );
+
+/// The roleplay the teacher would run now, chosen deterministically from the
+/// brain (Phase 30, Part 5) — recovery/motivation aware, interest-driven,
+/// resuming an interrupted scene when one exists. Null until the brain loads.
+final roleplaySelectionProvider = Provider<RoleplayScenario?>((ref) {
+  final brain = ref.watch(teacherBrainProvider).value;
+  if (brain == null) return null;
+  return selectRoleplay(brain, continuation: const ConversationContinuation());
 });
 
 /// The unified teacher's automatic choice (Phase 18) — which internal strategy

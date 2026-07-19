@@ -9,6 +9,21 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- **Phase 35 (increment 6) / Phase 38 core — Reader session instrumentation.**
+  The reader now MEASURES sessions: wall-clock duration, pauses (playback
+  interruptions), paragraph replays, page revisits, word look-ups, and words
+  read — real counters in the UI layer, engines stay pure. Measurements ride on
+  `ReadingRecord` (new nullable fields + json; legacy records read back as
+  nulls — single store, persistence free). `recordCompletion` passes them;
+  `readingAnalyticsProvider` turns measured records into `ReadingSessionInput`
+  sessions, so `computeReadingReport` now yields REAL `meanDurationMs`,
+  `replayCount`, `pauseFrequency` (new aggregation: mean pauses per session)
+  and `wordsPerMinute` (new: wordsRead/duration) — all previously structurally
+  null. Null stays null where nothing was measured. 427 tests (+3: json
+  round-trip incl. legacy, buildReadingRecord pass-through, provider→report
+  end-to-end with real WPM/pauses). analyze clean; apk debug green. Not
+  device-verified.
+
 - **Phase 35 (increment 5) — Reader profile surfaced in the Library.** The Phase
   33 Reader Intelligence profile (`readerProfileProvider`) was consumed by no
   screen. Added a read-only **"Your reading"** card at the top of the Reading

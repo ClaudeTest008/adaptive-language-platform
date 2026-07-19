@@ -133,14 +133,35 @@ ReadingAnalyticsReport computeReadingReport(
   ];
   final abandoned = sessions.values.where((s) => !s.completed).length;
 
+  // Real reading speed: sessions where the reader measured both the words in
+  // the finished text and the wall-clock duration (Phase 35/38).
+  final speeds = [
+    for (final s in sessions.values)
+      if (s.durationMs != null &&
+          s.durationMs! > 0 &&
+          s.record.wordsRead != null &&
+          s.record.wordsRead! > 0)
+        s.record.wordsRead! / (s.durationMs! / 60000),
+  ];
+  final pauses = [
+    for (final s in sessions.values)
+      if (s.pauseCount != null) s.pauseCount!,
+  ];
+
   return ReadingAnalyticsReport(
     booksRead: records.length,
     meanComprehension: double.parse(comprehension.toStringAsFixed(2)),
-    wordsPerMinute: null, // reader does not measure words/time yet (seam)
+    wordsPerMinute: speeds.isEmpty
+        ? null
+        : double.parse(_mean(speeds).toStringAsFixed(1)),
     meanDurationMs: durations.isEmpty
         ? null
         : (durations.reduce((a, b) => a + b) / durations.length).round(),
-    pauseFrequency: null,
+    // Mean pauses per instrumented session; null when never measured.
+    pauseFrequency: pauses.isEmpty
+        ? null
+        : double.parse(_mean(pauses.map((p) => p.toDouble()))
+            .toStringAsFixed(2)),
     replayCount: replays.isEmpty ? null : replays.reduce((a, b) => a + b),
     completionRate: sessions.isEmpty
         ? null

@@ -39,6 +39,16 @@ class _LanguageStoryReaderScreenState
   late final PageController _pageController =
       PageController(initialPage: _phrase);
 
+  // Phase 35/38 session instrumentation — real measurements only. The clock
+  // lives in the UI layer; every engine downstream takes these as inputs.
+  final DateTime _sessionStart = DateTime.now();
+  int _pauses = 0;
+  int _replays = 0;
+  int _revisits = 0;
+  int _wordTaps = 0;
+  final Set<int> _played = {};
+  late final Set<int> _visited = {_phrase};
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -67,6 +77,7 @@ class _LanguageStoryReaderScreenState
   }
 
   Future<void> _playParagraph(String text, String bcp47) async {
+    if (!_played.add(_phrase)) _replays++; // measured: replay of a heard page
     final speech = ref.read(speechServiceProvider);
     await speech.stop();
     setState(() => _playing = true);
@@ -75,6 +86,7 @@ class _LanguageStoryReaderScreenState
   }
 
   Future<void> _stopAudio() async {
+    if (_playing) _pauses++; // measured: learner interrupted playback
     await ref.read(speechServiceProvider).stop();
     if (mounted) setState(() => _playing = false);
   }
@@ -331,6 +343,7 @@ class _LanguageStoryReaderScreenState
                           controller: _pageController,
                           itemCount: story.phrases.length,
                           onPageChanged: (i) {
+                            if (!_visited.add(i)) _revisits++; // measured
                             ref.read(speechServiceProvider).stop();
                             saveReadingPage(widget.storyId, i);
                             setState(() {
@@ -369,7 +382,10 @@ class _LanguageStoryReaderScreenState
                                     // Phase 21: every word is long-pressable —
                                     // the teacher explains it through
                                     // connections, dictionary second.
-                                    _TappableTargetText(text: p.text),
+                                    _TappableTargetText(
+                                      text: p.text,
+                                      onWordTap: () => _wordTaps++,
+                                    ),
                                   if (_mode == _ReaderMode.both) ...[
                                     const SizedBox(height: AppSpace.xl),
                                     Divider(
@@ -525,7 +541,16 @@ class _LanguageStoryReaderScreenState
                                     // (vocab mined, interests discovered).
                                     ref
                                         .read(readingExperienceProvider.notifier)
-                                        .recordCompletion(story);
+                                        .recordCompletion(
+                                          story,
+                                          durationMs: DateTime.now()
+                                              .difference(_sessionStart)
+                                              .inMilliseconds,
+                                          pauseCount: _pauses,
+                                          replays: _replays,
+                                          pagesRevisited: _revisits,
+                                          wordTaps: _wordTaps,
+                                        );
                                     setState(() => _showComplete = true);
                                   }
                                 },
@@ -688,9 +713,12 @@ class _Option extends StatelessWidget {
 /// explanation from the Teacher Brain (Phase 21). Teach first, dictionary
 /// second — never a bare definition.
 class _TappableTargetText extends ConsumerWidget {
-  const _TappableTargetText({required this.text});
+  const _TappableTargetText({required this.text, this.onWordTap});
 
   final String text;
+
+  /// Instrumentation hook (Phase 35/38): counts real word look-ups.
+  final VoidCallback? onWordTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -705,7 +733,10 @@ class _TappableTargetText extends ConsumerWidget {
       children: [
         for (final w in words)
           GestureDetector(
-            onLongPress: () => _showWordExplanation(context, ref, w),
+            onLongPress: () {
+              onWordTap?.call();
+              _showWordExplanation(context, ref, w);
+            },
             child: Text('$w ', style: style),
           ),
       ],

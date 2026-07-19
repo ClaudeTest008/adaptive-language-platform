@@ -85,6 +85,12 @@ class ReadingRecord {
     required this.topics,
     required this.knownRatio,
     required this.unknownWords,
+    this.durationMs,
+    this.pauseCount,
+    this.replays,
+    this.pagesRevisited,
+    this.wordTaps,
+    this.wordsRead,
   });
 
   final String day;
@@ -97,6 +103,18 @@ class ReadingRecord {
   final double knownRatio;
   final List<String> unknownWords;
 
+  // Phase 35/38 session measurements — null when the session wasn't
+  // instrumented (older records). Measured by the reader UI, never estimated.
+  final int? durationMs;
+  final int? pauseCount;
+  final int? replays;
+  final int? pagesRevisited;
+  final int? wordTaps;
+
+  /// Words in the finished text — measured from the story itself, so
+  /// durationMs + wordsRead give a real reading speed.
+  final int? wordsRead;
+
   Map<String, dynamic> toJson() => {
     'day': day,
     'storyId': storyId,
@@ -104,6 +122,12 @@ class ReadingRecord {
     'topics': topics,
     'knownRatio': knownRatio,
     'unknownWords': unknownWords,
+    if (durationMs != null) 'durationMs': durationMs,
+    if (pauseCount != null) 'pauseCount': pauseCount,
+    if (replays != null) 'replays': replays,
+    if (pagesRevisited != null) 'pagesRevisited': pagesRevisited,
+    if (wordTaps != null) 'wordTaps': wordTaps,
+    if (wordsRead != null) 'wordsRead': wordsRead,
   };
 
   factory ReadingRecord.fromJson(Map<String, dynamic> json) => ReadingRecord(
@@ -114,6 +138,12 @@ class ReadingRecord {
     knownRatio: (json['knownRatio'] as num?)?.toDouble() ?? 0,
     unknownWords:
         [...(json['unknownWords'] as List? ?? const []).cast<String>()],
+    durationMs: (json['durationMs'] as num?)?.toInt(),
+    pauseCount: (json['pauseCount'] as num?)?.toInt(),
+    replays: (json['replays'] as num?)?.toInt(),
+    pagesRevisited: (json['pagesRevisited'] as num?)?.toInt(),
+    wordTaps: (json['wordTaps'] as num?)?.toInt(),
+    wordsRead: (json['wordsRead'] as num?)?.toInt(),
   );
 }
 
@@ -123,6 +153,12 @@ ReadingRecord buildReadingRecord({
   required Story story,
   required List<MinedWord> mined,
   required String day,
+  int? durationMs,
+  int? pauseCount,
+  int? replays,
+  int? pagesRevisited,
+  int? wordTaps,
+  int? wordsRead,
 }) {
   final unknown = [for (final m in mined) if (!m.known) m.word];
   final knownRatio = mined.isEmpty
@@ -135,6 +171,12 @@ ReadingRecord buildReadingRecord({
     topics: story.topics,
     knownRatio: double.parse(knownRatio.toStringAsFixed(2)),
     unknownWords: unknown.take(10).toList(),
+    durationMs: durationMs,
+    pauseCount: pauseCount,
+    replays: replays,
+    pagesRevisited: pagesRevisited,
+    wordTaps: wordTaps,
+    wordsRead: wordsRead,
   );
 }
 

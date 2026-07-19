@@ -6,6 +6,10 @@ import 'package:adaptive_exam_platform/language/curriculum.dart';
 import 'package:adaptive_exam_platform/language/entities.dart';
 import 'package:adaptive_exam_platform/language/experience.dart';
 import 'package:adaptive_exam_platform/language/story.dart';
+import 'package:adaptive_exam_platform/language/notebook_repository.dart';
+import 'package:adaptive_exam_platform/language/teacher_memory.dart';
+import 'package:adaptive_exam_platform/presentation/language_providers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -156,6 +160,105 @@ void main() {
     expect((await fresh.loadReadingRecords()).single.storyId, 's1');
     expect((await fresh.loadImportedBooks())['b1']!.title, 'Mi libro');
     expect(await fresh.loadSavedWords(), contains('faro'));
+  });
+
+  test('reading record session measurements round-trip and default to null',
+      () {
+    // Measured session (Phase 35/38 instrumentation).
+    const measured = ReadingRecord(
+      day: '2026-07-19',
+      storyId: 's1',
+      title: 'T',
+      topics: [],
+      knownRatio: 0.5,
+      unknownWords: [],
+      durationMs: 120000,
+      pauseCount: 2,
+      replays: 1,
+      pagesRevisited: 3,
+      wordTaps: 4,
+    );
+    final back = ReadingRecord.fromJson(
+      jsonDecode(jsonEncode(measured.toJson())) as Map<String, dynamic>,
+    );
+    expect(back.durationMs, 120000);
+    expect(back.pauseCount, 2);
+    expect(back.replays, 1);
+    expect(back.pagesRevisited, 3);
+    expect(back.wordTaps, 4);
+
+    // Legacy record json (no measurement keys) → nulls, never fabricated.
+    final legacy = ReadingRecord.fromJson(const {
+      'day': '2026-07-18',
+      'storyId': 's0',
+      'title': 'Old',
+      'topics': <String>[],
+      'knownRatio': 0.4,
+      'unknownWords': <String>[],
+    });
+    expect(legacy.durationMs, isNull);
+    expect(legacy.pauseCount, isNull);
+    expect(legacy.replays, isNull);
+    expect(legacy.pagesRevisited, isNull);
+    expect(legacy.wordTaps, isNull);
+  });
+
+  test('buildReadingRecord carries measurements only when provided', () {
+    const story = Story(
+      id: 's2',
+      title: 'Faro',
+      level: CefrLevel.a1,
+      phrases: [StoryPhrase(text: 'El faro brilla.', translation: '')],
+    );
+    final measured = buildReadingRecord(
+      story: story,
+      mined: const [],
+      day: '2026-07-19',
+      durationMs: 60000,
+      wordTaps: 2,
+    );
+    expect(measured.durationMs, 60000);
+    expect(measured.wordTaps, 2);
+    expect(measured.pauseCount, isNull); // not measured → null
+
+    final bare =
+        buildReadingRecord(story: story, mined: const [], day: '2026-07-19');
+    expect(bare.durationMs, isNull);
+  });
+
+  test('readingAnalyticsProvider feeds measured sessions into the report',
+      () async {
+    final repo = InMemoryExperienceRepository();
+    await repo.addReadingRecord(const ReadingRecord(
+      day: '2026-07-19',
+      storyId: 's1',
+      title: 'T',
+      topics: [],
+      knownRatio: 0.6,
+      unknownWords: ['faro'],
+      durationMs: 90000,
+      pauseCount: 1,
+      replays: 2,
+      wordTaps: 3,
+      wordsRead: 150,
+    ));
+    final container = ProviderContainer(overrides: [
+      experienceRepositoryProvider.overrideWithValue(repo),
+      teacherNotebookRepositoryProvider
+          .overrideWithValue(InMemoryTeacherNotebookRepository()),
+      teacherMemoryRepositoryProvider
+          .overrideWithValue(InMemoryTeacherMemoryRepository()),
+    ]);
+    addTearDown(container.dispose);
+
+    final report =
+        await container.read(readingAnalyticsProvider.future);
+    // Duration/pause/replay analytics are REAL now (previously structurally
+    // null because the provider never passed sessions).
+    expect(report.meanDurationMs, 90000);
+    expect(report.replayCount, 2);
+    expect(report.pauseFrequency, 1.0); // 1 pause / 1 measured session
+    expect(report.wordsPerMinute, 100.0); // 150 words / 1.5 min — real WPM
   });
 }
 

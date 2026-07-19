@@ -1265,11 +1265,28 @@ final vocabularyHistoryProvider =
   return byWord.values.toList();
 });
 
-/// Aggregated, measured reading analytics.
+/// Aggregated, measured reading analytics. Records that carry session
+/// measurements (Phase 35/38 reader instrumentation) become session inputs, so
+/// duration/pause/replay analytics are real where measured and null elsewhere.
 final readingAnalyticsProvider =
     FutureProvider<ReadingAnalyticsReport>((ref) async {
   final records = await ref.watch(readingRecordsProvider.future);
-  return computeReadingReport(records);
+  final sessions = <String, ReadingSessionInput>{
+    for (final r in records)
+      if (r.durationMs != null ||
+          r.pauseCount != null ||
+          r.replays != null ||
+          r.wordTaps != null)
+        r.storyId: ReadingSessionInput(
+          record: r,
+          durationMs: r.durationMs,
+          pauseCount: r.pauseCount,
+          paragraphReplays: r.replays,
+          pagesRevisited: r.pagesRevisited,
+          wordTaps: r.wordTaps,
+        ),
+  };
+  return computeReadingReport(records, sessions: sessions);
 });
 
 /// Vocabulary growth derived from the measured vocabulary history.
@@ -1492,7 +1509,19 @@ class ReadingExperienceController extends Notifier<int> {
   @override
   int build() => 0;
 
-  Future<void> recordCompletion(Story story) async {
+  /// Optional session measurements (Phase 35/38) come from the reader UI —
+  /// real clock and real counters, never estimated. Null = uninstrumented.
+  Future<void> recordCompletion(
+    Story story, {
+    int? durationMs,
+    int? pauseCount,
+    int? replays,
+    int? pagesRevisited,
+    int? wordTaps,
+  }) async {
+    // Words actually in the finished text — measured from the story itself.
+    final wordsRead =
+        story.fullText.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
     final curriculum = ref.read(curriculumProvider).value;
     if (curriculum == null) return;
     final learner = ref.read(languageLearnerProvider);
@@ -1505,6 +1534,12 @@ class ReadingExperienceController extends Notifier<int> {
       story: story,
       mined: mined,
       day: _notebookDay(DateTime.now()),
+      durationMs: durationMs,
+      pauseCount: pauseCount,
+      replays: replays,
+      pagesRevisited: pagesRevisited,
+      wordTaps: wordTaps,
+      wordsRead: durationMs == null ? null : wordsRead,
     );
     await ref.read(experienceRepositoryProvider).addReadingRecord(record);
     ref.read(experienceRevisionProvider.notifier).state++;

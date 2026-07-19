@@ -9,6 +9,18 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- **Phase 35 (increment 5) — Reader profile surfaced in the Library.** The Phase
+  33 Reader Intelligence profile (`readerProfileProvider`) was consumed by no
+  screen. Added a read-only **"Your reading"** card at the top of the Reading
+  Library (`_ReaderProfileCard` + exhaustive `_fitLabel`) showing books finished,
+  comprehension, difficulty fit and the first insight. Hidden entirely while the
+  profile is empty (no finished books) — never fabricated. Placed in the Library
+  (not the dashboard) because reading intelligence belongs where reading lives
+  and the dashboard already has five sections. No engine/provider/state added.
+  424 tests (+1 deterministic widget test — first widget test for the stories
+  screen, safe because `storiesProvider` is overridden so no rootBundle flake).
+  `flutter analyze` clean; `flutter build apk --debug` green. Not device-verified.
+
 - **Phase 35 (increment 4) — Suggested practice scene surfaced.** The Phase 30
   Roleplay Engine (`roleplaySelectionProvider`) was computed but consumed by no
   screen. Added a read-only **"Suggested practice scene"** dashboard section

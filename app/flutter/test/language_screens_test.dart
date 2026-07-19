@@ -4,10 +4,14 @@ import 'dart:io';
 import 'package:adaptive_exam_platform/infrastructure/prefs_experience_repository.dart';
 import 'package:adaptive_exam_platform/language/curriculum.dart';
 import 'package:adaptive_exam_platform/language/curriculum_intelligence.dart';
+import 'package:adaptive_exam_platform/language/entities.dart';
 import 'package:adaptive_exam_platform/language/learning_journey_engine.dart';
 import 'package:adaptive_exam_platform/language/notebook_repository.dart';
 import 'package:adaptive_exam_platform/language/recommendation_engine.dart';
+import 'package:adaptive_exam_platform/language/reader_intelligence.dart';
 import 'package:adaptive_exam_platform/language/roleplay_engine.dart';
+import 'package:adaptive_exam_platform/language/story.dart';
+import 'package:adaptive_exam_platform/presentation/screens/language_stories_screen.dart';
 import 'package:adaptive_exam_platform/language/teacher_memory.dart';
 import 'package:adaptive_exam_platform/language/speech.dart';
 import 'package:adaptive_exam_platform/presentation/language_providers.dart';
@@ -306,6 +310,54 @@ void main() {
     expect(find.text('At the café'), findsOneWidget);
     expect(find.text('Standard'), findsOneWidget);
     expect(find.textContaining('Ordering a coffee'), findsOneWidget);
+  });
+
+  testWidgets('library surfaces the reader profile once books are read', (
+    tester,
+  ) async {
+    // Fixed story list (no rootBundle → not flaky) + fixed profile so the
+    // card is asserted deterministically (engine logic covered by
+    // language_phase33_test.dart).
+    const story = Story(
+      id: 's1',
+      title: 'El viaje',
+      level: CefrLevel.a1,
+      phrases: [StoryPhrase(text: 'Hola.', translation: 'Hello.')],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          curriculumProvider.overrideWith((ref) => Future.value(curriculum)),
+          speechServiceProvider.overrideWithValue(NoopSpeechService()),
+          teacherNotebookRepositoryProvider.overrideWithValue(
+            InMemoryTeacherNotebookRepository(),
+          ),
+          experienceRepositoryProvider.overrideWithValue(
+            InMemoryExperienceRepository(),
+          ),
+          teacherMemoryRepositoryProvider.overrideWithValue(
+            InMemoryTeacherMemoryRepository(),
+          ),
+          storiesProvider.overrideWith((ref) => Future.value(const [story])),
+          readerProfileProvider.overrideWith(
+            (ref) async => const ReaderProfile(
+              booksRead: 2,
+              readingConfidence: 0.8,
+              difficultyFit: ReadingDifficultyFit.tooEasy,
+              insights: ['You finish what you start.'],
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: LanguageStoriesScreen()),
+      ),
+    );
+    await _settle(tester);
+
+    expect(find.text('Your reading'), findsOneWidget);
+    expect(find.textContaining('2 books finished'), findsOneWidget);
+    expect(find.textContaining('comprehension 80%'), findsOneWidget);
+    expect(find.text('Ready for harder'), findsOneWidget);
+    expect(find.text('You finish what you start.'), findsOneWidget);
   });
 
   testWidgets('language selector switches curriculum and reseeds learner', (

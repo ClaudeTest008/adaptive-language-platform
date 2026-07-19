@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../language/entities.dart';
+import '../../language/reader_intelligence.dart';
 import '../../language/story.dart';
 import '../language_providers.dart';
 import '../reading_state.dart';
@@ -93,6 +94,10 @@ class LanguageStoriesScreen extends ConsumerWidget {
                             ),
                       ),
                     ),
+                    // Phase 35: the Reader Intelligence profile (Phase 33)
+                    // made visible where reading lives. Renders nothing until
+                    // a book has actually been finished — never fabricated.
+                    const _ReaderProfileCard(),
                     if (continueReading.isNotEmpty)
                       _Shelf(
                         title: 'Continue reading',
@@ -120,6 +125,75 @@ class LanguageStoriesScreen extends ConsumerWidget {
     return last != null && last >= s.phrases.length - 1;
   }
 }
+
+/// Surfaces the Phase 33 Reader Intelligence profile (`readerProfileProvider`)
+/// where reading lives. Read-only and derived: books read, confidence,
+/// difficulty fit, and the first insight. Hidden entirely while the profile is
+/// empty (no finished books) — an absent card is honest; a fabricated one is
+/// not.
+class _ReaderProfileCard extends ConsumerWidget {
+  const _ReaderProfileCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final profile = ref.watch(readerProfileProvider).value;
+    if (profile == null || profile.isEmpty) return const SizedBox.shrink();
+
+    final confidence = profile.readingConfidence;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.lg,
+        0,
+        AppSpace.lg,
+        AppSpace.md,
+      ),
+      child: GlassCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.auto_stories_outlined,
+                    size: 18, color: scheme.primary),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Your reading', style: text.titleSmall)),
+                Text(
+                  _fitLabel(profile.difficultyFit),
+                  style: text.labelSmall?.copyWith(color: scheme.primary),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${profile.booksRead} '
+              '${profile.booksRead == 1 ? 'book' : 'books'} finished'
+              '${confidence == null ? '' : ' · comprehension ${(confidence * 100).round()}%'}',
+              style: text.bodyMedium,
+            ),
+            if (profile.insights.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                profile.insights.first,
+                style:
+                    text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Presentation label for reading difficulty fit. Exhaustive over the enum.
+String _fitLabel(ReadingDifficultyFit fit) => switch (fit) {
+      ReadingDifficultyFit.tooEasy => 'Ready for harder',
+      ReadingDifficultyFit.ideal => 'Right level',
+      ReadingDifficultyFit.tooHard => 'Take it gentle',
+      ReadingDifficultyFit.unknown => '',
+    };
 
 /// A horizontally-scrolling shelf of book covers.
 class _Shelf extends StatelessWidget {

@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:adaptive_exam_platform/infrastructure/prefs_experience_repository.dart';
 import 'package:adaptive_exam_platform/language/curriculum.dart';
+import 'package:adaptive_exam_platform/language/curriculum_intelligence.dart';
+import 'package:adaptive_exam_platform/language/learning_journey_engine.dart';
 import 'package:adaptive_exam_platform/language/notebook_repository.dart';
 import 'package:adaptive_exam_platform/language/recommendation_engine.dart';
 import 'package:adaptive_exam_platform/language/teacher_memory.dart';
@@ -206,6 +208,54 @@ void main() {
     await tester.tap(find.textContaining('Read a short story'));
     await tester.pump();
     expect(container.read(homeTabProvider), 1);
+  });
+
+  testWidgets('dashboard surfaces learning journeys with health', (
+    tester,
+  ) async {
+    // Fixed journey report so the card is asserted deterministically (the
+    // engine's own logic is covered by language_phase32_test.dart).
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          curriculumProvider.overrideWith((ref) => Future.value(curriculum)),
+          speechServiceProvider.overrideWithValue(NoopSpeechService()),
+          teacherNotebookRepositoryProvider.overrideWithValue(
+            InMemoryTeacherNotebookRepository(),
+          ),
+          experienceRepositoryProvider.overrideWithValue(
+            InMemoryExperienceRepository(),
+          ),
+          teacherMemoryRepositoryProvider.overrideWithValue(
+            InMemoryTeacherMemoryRepository(),
+          ),
+          journeyReportsProvider.overrideWith(
+            (ref) async => const [
+              JourneyReport(
+                journey: LearningJourney(
+                  id: 'j1',
+                  name: 'Present tense verbs',
+                  stages: [],
+                  progress: 0.5,
+                ),
+                health: JourneyHealth.accelerating,
+                prediction: JourneyPrediction(nextMilestone: 'Irregular yo-forms'),
+              ),
+            ],
+          ),
+        ],
+        child: const MaterialApp(home: LanguageDashboardScreen()),
+      ),
+    );
+    await _settle(tester);
+
+    await tester.scrollUntilVisible(find.text('Your learning journeys'), 150);
+    await tester.tap(find.text('Your learning journeys'));
+    await _settle(tester);
+    await tester.scrollUntilVisible(find.text('Present tense verbs'), 120);
+    expect(find.text('Present tense verbs'), findsOneWidget);
+    expect(find.text('Accelerating'), findsOneWidget);
+    expect(find.textContaining('Irregular yo-forms'), findsOneWidget);
   });
 
   testWidgets('language selector switches curriculum and reseeds learner', (

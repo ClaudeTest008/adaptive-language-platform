@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../language/entities.dart';
+import '../../language/learning_journey_engine.dart';
 import '../../language/lesson.dart';
 import '../../language/notebook.dart';
 import '../../language/recommendation_engine.dart';
@@ -159,6 +160,19 @@ class LanguageDashboardScreen extends ConsumerWidget {
                   title: 'What to focus on next',
                   subtitle: 'From your whole learning history',
                   child: _TeacherRecommendationsCard(),
+                ),
+              ),
+              const SizedBox(height: AppSpace.md),
+              // 4c · Learning journeys — the Phase 32 Journey Engine
+              // (journeyReportsProvider) made visible: each engaged domain's
+              // path with assessed health + progress. Read-only, derived.
+              const FadeInUp(
+                delayMs: 365,
+                child: _ExpandableSection(
+                  icon: Icons.route_outlined,
+                  title: 'Your learning journeys',
+                  subtitle: 'Where each path stands',
+                  child: _JourneysCard(),
                 ),
               ),
               const SizedBox(height: AppSpace.md),
@@ -918,6 +932,102 @@ IconData _recIcon(RecommendationKind kind) => switch (kind) {
       RecommendationKind.challenge => Icons.trending_up,
       RecommendationKind.confidence => Icons.favorite_outline,
       RecommendationKind.celebrate => Icons.celebration_outlined,
+    };
+
+/// Surfaces the Phase 32 Journey Engine (`journeyReportsProvider`) — each
+/// engaged domain's derived path with assessed health and progress. Read-only
+/// and derived; no state, no fabrication (an empty list means no journey has
+/// formed yet). Reuses the same async pattern as the recommendations card.
+class _JourneysCard extends ConsumerWidget {
+  const _JourneysCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final async = ref.watch(journeyReportsProvider);
+
+    if (async.isLoading && !async.hasValue) {
+      return const Padding(
+        padding: EdgeInsets.all(AppSpace.md),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    final reports = async.value ?? const <JourneyReport>[];
+    if (reports.isEmpty) {
+      return GlassCard(
+        child: Row(
+          children: [
+            Icon(Icons.route_outlined, size: 18, color: scheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'No journeys yet — keep learning and paths will form.',
+                style:
+                    text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    final top = reports.take(3).toList();
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < top.length; i++) ...[
+            if (i > 0) const Divider(height: AppSpace.md),
+            _journeyRow(context, top[i]),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+Widget _journeyRow(BuildContext context, JourneyReport r) {
+  final scheme = Theme.of(context).colorScheme;
+  final text = Theme.of(context).textTheme;
+  final pct = (r.journey.progress * 100).round();
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Expanded(child: Text(r.journey.name, style: text.titleSmall)),
+          Text(
+            _journeyHealthLabel(r.health),
+            style: text.labelSmall?.copyWith(color: scheme.primary),
+          ),
+        ],
+      ),
+      const SizedBox(height: 6),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: LinearProgressIndicator(
+          value: r.journey.progress.clamp(0.0, 1.0),
+          minHeight: 6,
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        '$pct% · ${r.prediction.nextMilestone ?? 'in progress'}',
+        style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+      ),
+    ],
+  );
+}
+
+/// Presentation label for journey health. Exhaustive: a new health value is a
+/// compile error, never a silent blank.
+String _journeyHealthLabel(JourneyHealth h) => switch (h) {
+      JourneyHealth.healthy => 'On track',
+      JourneyHealth.recovering => 'Recovering',
+      JourneyHealth.plateau => 'Plateau',
+      JourneyHealth.stalled => 'Stalled',
+      JourneyHealth.accelerating => 'Accelerating',
+      JourneyHealth.completed => 'Complete',
     };
 
 class _RecommendedNextLessonCard extends ConsumerWidget {

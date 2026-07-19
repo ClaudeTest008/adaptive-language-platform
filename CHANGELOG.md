@@ -9,6 +9,16 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- **Phase 35 (increment 3) — Learning journeys surfaced.** The Phase 32 Journey
+  Engine (`journeyReportsProvider`) was computed but consumed by no screen. Added
+  a read-only **"Your learning journeys"** dashboard section (`_JourneysCard` +
+  `_journeyRow` + exhaustive `_journeyHealthLabel`) showing each engaged domain's
+  path — name, assessed health, progress bar, next milestone. Purely derived and
+  read-only; no engine/provider/state added; TeacherBrain and all reasoning
+  engines untouched. Empty list renders an honest "no journeys yet" line. 422
+  tests (+1 deterministic widget test with a fixed `JourneyReport`).
+  `flutter analyze` clean; `flutter build apk --debug` green. Not device-verified.
+
 - **Phase 35 (increment 2) — Recommendations become actionable.** The read-only
   "What to focus on next" rows from increment 1 are now tappable: each routes to
   the activity that already exists for its kind, reusing the same session/tab

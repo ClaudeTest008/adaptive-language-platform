@@ -68,6 +68,38 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 33 — Reading Completion & Reader Intelligence + closed the
+  Phase 32 seam. **Phase 32 follow-up (done first)**: the Recommendation Engine
+  is now actually consumed by teaching decisions — `chooseTeachingStrategy` and
+  `AdaptiveLessonGenerator.generate` take an optional `recommendations` list;
+  recovery/misconception/lagging-speaker branches are UNCHANGED (existing tests
+  pass), and a top recommendation only steers the previously-generic default
+  branch (planner) or is inserted as a lesson block (generator). Providers wire
+  `recommendationsProvider` into both. **Reader Intelligence** — the reader
+  becomes a measured learning producer. `lib/language/reading_analytics.dart`
+  (pure): `computeReadingReport` aggregates measured signals from reading
+  records (comprehension, unknown-word density, longest streak, consistency)
+  plus optional per-session instrumentation (replays, completion) — timing/
+  pause/WPM are typed nullable seams that stay **null** until the reader UI
+  instruments them, never invented. `lib/language/vocabulary_growth.dart`
+  (pure): `computeVocabularyGrowth` classifies stable / weak / frequently-
+  forgotten / reinforced words + momentum + review candidates from the measured
+  vocabulary history; empty history → empty. `lib/language/reader_intelligence.dart`
+  (pure): `buildReaderProfile` derives reading confidence, difficulty fit
+  (too easy/ideal/too hard/unknown), momentum, habits, strengths/weaknesses,
+  insights, a prediction, and reading **Recommendations that merge into the ONE
+  Recommendation Engine list** (not a second system). **TeacherPacket expanded**
+  (additive): reader profile serialized (READER / READING / REVIEW WORDS,
+  omitted when the learner has not read). Providers: `readingAnalyticsProvider`,
+  `vocabularyHistoryProvider` (built from records' unknown words),
+  `vocabularyGrowthProvider`, `readerProfileProvider`,
+  `topReadingRecommendationProvider`; `recommendationsProvider` now merges
+  reading recommendations into its ranked output. 412 tests (+10: analytics
+  measured/null-when-unmeasured/instrumented, vocabulary growth + empty, reader
+  profile confidence/fit/recs/empty/determinism, P32-seam planner + generator +
+  regression), analyze clean, Android debug build green. Fully offline/
+  deterministic; no native/device.
+
 - 2026-07-18: Phase 32 — Recommendation & Learning Journey Engine. Two new
   pure, deterministic, offline engines; recommendations become another derived
   layer of the Teacher Brain (no parallel state, no persistence — recomputed

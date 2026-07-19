@@ -47,7 +47,10 @@ import '../language/conversation_continuity.dart';
 import '../language/lesson_outcomes.dart';
 import '../language/roleplay_engine.dart';
 import '../language/learning_journey_engine.dart';
+import '../language/reader_intelligence.dart';
+import '../language/reading_analytics.dart';
 import '../language/recommendation_engine.dart';
+import '../language/vocabulary_growth.dart';
 import '../language/teacher_memory.dart';
 import '../language/teacher_memory_engine.dart';
 import '../language/speaking_session.dart';
@@ -1238,16 +1241,85 @@ final teacherMemorySummaryProvider =
   );
 });
 
-// ---------- Recommendations + journeys (Phase 32) ----------
+// ---------- Reader intelligence (Phase 33) ----------
+
+/// Measured vocabulary history built from the learner's reading records —
+/// each unknown word accumulates encounters across books. No estimation.
+final vocabularyHistoryProvider =
+    FutureProvider<List<VocabularyEntry>>((ref) async {
+  final records = await ref.watch(readingRecordsProvider.future);
+  final byWord = <String, VocabularyEntry>{};
+  final ordered = [...records]..sort((a, b) => a.day.compareTo(b.day));
+  for (final r in ordered) {
+    for (final w in r.unknownWords) {
+      byWord[w] = recordEncounter(
+        byWord[w],
+        word: w,
+        day: r.day,
+        lookedUp: true,
+        bookId: r.storyId,
+      );
+    }
+  }
+  return byWord.values.toList();
+});
+
+/// Aggregated, measured reading analytics.
+final readingAnalyticsProvider =
+    FutureProvider<ReadingAnalyticsReport>((ref) async {
+  final records = await ref.watch(readingRecordsProvider.future);
+  return computeReadingReport(records);
+});
+
+/// Vocabulary growth derived from the measured vocabulary history.
+final vocabularyGrowthProvider = FutureProvider<VocabularyGrowth>((ref) async {
+  final history = await ref.watch(vocabularyHistoryProvider.future);
+  return computeVocabularyGrowth(
+    history,
+    today: _notebookDay(DateTime.now()),
+  );
+});
+
+/// The reader profile — reading confidence, difficulty fit, momentum, habits,
+/// insights, prediction, and reading recommendations. Derived each rebuild.
+final readerProfileProvider = FutureProvider<ReaderProfile>((ref) async {
+  final records = await ref.watch(readingRecordsProvider.future);
+  final analytics = await ref.watch(readingAnalyticsProvider.future);
+  final vocab = await ref.watch(vocabularyGrowthProvider.future);
+  return buildReaderProfile(
+    records: records,
+    analytics: analytics,
+    vocabulary: vocab,
+  );
+});
+
+/// The single most important reading recommendation, or null.
+final topReadingRecommendationProvider = Provider<Recommendation?>((ref) {
+  final profile = ref.watch(readerProfileProvider).value;
+  final recs = profile?.recommendations ?? const [];
+  return recs.isEmpty ? null : recs.first;
+});
+
+// ---------- Recommendations + journeys (Phase 32/33) ----------
 
 /// Ranked, explainable recommendations derived from the brain + long-term
-/// memory (no storage — recomputed each brain rebuild). Empty until ready.
+/// memory + reader intelligence (Phase 33 merges reading recs into the ONE
+/// recommendation list). No storage — recomputed each brain rebuild.
 final recommendationsProvider =
     FutureProvider<List<Recommendation>>((ref) async {
   final brain = ref.watch(teacherBrainProvider).value;
   if (brain == null) return const [];
   final memory = await ref.watch(teacherMemorySummaryProvider.future);
-  return recommend(brain, memory: memory);
+  final reader = await ref.watch(readerProfileProvider.future);
+  final merged = [...recommend(brain, memory: memory), ...reader.recommendations]
+    ..sort((a, b) {
+      final p = a.priority.compareTo(b.priority);
+      if (p != 0) return p;
+      final u = b.urgency.compareTo(a.urgency);
+      if (u != 0) return u;
+      return a.id.compareTo(b.id);
+    });
+  return merged;
 });
 
 /// The single most important recommendation (or null).
@@ -1279,7 +1351,10 @@ final roleplaySelectionProvider = Provider<RoleplayScenario?>((ref) {
 /// ready. The tutor screen uses this instead of a mode selector.
 final teachingChoiceProvider = Provider<TeachingChoice?>((ref) {
   final brain = ref.watch(teacherBrainProvider).value;
-  return brain == null ? null : chooseTeachingStrategy(brain);
+  if (brain == null) return null;
+  // Phase 33: recommendations now inform the choice (recovery still leads).
+  final recs = ref.watch(recommendationsProvider).value ?? const [];
+  return chooseTeachingStrategy(brain, recommendations: recs);
 });
 
 // ---------- Local Whisper (Phase 23) ----------
@@ -1433,7 +1508,9 @@ final lessonPlanProvider = Provider<LessonPlan?>((ref) {
   final brain = ref.watch(teacherBrainProvider).value;
   if (brain == null) return null;
   final stories = ref.watch(storiesProvider).value ?? const [];
-  return const AdaptiveLessonGenerator().generate(brain, stories: stories);
+  final recs = ref.watch(recommendationsProvider).value ?? const [];
+  return const AdaptiveLessonGenerator()
+      .generate(brain, stories: stories, recommendations: recs);
 });
 
 /// Today's personalized plan (ADR-0022): misconception repair first, then

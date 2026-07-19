@@ -6,6 +6,7 @@ import 'recommendation_engine.dart';
 import 'local_llm/llm_memory.dart';
 import 'local_llm/llm_prompt_builder.dart';
 import 'pipeline.dart';
+import 'reader_intelligence.dart';
 import 'relationships.dart';
 import 'roleplay_engine.dart';
 import 'teacher_brain.dart';
@@ -42,6 +43,7 @@ class TeacherPacket {
     this.memory,
     this.recommendations = const [],
     this.journeyReport,
+    this.reader,
   });
 
   final TeacherResponsePlan plan;
@@ -81,6 +83,10 @@ class TeacherPacket {
 
   /// The active journey's health + prediction (Phase 32).
   final JourneyReport? journeyReport;
+
+  /// Reader intelligence (Phase 33) — reading confidence, difficulty fit,
+  /// habits, insights, prediction; null when the learner has not read.
+  final ReaderProfile? reader;
 }
 
 /// Assembles the packet from the brain + engines + live conversation. All
@@ -100,6 +106,7 @@ TeacherPacket buildTeacherPacket({
   TeacherMemorySummary? memory,
   List<Recommendation> recommendations = const [],
   JourneyReport? journeyReport,
+  ReaderProfile? reader,
 }) {
   final plan = intelligence.plan(brain, turn: context.turns.length);
   final summary = summarizeConversation(context);
@@ -155,6 +162,7 @@ TeacherPacket buildTeacherPacket({
     memory: (memory == null || memory.isEmpty) ? null : memory,
     recommendations: recommendations.take(3).toList(),
     journeyReport: journeyReport,
+    reader: (reader == null || reader.isEmpty) ? null : reader,
   );
 }
 
@@ -243,6 +251,15 @@ String serializeTeacherPacket(TeacherPacket p) {
     b.writeln('JOURNEY HEALTH: ${jr.journey.name} is ${jr.health.name}'
         '${jr.prediction.nextMilestone == null ? '' : ' — next: ${jr.prediction.nextMilestone}'}'
         '${jr.prediction.likelyObstacle == null ? '' : ', watch ${jr.prediction.likelyObstacle}'}');
+  }
+  final rd = p.reader;
+  if (rd != null && !rd.isEmpty) {
+    b.writeln('READER: ${rd.booksRead} books · confidence '
+        '${rd.readingConfidence} · ${rd.difficultyFit.name}');
+    if (rd.insights.isNotEmpty) b.writeln('READING: ${rd.insights.first}');
+    if (rd.prediction.nextReviewWords.isNotEmpty) {
+      b.writeln('REVIEW WORDS: ${rd.prediction.nextReviewWords.join(', ')}');
+    }
   }
   return b.toString().trim();
 }

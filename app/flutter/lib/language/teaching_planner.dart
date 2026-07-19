@@ -1,5 +1,6 @@
 import 'connections.dart';
 import 'entities.dart';
+import 'recommendation_engine.dart';
 import 'teacher_brain.dart';
 import 'tutor.dart';
 
@@ -43,7 +44,10 @@ ConnectionSuggestion? _connectionFor(TeacherBrain brain, String? conceptId) {
 /// get a lagging speaker talking → build outward from a strong anchor →
 /// general teacher review. Pure and offline; a premium planner can replace
 /// this while consuming the same brain.
-TeachingChoice chooseTeachingStrategy(TeacherBrain brain) {
+TeachingChoice chooseTeachingStrategy(
+  TeacherBrain brain, {
+  List<Recommendation> recommendations = const [],
+}) {
   // 0 · Recovery beats everything (Phase 20): sustained struggle or material
   // running too hard — review, no new concepts.
   final pedagogy = brain.pedagogy;
@@ -108,7 +112,35 @@ TeachingChoice chooseTeachingStrategy(TeacherBrain brain) {
     );
   }
 
-  // 4 · General teacher review.
+  // 4 · No pressing repair/skill gap — let the Recommendation Engine steer
+  // (Phase 33 integration). Only the branches ABOVE (recovery, misconception,
+  // lagging speaker, strong-anchor) take precedence; here a top recommendation
+  // picks the mode when it maps to one. Deterministic and additive.
+  final rec = recommendations.isEmpty ? null : recommendations.first;
+  if (rec != null) {
+    final mode = switch (rec.kind) {
+      RecommendationKind.conversation ||
+      RecommendationKind.roleplay ||
+      RecommendationKind.speaking =>
+        TutorMode.conversation,
+      RecommendationKind.mentalModel ||
+      RecommendationKind.connection ||
+      RecommendationKind.recoverWeakConcept ||
+      RecommendationKind.review =>
+        TutorMode.teacher,
+      _ => null,
+    };
+    if (mode != null) {
+      return TeachingChoice(
+        mode: mode,
+        focusConceptId:
+            rec.requiredConcepts.isEmpty ? null : rec.requiredConcepts.first,
+        rationale: rec.reason,
+      );
+    }
+  }
+
+  // 5 · General teacher review.
   return const TeachingChoice(
     mode: TutorMode.teacher,
     rationale: "Let's review and strengthen what you've been learning.",

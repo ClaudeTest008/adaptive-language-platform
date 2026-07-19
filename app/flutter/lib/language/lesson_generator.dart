@@ -1,5 +1,6 @@
 import 'connections.dart';
 import 'mental_models.dart';
+import 'recommendation_engine.dart';
 import 'story.dart';
 import 'teacher_brain.dart';
 
@@ -74,7 +75,11 @@ class LessonPlan {
 class AdaptiveLessonGenerator {
   const AdaptiveLessonGenerator();
 
-  LessonPlan generate(TeacherBrain brain, {List<Story> stories = const []}) {
+  LessonPlan generate(
+    TeacherBrain brain, {
+    List<Story> stories = const [],
+    List<Recommendation> recommendations = const [],
+  }) {
     final recs = <LessonRecommendation>[];
     final suggestion = brain.connections.suggestions.isEmpty
         ? null
@@ -185,6 +190,23 @@ class AdaptiveLessonGenerator {
       ),
     );
 
+    // Phase 33: the Recommendation Engine's top pick leads the plan (additive
+    // — existing blocks remain). Recovery already leads via `today`, so a
+    // recommendation only jumps ahead when it is not itself the recovery focus.
+    final rec = recommendations.isEmpty ? null : recommendations.first;
+    if (rec != null && rec.priority > 0) {
+      recs.insert(
+        1,
+        LessonRecommendation(
+          kind: _kindFor(rec.kind),
+          title: 'Recommended: ${rec.kind.name}',
+          rationale: rec.reason,
+          conceptIds: rec.requiredConcepts,
+          activityHint: _hintFor(rec.kind),
+        ),
+      );
+    }
+
     return LessonPlan(
       todaysFocus: today,
       recommendations: recs,
@@ -192,6 +214,28 @@ class AdaptiveLessonGenerator {
       steps: _steps(brain, suggestion, model),
     );
   }
+
+  LessonRecommendationKind _kindFor(RecommendationKind k) => switch (k) {
+    RecommendationKind.conversation ||
+    RecommendationKind.roleplay =>
+      LessonRecommendationKind.conversation,
+    RecommendationKind.reading || RecommendationKind.story =>
+      LessonRecommendationKind.story,
+    RecommendationKind.speaking => LessonRecommendationKind.speaking,
+    RecommendationKind.review ||
+    RecommendationKind.recoverWeakConcept =>
+      LessonRecommendationKind.review,
+    RecommendationKind.mentalModel ||
+    RecommendationKind.connection =>
+      LessonRecommendationKind.challenge,
+    _ => LessonRecommendationKind.today,
+  };
+
+  String _hintFor(RecommendationKind k) => switch (k) {
+    RecommendationKind.reading || RecommendationKind.story => 'story',
+    RecommendationKind.speaking => 'speaking',
+    _ => 'tutor',
+  };
 
   List<String> _steps(
     TeacherBrain brain,

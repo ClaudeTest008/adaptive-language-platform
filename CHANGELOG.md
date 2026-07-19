@@ -7,6 +7,24 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
+### Changed
+
+- **Qwen3-1.7B Q4_K_S is now the default tutor model** (`llmDefaultSpec`),
+  after the on-device benchmark showed it clearly better as a Spanish tutor at
+  latency parity (see prior benchmark entry). Extended this session with ~15
+  live Qwen3 turns: quality held (correct, Socratic ser/estar teaching; natural
+  memory use), the female Piper voice spoke replies, 0 ANRs. Honest: the full
+  40/100-turn battery was NOT feasible on the owner's phone, and latency GROWS
+  with conversation length on BOTH models (TTFT ~15 s early → ~45 s by turn 11)
+  because the whole prompt is reprocessed each turn — no KV-prefix reuse is
+  exposed by llamadart (documented, not faked). Qwen2.5 stays one tap away in
+  settings; existing installs see "Update available" (one-time ~1 GB switch).
+- **UI overflow fixes** (device-verified, no behaviour change): the dashboard
+  "Working level" row now uses Expanded + ellipsis so it yields to the streak
+  pill (the "RIGHT OVERFLOWED BY 8" bug — confirmed gone on device); the
+  speaking drill is now scrollable so a tall attempt (feedback + per-word chips)
+  never overflows the screen.
+
 ### Added
 
 - **Model benchmark executed on-device: Qwen3-1.7B Q4_K_S vs Qwen2.5-1.5B

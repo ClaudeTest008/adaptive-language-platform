@@ -3,6 +3,7 @@ import 'conversation_continuity.dart';
 import 'curriculum_intelligence.dart';
 import 'learning_journey_engine.dart';
 import 'lesson_outcomes.dart';
+import 'message_intent.dart';
 import 'recommendation_engine.dart';
 import 'local_llm/llm_memory.dart';
 import 'local_llm/llm_prompt_builder.dart';
@@ -46,6 +47,7 @@ class TeacherPacket {
     this.journeyReport,
     this.reader,
     this.optimization,
+    this.learnerFacts = const {},
   });
 
   final TeacherResponsePlan plan;
@@ -93,6 +95,11 @@ class TeacherPacket {
   /// Connection-network optimization (Phase 34) — weak/strong/suggested
   /// bridges, cluster health, optimization score; null when no graph yet.
   final ConnectionOptimizationReport? optimization;
+
+  /// Facts the learner EXPLICITLY shared in conversation (name, city, family,
+  /// reasons for learning…). Stored verbatim, never inferred — see
+  /// `message_intent.dart`. Empty when nothing has been shared.
+  final Map<String, String> learnerFacts;
 }
 
 /// Assembles the packet from the brain + engines + live conversation. All
@@ -114,6 +121,7 @@ TeacherPacket buildTeacherPacket({
   JourneyReport? journeyReport,
   ReaderProfile? reader,
   ConnectionOptimizationReport? optimization,
+  Map<String, String> learnerFacts = const {},
 }) {
   final plan = intelligence.plan(brain, turn: context.turns.length);
   final summary = summarizeConversation(context);
@@ -172,6 +180,7 @@ TeacherPacket buildTeacherPacket({
     reader: (reader == null || reader.isEmpty) ? null : reader,
     optimization:
         (optimization == null || optimization.isEmpty) ? null : optimization,
+    learnerFacts: learnerFacts,
   );
 }
 
@@ -185,6 +194,10 @@ String serializeTeacherPacket(TeacherPacket p) {
     ..writeln('LANGUAGE POLICY: ${p.languagePolicy}')
     ..writeln('CORRECTION POLICY: ${p.correctionPolicy}');
   if (p.teachingStyle != null) b.writeln('STYLE: ${p.teachingStyle}');
+  if (p.learnerFacts.isNotEmpty) {
+    b.writeln('ABOUT THE LEARNER (they told you this — use it naturally): '
+        '${factsBrief(p.learnerFacts)}');
+  }
   if (p.continuation.opener != null) {
     b.writeln('CONTINUE THREAD (${p.continuation.thread}): '
         '${p.continuation.opener}');

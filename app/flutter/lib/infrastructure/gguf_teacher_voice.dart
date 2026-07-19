@@ -68,6 +68,15 @@ class GgufTeacherVoice {
             role: LlamaChatRole.system,
             text: prompt.system,
           ),
+          // Conversation repair: previous turns as REAL chat messages —
+          // the model finally sees the conversation, newest message last.
+          for (final t in prompt.history)
+            LlamaChatMessage.fromText(
+              role: t.fromLearner
+                  ? LlamaChatRole.user
+                  : LlamaChatRole.assistant,
+              text: t.text,
+            ),
           LlamaChatMessage.fromText(
             role: LlamaChatRole.user,
             text: prompt.user,

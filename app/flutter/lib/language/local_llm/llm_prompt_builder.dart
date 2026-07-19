@@ -15,15 +15,30 @@ import 'llm_memory.dart';
 
 /// A structured prompt: a system brief (who the teacher is + this turn's
 /// intent), the user turn, and hard constraints the generator must obey.
+/// One prior exchange, delivered to the model as a proper chat message.
+class LlmChatTurn {
+  const LlmChatTurn({required this.fromLearner, required this.text});
+
+  final bool fromLearner;
+  final String text;
+}
+
 class LlmPrompt {
   const LlmPrompt({
     required this.system,
     required this.user,
     required this.constraints,
+    this.history = const [],
   });
 
   final String system;
+
+  /// The CURRENT learner message — always the newest, always last.
   final String user;
+
+  /// Previous conversation turns, oldest first (conversation repair: the
+  /// investigation proved these never reached the model before).
+  final List<LlmChatTurn> history;
 
   /// Machine-checkable rules (language, correction cap, no-repeat list…).
   final LlmConstraints constraints;
@@ -142,6 +157,10 @@ LlmPrompt buildTeacherPrompt({
   return LlmPrompt(
     system: b.toString().trim(),
     user: userMessage,
+    history: [
+      for (final t in context.turns)
+        LlmChatTurn(fromLearner: t.fromLearner, text: t.text),
+    ],
     constraints: LlmConstraints(
       targetLanguage: brain.identity.targetLanguage,
       nativeLanguage: brain.identity.nativeLanguage,

@@ -1,5 +1,6 @@
 import 'connections.dart';
 import 'learning_profile.dart';
+import 'message_intent.dart';
 import 'teacher_brain.dart';
 import 'teaching_style.dart';
 
@@ -360,11 +361,12 @@ class TeacherIntelligenceEngine {
       ..sort((a, b) => a.confidence.compareTo(b.confidence));
     if (weak.isEmpty) return null;
     final g = weak.first;
-    // Anchor the "why" to a family member the learner already holds.
+    // Anchor the "why" to a family member the learner already holds — worded
+    // like a teacher, never a list dump.
     final family = _familyOf(brain, g.conceptId);
     final why = family.isEmpty
-        ? 'It belongs to a pattern we are building.'
-        : 'It follows the same pattern as ${family.take(3).join(', ')}.';
+        ? "it's part of a pattern we're building together."
+        : "it works just like ${family.first.toLowerCase()}.";
     return CorrectionPlan(
       conceptId: g.conceptId,
       praise: 'Good — the meaning came through clearly.',
@@ -470,21 +472,157 @@ class TeacherIntelligenceEngine {
     );
   }
 
-  /// The complete next-turn plan.
-  TeacherResponsePlan plan(TeacherBrain brain, {int turn = 0}) {
+  /// The complete next-turn plan. [learnerIntent] is the deterministic
+  /// classification of what the learner just said (conversation repair): the
+  /// teacher now reacts to the message instead of planning blind.
+  /// [learnerHasProduced] is true once the learner has actually written or
+  /// said something correctable — corrections are gated on it, so the teacher
+  /// never opens a conversation by correcting.
+  TeacherResponsePlan plan(
+    TeacherBrain brain, {
+    int turn = 0,
+    LearnerIntent? learnerIntent,
+    bool learnerHasProduced = false,
+  }) {
     final state = conversationState(brain, turn: turn);
-    final decision = decide(brain);
     final closing = state.stage == LessonStage.reflection;
+
+    // 1 · Learner-driven moments beat brain-driven planning.
+    final learnerMoment =
+        _momentForLearner(brain, learnerIntent, turn: turn);
+    // 2 · Natural arc: greet first; corrections only after real production
+    //     and never in the opening stages.
+    TeacherDecision decision;
+    if (learnerMoment != null) {
+      decision = TeacherDecision(
+        intent: learnerMoment.intent,
+        rationale: learnerMoment.rationale,
+        conceptId:
+            learnerMoment.conceptIds.isEmpty ? null : learnerMoment.conceptIds.first,
+      );
+    } else if (turn <= 0) {
+      decision = const TeacherDecision(
+        intent: TeacherIntent.greet,
+        rationale: 'Every lesson opens with a real greeting.',
+      );
+    } else if (turn == 1 && learnerIntent != LearnerIntent.statement) {
+      decision = const TeacherDecision(
+        intent: TeacherIntent.warmUp,
+        rationale: 'Warm up before teaching.',
+      );
+    } else {
+      decision = decide(brain);
+      final tooEarlyToCorrect = turn < 3;
+      if (decision.intent == TeacherIntent.correct &&
+          (!learnerHasProduced || tooEarlyToCorrect)) {
+        // Nothing has been produced that could be corrected — teach instead.
+        final ops = opportunities(brain)
+            .where((o) => o.intent != TeacherIntent.correct)
+            .toList();
+        decision = ops.isEmpty
+            ? const TeacherDecision(
+                intent: TeacherIntent.discover,
+                rationale: 'Teach forward — nothing to correct yet.',
+              )
+            : TeacherDecision(
+                intent: ops.first.intent,
+                rationale: ops.first.reason,
+                conceptId:
+                    ops.first.conceptIds.isEmpty ? null : ops.first.conceptIds.first,
+              );
+      }
+    }
+
     return TeacherResponsePlan(
       state: state,
-      moment: moment(brain, decision),
+      moment: learnerMoment ?? moment(brain, decision),
       pacing: pacing(brain),
-      correction: decision.intent == TeacherIntent.correct
+      correction: decision.intent == TeacherIntent.correct &&
+              learnerHasProduced
           ? correction(brain)
           : null,
       memory: memory(brain),
       reflection: closing ? reflection(brain) : null,
     );
+  }
+
+  /// Builds the moment when the learner's message itself demands a specific
+  /// reaction. Null = nothing special, fall back to brain-driven planning.
+  TeachingMoment? _momentForLearner(
+    TeacherBrain brain,
+    LearnerIntent? intent, {
+    int turn = 0,
+  }) {
+    if (intent == null) return null;
+    final focusId = brain.objectives.currentConceptId;
+    final family = focusId == null ? const <String>[] : _familyOf(brain, focusId);
+    final anchor = family.isEmpty ? null : family.first.toLowerCase();
+    switch (intent) {
+      case LearnerIntent.greeting:
+        return TeachingMoment(
+          intent: turn <= 1 ? TeacherIntent.greet : TeacherIntent.warmUp,
+          message: '¡Hola! Me alegro de verte. ¿Cómo estás hoy?',
+          rationale: 'The learner greeted — greet back, warmly.',
+        );
+      case LearnerIntent.farewell:
+        return TeachingMoment(
+          intent: TeacherIntent.reflect,
+          message: '¡Hasta pronto! Hoy avanzaste de verdad.',
+          rationale: 'The learner is leaving — close the lesson kindly.',
+        );
+      case LearnerIntent.confusion:
+        return TeachingMoment(
+          intent: TeacherIntent.discover,
+          message: 'No problem — let me say that a simpler way, with a '
+              'concrete example${anchor == null ? '' : ', starting from '
+                  '$anchor which you already know'}.',
+          conceptIds: focusId == null ? const [] : [focusId],
+          rationale: 'The learner said they did not understand — re-explain '
+              'differently, never repeat the same wording.',
+        );
+      case LearnerIntent.exampleRequest:
+        return TeachingMoment(
+          intent: TeacherIntent.practice,
+          message: 'Claro — here is a fresh example, different from the last '
+              'one. Try reading it aloud.',
+          conceptIds: focusId == null ? const [] : [focusId],
+          rationale: 'The learner asked for another example — give a new one.',
+        );
+      case LearnerIntent.grammarRequest:
+        return TeachingMoment(
+          intent: TeacherIntent.connect,
+          message: 'Good question. Let me explain it the way it actually '
+              'works in real speech${anchor == null ? '' : ' — it connects '
+                  'to $anchor'}.',
+          conceptIds: focusId == null ? const [] : [focusId],
+          rationale: 'The learner asked for a grammar explanation.',
+        );
+      case LearnerIntent.vocabularyRequest:
+      case LearnerIntent.translationRequest:
+        return TeachingMoment(
+          intent: TeacherIntent.connect,
+          message: 'Vamos a verlo — I will give you the word and one natural '
+              'sentence that uses it.',
+          rationale: 'The learner asked about a word or translation.',
+        );
+      case LearnerIntent.roleplayRequest:
+        return TeachingMoment(
+          intent: TeacherIntent.practice,
+          message: '¡Perfecto! Vamos a practicar en una escena real.',
+          rationale: 'The learner asked to roleplay — start a scene.',
+        );
+      case LearnerIntent.practiceRequest:
+      case LearnerIntent.conversationRequest:
+        return TeachingMoment(
+          intent: TeacherIntent.practice,
+          message: 'Muy bien — tu turno. Te propongo algo corto para empezar.',
+          rationale: 'The learner asked to practice.',
+        );
+      case LearnerIntent.question:
+      case LearnerIntent.statement:
+      case LearnerIntent.unknown:
+        return null; // brain-driven planning handles these
+    }
   }
 
   /// The family (same-domain concepts) around [conceptId], from the connection
@@ -494,8 +632,13 @@ class TeacherIntelligenceEngine {
     final names = <String>[];
     for (final c in brain.connections.clusters) {
       if (c.id != domain) continue;
+      final focusDepth = conceptId.split(':').length;
       for (final id in c.memberIds) {
         if (id == conceptId) continue;
+        // Only sibling/leaf concepts read naturally in a sentence. Ancestor
+        // tiers ("Verbs", "Present tense") leaked into replies as robotic
+        // lists — the investigation's "internal node names" defect.
+        if (id.split(':').length < focusDepth) continue;
         final name = brain.connections.nodes[id]?.name;
         if (name != null && !names.contains(name)) names.add(name);
       }

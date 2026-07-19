@@ -52,6 +52,15 @@ class DeterministicTeacherVoice {
     ConversationContext context,
     TeacherBrain brain,
   ) {
+    // Learner-driven moments (conversation repair) carry a specific,
+    // situation-aware message — speak IT, never a canned rotation. All such
+    // moments are marked by their rationale ("The learner …").
+    if (plan.moment.rationale.startsWith('The learner')) {
+      final socratic = plan.moment.socraticPrompt;
+      return socratic == null
+          ? plan.moment.message
+          : '${plan.moment.message} $socratic';
+    }
     final es = brain.identity.targetLanguage == 'es';
     final names = _familyNames(plan, brain);
     final variants = _variantsFor(plan, es, names, brain);

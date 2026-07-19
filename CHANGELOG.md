@@ -9,6 +9,35 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- **Conversation repair — the tutor now reacts to what the learner says.**
+  Fixes all six investigated defects. (1) Conversation history finally reaches
+  the model: `LlmPrompt.history` carries prior turns and the GGUF path sends
+  them as real chat messages, newest last. (2) New deterministic
+  `message_intent.dart`: 13-intent classifier + explicit-only fact extraction
+  + truthful `answerFromFacts` — the planner (`plan(brain, turn,
+  learnerIntent, learnerHasProduced)`) now reacts to greetings, confusion,
+  example/grammar/roleplay/practice requests. (3) TeacherPacket is serialized
+  into the live system prompt (packetPrompt path finally in production).
+  (4) Natural lesson arc: greeting stays a greeting; corrections are gated
+  until the learner has produced something and never before turn 3.
+  (5) Humanized wording: ancestor node names ("Verbs", "Present tense") no
+  longer leak into replies; corrections read like a teacher. (6) New
+  `learnerFactsProvider`: facts the learner explicitly states (name, city,
+  children, reason…) persist and enter every prompt; questions about them get
+  deterministic truthful answers ("Your name is John") — never model-invented.
+  Roleplay requests mid-chat start the real scene in place, preserving the
+  conversation. 451 tests (+9 regression: taxonomy, explicit-only extraction,
+  truthful answers, greeting-stays-greeting, name/city/children/reason recall,
+  changed explanation on confusion, new example on request, roleplay start
+  with history kept, full-conversation determinism). analyze clean; apk debug
+  green. DEVICE: partially verified on CPH2037 — GGUF greeting opener
+  ("¡Bienvenido!…" instead of the old correction-opener) and humanized memory
+  wording ("works just like manzana") confirmed via logcat + screenshots; the
+  remaining manual script was aborted because the phone's owner was actively
+  using it (Messenger chat-head overlays intercepted taps — no app defect;
+  no personal content interacted with). Fact-recall/roleplay turns are
+  deterministic-path and covered by the passing regression suite.
+
 - **Phase 37 — REAL offline Whisper STT (device-verified on CPH2037).** Raw PCM
   mic capture (`record` 7.1.1, 16 kHz mono) → long-lived background isolate
   owning the sherpa-onnx `OfflineRecognizer` (whisper tiny multilingual int8)

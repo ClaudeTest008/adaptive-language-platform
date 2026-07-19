@@ -12,6 +12,8 @@ import 'package:flutter_riverpod/legacy.dart';
 
 import 'dart:convert';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../adaptive/engine.dart';
 import '../adaptive/model.dart' as adaptive;
 import '../ai/chat_model.dart';
@@ -33,6 +35,7 @@ import '../language/exercises.dart';
 import '../language/ingestion.dart';
 import '../language/lesson.dart';
 import '../language/lesson_generator.dart';
+import '../language/message_intent.dart';
 import '../language/misconceptions.dart';
 import '../language/notebook.dart';
 import '../language/notebook_repository.dart';
@@ -58,6 +61,7 @@ import '../language/teacher_memory.dart';
 import '../language/teacher_memory_engine.dart';
 import '../language/speaking_session.dart';
 import '../language/teacher_intelligence.dart';
+import '../language/teacher_packet.dart';
 import '../infrastructure/gguf_teacher_voice.dart';
 import '../infrastructure/llm_downloader.dart';
 import '../language/whisper/whisper_model_manager.dart';
@@ -911,6 +915,10 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
             userMessage: 'Start the session.',
             supportMode: ref.read(teacherSupportModeProvider),
             generate: await _neuralGenerator(),
+            learnerIntent: LearnerIntent.unknown, // teacher opens, learner silent
+            learnerFacts: ref.read(learnerFactsProvider),
+            packet: _buildPacket(brain, conversation),
+            learnerHasProduced: false, // nothing to correct at the opener
           );
       openerText = response.text;
       conversation = response.context;
@@ -941,6 +949,27 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
     );
   }
 
+  /// Assembles the full TeacherPacket for the prompt (Defect 3 repair): the
+  /// single serialization of everything the teacher knows — memory,
+  /// recommendations, reader, connections, learner-shared facts. Best-effort:
+  /// providers that have not resolved yet contribute nothing.
+  TeacherPacket? _buildPacket(TeacherBrain brain, ConversationContext ctx) {
+    final curriculum = ref.read(curriculumProvider).value;
+    if (curriculum == null) return null;
+    return buildTeacherPacket(
+      brain: brain,
+      graph: curriculum.graph,
+      context: ctx,
+      supportMode: ref.read(teacherSupportModeProvider),
+      memory: ref.read(teacherMemorySummaryProvider).value,
+      recommendations: ref.read(recommendationsProvider).value ?? const [],
+      reader: ref.read(readerProfileProvider).value,
+      optimization: ref.read(connectionOptimizationProvider).value,
+      roleplay: state?.roleplay?.scenario,
+      learnerFacts: ref.read(learnerFactsProvider),
+    );
+  }
+
   /// Phase 36: returns the real GGUF wording generator when — and only when —
   /// a verified model is installed AND the engine loads. Anything else → null
   /// → the deterministic voice words the plan. Never fabricates readiness.
@@ -960,7 +989,9 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
   /// Starts (or resumes) a roleplay scene (Phase 30/35). The engine selects
   /// the scenario from the brain; a matching interrupted scene saved in
   /// teacher memory resumes at its stage. Requires the brain (packet path).
-  Future<void> startRoleplay() async {
+  /// [preserveSession] keeps the current transcript/conversation (a mid-chat
+  /// "can we practice ordering food?" flows into the scene naturally).
+  Future<void> startRoleplay({bool preserveSession = false}) async {
     final brain = ref.read(teacherBrainProvider).value;
     final context = assembleTutorContext(ref);
     if (brain == null || context == null) return;
@@ -987,19 +1018,26 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
       day: _notebookDay(DateTime.now()),
     ));
     final stage = progress.currentStage;
-    state = TutorSessionState(
-      mode: TutorMode.conversation,
-      context: context,
-      roleplay: progress,
-      transcript: [
-        (
-          true,
-          '${scenario.title} — ${scenario.setting}. ${scenario.rationale}'
-        ),
-        if (resumeIndex > 0) (true, 'Seguimos donde lo dejamos.'),
-        if (stage != null) (true, stage.prompt.text),
-      ],
-    );
+    final sceneLines = <(bool, String)>[
+      (
+        true,
+        '${scenario.title} — ${scenario.setting}. ${scenario.rationale}'
+      ),
+      if (resumeIndex > 0) (true, 'Seguimos donde lo dejamos.'),
+      if (stage != null) (true, stage.prompt.text),
+    ];
+    final current = state;
+    state = preserveSession && current != null
+        ? current.copyWith(
+            transcript: [...current.transcript, ...sceneLines],
+            roleplay: progress,
+          )
+        : TutorSessionState(
+            mode: TutorMode.conversation,
+            context: context,
+            roleplay: progress,
+            transcript: sceneLines,
+          );
   }
 
   Future<void> send(String rawMessage) async {
@@ -1021,6 +1059,21 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
       );
     }
 
+    // Conversation repair: deterministically read the message FIRST — the
+    // teacher reacts to what was actually said.
+    final intent = classifyLearnerMessage(message);
+    final newFacts = extractLearnerFacts(message);
+    if (newFacts.isNotEmpty) {
+      ref.read(learnerFactsProvider.notifier).record(newFacts);
+    }
+
+    // A roleplay request starts a real scene in-place (existing engine).
+    if (intent == LearnerIntent.roleplayRequest && s.roleplay == null) {
+      await startRoleplay(preserveSession: true);
+      state = state?.copyWith(busy: false);
+      return;
+    }
+
     // Phase 35 activation: packet teacher path when the brain is ready,
     // legacy LanguageTutor fallback otherwise (same rule as start()).
     final brain = ref.read(teacherBrainProvider).value;
@@ -1035,6 +1088,12 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
             userMessage: message,
             supportMode: ref.read(teacherSupportModeProvider),
             generate: await _neuralGenerator(),
+            learnerIntent: intent,
+            learnerFacts: ref.read(learnerFactsProvider),
+            packet: _buildPacket(brain, withLearner),
+            // The learner just produced this message — correctable. The
+            // planner still gates corrections to later stages of the arc.
+            learnerHasProduced: true,
           );
       replyText = response.text;
       nextConversation = response.context;
@@ -1328,6 +1387,52 @@ final localLlmProvider = Provider<LocalLlm>((ref) => const LocalLlm());
 /// The response pipeline: TeacherBrain → plan → prompt → voice → language
 /// policy. Words the teacher's decision offline, without repetition.
 final llmPipelineProvider = Provider<LlmPipeline>((ref) => const LlmPipeline());
+
+/// Facts the learner EXPLICITLY shared in conversation (name, city, family,
+/// reason for learning…). NOT TeacherBrain evidence — the brain stays
+/// measured-only; this is a separate, honest store of things the learner
+/// literally said, persisted so the teacher remembers across sessions.
+class LearnerFactsController extends Notifier<Map<String, String>> {
+  static const _key = 'learner_shared_facts_v1';
+
+  @override
+  Map<String, String> build() {
+    ref.watch(selectedLanguageProvider); // facts survive language switches
+    _load();
+    return const {};
+  }
+
+  Future<void> _load() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_key);
+      if (raw == null || raw.isEmpty) return;
+      final decoded = (jsonDecode(raw) as Map<String, dynamic>)
+          .map((k, v) => MapEntry(k, v.toString()));
+      state = {...decoded, ...state};
+    } catch (_) {
+      // No prefs plugin (tests) → in-run only. Never crashes.
+    }
+  }
+
+  /// Merges newly-stated facts (newest wins) and persists best-effort.
+  void record(Map<String, String> facts) {
+    if (facts.isEmpty) return;
+    state = {...state, ...facts};
+    _persist();
+  }
+
+  Future<void> _persist() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_key, jsonEncode(state));
+    } catch (_) {}
+  }
+}
+
+final learnerFactsProvider =
+    NotifierProvider<LearnerFactsController, Map<String, String>>(
+        LearnerFactsController.new);
 
 /// Phase 36: the real on-device GGUF wording generator (llama.cpp via
 /// llamadart). Long-lived singleton — the engine owns the loaded model.

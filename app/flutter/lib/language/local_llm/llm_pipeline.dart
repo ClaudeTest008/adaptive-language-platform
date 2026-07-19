@@ -1,6 +1,8 @@
+import '../message_intent.dart';
 import '../pipeline.dart';
 import '../teacher_brain.dart';
 import '../teacher_intelligence.dart';
+import '../teacher_packet.dart';
 import 'llm_memory.dart';
 import 'llm_prompt_builder.dart';
 import 'local_llm.dart';
@@ -49,23 +51,52 @@ class LlmPipeline {
   /// deterministic voice words the SAME plan — the neural model only ever
   /// changes wording, never the teacher's decision, and failure never
   /// invents anything.
+  ///
+  /// Conversation repair: [learnerIntent] (deterministic classification of
+  /// the message) now shapes the plan; [learnerFacts] are facts the learner
+  /// explicitly shared — questions about them are answered deterministically
+  /// (the truth never depends on a model); [packet] is the full TeacherPacket,
+  /// serialized once into the system prompt so the model finally sees the
+  /// teacher's structured knowledge.
   Future<LlmResponse> respond({
     required TeacherBrain brain,
     required ConversationContext context,
     required String userMessage,
     required TeacherSupportMode supportMode,
     Future<String?> Function(LlmPrompt prompt)? generate,
+    LearnerIntent? learnerIntent,
+    Map<String, String> learnerFacts = const {},
+    TeacherPacket? packet,
+    bool learnerHasProduced = false,
   }) async {
-    final plan = intelligence.plan(brain, turn: context.turns.length);
-    final prompt = buildTeacherPrompt(
+    final intent = learnerIntent ?? classifyLearnerMessage(userMessage);
+    final plan = intelligence.plan(
+      brain,
+      turn: context.turns.length,
+      learnerIntent: intent,
+      learnerHasProduced: learnerHasProduced,
+    );
+    final base = buildTeacherPrompt(
       brain: brain,
       plan: plan,
       context: context,
       userMessage: userMessage,
       supportMode: supportMode,
     );
-    var worded = voice.word(plan, context, brain);
-    if (generate != null) {
+    final prompt = packet == null
+        ? base
+        : LlmPrompt(
+            system: '${base.system}\n\n${serializeTeacherPacket(packet)}',
+            user: base.user,
+            history: base.history,
+            constraints: base.constraints,
+          );
+
+    // 1 · Questions about explicitly-shared facts get the deterministic
+    //     truth — a model may word teaching, never learner facts.
+    final factAnswer = answerFromFacts(userMessage, learnerFacts);
+    var worded = factAnswer ?? voice.word(plan, context, brain);
+    if (factAnswer == null && generate != null) {
       try {
         final neural = await generate(prompt);
         if (neural != null && neural.trim().isNotEmpty) worded = neural.trim();

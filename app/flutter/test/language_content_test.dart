@@ -231,6 +231,68 @@ void main() {
       expect(speech.spoken, hasLength(1));
     });
 
+    test('session mixes drill kinds beyond repeat-after-me', () async {
+      final speech = NoopSpeechService();
+      final container = await makeContainer(speech);
+      final ctrl = container.read(speakingProvider.notifier);
+      ctrl.start(limit: 8);
+      final kinds =
+          container.read(speakingProvider)!.drills.map((d) => d.kind).toSet();
+      expect(kinds.length, greaterThan(1));
+      expect(kinds, contains(SpeakingDrillKind.spontaneous));
+      expect(kinds, contains(SpeakingDrillKind.roleplay));
+    });
+
+    test('a session never repeats a target, and the next session moves on',
+        () async {
+      final speech = NoopSpeechService()..scriptedTranscript = 'algo';
+      final container = await makeContainer(speech);
+      final ctrl = container.read(speakingProvider.notifier);
+
+      ctrl.start(limit: 5);
+      final first = container.read(speakingProvider)!.drills
+          .map((d) => d.target)
+          .toList();
+      expect(first.toSet(), hasLength(first.length)); // no in-session repeat
+
+      // Practise every drill of the first session.
+      for (var i = 0; i < first.length; i++) {
+        await ctrl.attempt();
+        ctrl.next();
+      }
+      ctrl.reset();
+
+      ctrl.start(limit: 5);
+      final second = container.read(speakingProvider)!.drills
+          .map((d) => d.target)
+          .toList();
+      expect(second.toSet().intersection(first.toSet()), isEmpty);
+    });
+
+    test('spontaneous drills are attempted but never scored', () async {
+      final speech = NoopSpeechService()
+        ..scriptedTranscript = 'Me llamo Ana y soy de Madrid.';
+      final container = await makeContainer(speech);
+      final ctrl = container.read(speakingProvider.notifier);
+      ctrl.start(limit: 40);
+
+      // Walk to the first spontaneous drill.
+      var s = container.read(speakingProvider)!;
+      while (s.current.kind != SpeakingDrillKind.spontaneous) {
+        ctrl.next();
+        s = container.read(speakingProvider)!;
+      }
+      await ctrl.attempt();
+
+      s = container.read(speakingProvider)!;
+      expect(s.attempted, isTrue); // the learner did speak
+      expect(s.score, isNull); // …and no number was invented
+      expect(s.words, isEmpty);
+      expect(s.instruction, 'Answer in your own words');
+      // No fabricated pronunciation evidence reached the learner model.
+      expect(container.read(speakingSessionsProvider), isEmpty);
+    });
+
     test('null transcript (denied/unsupported) leaves the drill unattempted',
         () async {
       final speech = NoopSpeechService(); // scriptedTranscript null

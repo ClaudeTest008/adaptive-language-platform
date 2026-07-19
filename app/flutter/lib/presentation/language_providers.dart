@@ -71,6 +71,7 @@ import '../infrastructure/whisper_downloader.dart';
 import '../language/signals.dart';
 import '../language/teacher_brain.dart';
 import '../language/speaking.dart';
+import '../language/speaking_prompts.dart';
 import '../language/speech.dart';
 import '../language/story.dart';
 import '../language/teaching_planner.dart';
@@ -664,7 +665,13 @@ class SpeakingState {
   final bool finished;
 
   SpeakingDrill get current => drills[index];
-  bool get attempted => score != null;
+
+  /// The learner has produced an utterance for this drill. Not the same as
+  /// "scored" — a spontaneous-response drill is attempted but unscored.
+  bool get attempted => transcript != null;
+
+  /// Instruction line for the current drill's kind.
+  String get instruction => current.kind.instruction;
 
   SpeakingState copyWith({
     int? index,
@@ -741,19 +748,48 @@ class SpeakingController extends Notifier<SpeakingState?> {
     }
     // Ask for more than we show, so fresh material can displace completed
     // phrases instead of the session looping the same list (repetition fix).
-    final drills = generateSpeakingDrills(
+    final graphDrills = generateSpeakingDrills(
       curriculum.graph,
       focusConceptIds: focus,
       limit: limit * 3,
     );
+    // Curated everyday prompts add the kinds the graph cannot produce
+    // (shadowing, spontaneous response, roleplay lines).
+    final drills = <SpeakingDrill>[];
+    final seen = <String>{};
+    for (final d in [
+      ...graphDrills,
+      ...curatedSpeakingDrills(languageCode: curriculum.languageCode),
+    ]) {
+      if (seen.add(d.target)) drills.add(d);
+    }
     final rotated = drills.isEmpty
         ? drills
         : [...drills.skip(offset % drills.length), ...drills.take(offset % drills.length)];
     // Fresh-first, completed-last (stable order → deterministic), then cap.
+    // A drill already practised never leads the queue again, so consecutive
+    // sessions move on to new material while old material stays reachable.
     final fresh = [for (final d in rotated) if (!_done.contains(d.target)) d];
     final repeats = [for (final d in rotated) if (_done.contains(d.target)) d];
-    final queue = [...fresh, ...repeats].take(limit).toList();
+    final queue = _mixKinds([...fresh, ...repeats]).take(limit).toList();
     state = SpeakingState(drills: queue, index: 0);
+  }
+
+  /// Round-robins the queue across drill kinds so one session is not eight
+  /// repeat-after-me drills. Stable within each kind → deterministic.
+  static List<SpeakingDrill> _mixKinds(List<SpeakingDrill> drills) {
+    final byKind = <SpeakingDrillKind, List<SpeakingDrill>>{};
+    for (final d in drills) {
+      (byKind[d.kind] ??= []).add(d);
+    }
+    final out = <SpeakingDrill>[];
+    while (out.length < drills.length) {
+      for (final kind in SpeakingDrillKind.values) {
+        final list = byKind[kind];
+        if (list != null && list.isNotEmpty) out.add(list.removeAt(0));
+      }
+    }
+    return out;
   }
 
   /// Speaks the target so the learner hears it before attempting.
@@ -782,6 +818,17 @@ class SpeakingController extends Notifier<SpeakingState?> {
       state = state?.copyWith(listening: false);
       return;
     }
+    if (!s.current.scored) {
+      // Free production: there is no correct string to compare against, so
+      // there is no honest pronunciation number. Record the utterance, score
+      // nothing, and feed no pronunciation signal or speaking session (both
+      // are measured against a target that does not exist here).
+      state = state?.copyWith(
+        listening: false,
+        transcript: session.transcript,
+      );
+      return;
+    }
     final result = scorePronunciationDetailed(
       s.current.target,
       session.transcript,
@@ -801,11 +848,14 @@ class SpeakingController extends Notifier<SpeakingState?> {
 
   void next() {
     final s = state;
-    if (s == null || !s.attempted) return;
+    if (s == null) return;
     // An attempted drill counts as completed — it will not lead the queue
-    // again (spaced repetition keeps it reachable at the back).
-    _done.add(s.current.target);
-    _persistDone();
+    // again (spaced repetition keeps it reachable at the back). A skipped
+    // drill is not marked done: it was never practised.
+    if (s.attempted) {
+      _done.add(s.current.target);
+      _persistDone();
+    }
     if (s.index + 1 < s.drills.length) {
       state = s.copyWith(index: s.index + 1, clearAttempt: true);
     } else {

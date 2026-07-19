@@ -134,7 +134,9 @@ class _WelcomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tones = AppTones.of(context);
-    return Padding(
+    // Scrollable: in landscape or at a large text scale the page is taller
+    // than the viewport, and a fixed Column overflowed instead of scrolling.
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpace.xl),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -190,7 +192,7 @@ class _LanguagePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(selectedLanguageProvider);
     final tones = AppTones.of(context);
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpace.xl),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

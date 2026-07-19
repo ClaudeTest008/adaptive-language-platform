@@ -310,6 +310,19 @@ class _Drill extends ConsumerWidget {
                   child: _Orb(size: 168, active: session.listening),
                 ),
                 const SizedBox(height: AppSpace.xl),
+                if (drill.scene != null) ...[
+                  Text(
+                    drill.scene!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: tones.inkSoft,
+                      fontSize: 15,
+                      height: 1.4,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.md),
+                ],
                 _PromptText(
                   target: drill.target,
                   translation: drill.translation,
@@ -373,7 +386,9 @@ class _Drill extends ConsumerWidget {
                       ),
                       const SizedBox(height: AppSpace.md),
                       Text(
-                        session.listening ? 'Listening…' : 'Tap and speak',
+                        session.listening
+                            ? 'Listening…'
+                            : session.instruction,
                         style: TextStyle(
                           color: tones.inkSoft,
                           fontSize: 14,
@@ -405,7 +420,10 @@ class _Feedback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tones = AppTones.of(context);
-    final score = session.score ?? 0;
+    // Unscored kinds (free-response prompts) have no correct string to
+    // compare against — show what was heard, never invent a percentage.
+    if (session.score == null) return _UnscoredFeedback(session: session);
+    final score = session.score!;
     final good = score >= 0.6;
     final tint = good ? AppTint.mint : AppTint.sun;
     final accent = tones.solid(tint);
@@ -510,6 +528,64 @@ class _Feedback extends StatelessWidget {
               ],
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Feedback for a drill with no single correct answer: the learner spoke,
+/// so we show what was heard — and no score, because none can be measured.
+class _UnscoredFeedback extends StatelessWidget {
+  const _UnscoredFeedback({required this.session});
+
+  final SpeakingState session;
+
+  @override
+  Widget build(BuildContext context) {
+    final tones = AppTones.of(context);
+    const tint = AppTint.lilac;
+    return SoftCard(
+      tint: tint,
+      padding: const EdgeInsets.all(AppSpace.lg + 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.record_voice_over_rounded, color: tones.solid(tint)),
+              const SizedBox(width: AppSpace.sm),
+              Expanded(
+                child: Text(
+                  '¡Bien hecho! You answered in your own words.',
+                  style: TextStyle(
+                    color: tones.onTint(tint),
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpace.md),
+          Text(
+            'Heard: "${session.transcript}"',
+            style: TextStyle(
+              color: tones.onTint(tint).withValues(alpha: 0.85),
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: AppSpace.sm),
+          Text(
+            'Open answers are not scored — there is no single correct '
+            'sentence to compare with.',
+            style: TextStyle(
+              color: tones.onTint(tint).withValues(alpha: 0.7),
+              fontSize: 12.5,
+              height: 1.4,
+            ),
+          ),
         ],
       ),
     );

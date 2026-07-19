@@ -1019,8 +1019,21 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
       if (!state.isReady || path == null) return null;
       final voice = ref.read(ggufTeacherVoiceProvider);
       if (!await voice.ensureLoaded(path)) return null;
-      // Stream partial tokens to the UI as they arrive.
-      return (prompt) => voice.word(prompt, onPartial: onPartial);
+      // Stream partial tokens to the UI as they arrive. The spec's template
+      // suffix (e.g. Qwen3 `/no_think`) rides on the system prompt — template
+      // plumbing, not evaluation content.
+      final suffix = ref.read(selectedLlmSpecProvider).systemSuffix;
+      return (prompt) => voice.word(
+            suffix.isEmpty
+                ? prompt
+                : LlmPrompt(
+                    system: '${prompt.system}$suffix',
+                    user: prompt.user,
+                    history: prompt.history,
+                    constraints: prompt.constraints,
+                  ),
+            onPartial: onPartial,
+          );
     } catch (_) {
       return null; // any failure = honest fallback, never a crash
     }
@@ -1444,10 +1457,45 @@ final llmModelRepositoryProvider = Provider<LlmModelRepository>(
 );
 
 /// LLM model lifecycle manager (download/verify/delete/upgrade). Pure logic.
+/// Which candidate wording model is active (model-evaluation framework).
+/// Persisted so a benchmark selection survives restarts; defaults to the
+/// baseline. Guarded prefs — test-safe.
+class SelectedLlmSpecController extends Notifier<LlmModelSpec> {
+  static const _key = 'selected_llm_spec_v1';
+
+  @override
+  LlmModelSpec build() {
+    _load();
+    return llmDefaultSpec;
+  }
+
+  Future<void> _load() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final id = prefs.getString(_key);
+      final match = llmModelSpecs.where((s) => s.id == id);
+      if (match.isNotEmpty) state = match.first;
+    } catch (_) {}
+  }
+
+  Future<void> select(LlmModelSpec spec) async {
+    state = spec;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_key, spec.id);
+    } catch (_) {}
+  }
+}
+
+final selectedLlmSpecProvider =
+    NotifierProvider<SelectedLlmSpecController, LlmModelSpec>(
+        SelectedLlmSpecController.new);
+
 final llmModelManagerProvider = Provider<LlmModelManager>(
   (ref) => LlmModelManager(
     repository: ref.watch(llmModelRepositoryProvider),
     downloader: GgufModelDownloader(),
+    spec: ref.watch(selectedLlmSpecProvider),
   ),
 );
 

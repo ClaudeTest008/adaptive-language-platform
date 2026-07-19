@@ -185,6 +185,44 @@ void main() {
       expect(const LocalLlm().isReady, isFalse);
     });
 
+    test('model-evaluation specs are real and distinct', () {
+      expect(llmModelSpecs, hasLength(2));
+      expect(llmDefaultSpec.id, 'qwen2.5-1.5b');
+      final ids = llmModelSpecs.map((s) => s.id).toSet();
+      final versions = llmModelSpecs.map((s) => s.version).toSet();
+      final shas = llmModelSpecs.map((s) => s.sha256).toSet();
+      expect(ids, hasLength(2));
+      expect(versions, hasLength(2));
+      expect(shas, hasLength(2));
+      for (final s in llmModelSpecs) {
+        expect(s.sha256, hasLength(64)); // real pinned hash, no placeholder
+        expect(s.sizeBytes, greaterThan(500 * 1024 * 1024));
+        expect(Uri.parse(s.url).isAbsolute, isTrue);
+      }
+      // Qwen3's thinking soft-switch is template plumbing on the spec.
+      expect(llmSpecQwen3.systemSuffix, contains('/no_think'));
+      expect(llmSpecQwen25.systemSuffix, isEmpty);
+    });
+
+    test('manager installs the spec it was given (challenger)', () async {
+      final repo = InMemoryLlmModelRepository();
+      final mgr = LlmModelManager(
+        repository: repo,
+        downloader: FakeLlmDownloader(),
+        spec: llmSpecQwen3,
+      );
+      final state = await mgr.ensureDownloaded();
+      expect(state.isReady, isTrue);
+      expect(state.info!.version, llmSpecQwen3.version);
+      // Baseline manager over the same repo sees a version mismatch → switch.
+      final baseline = LlmModelManager(
+        repository: repo,
+        downloader: FakeLlmDownloader(),
+      );
+      final s2 = await baseline.status();
+      expect(s2.status, LlmModelStatus.versionMismatch);
+    });
+
     test('neural generator words the reply when it succeeds (Phase 36)', () async {
       final brain = _brain(currentConceptId: _hambre);
       final res = await const LlmPipeline().respond(

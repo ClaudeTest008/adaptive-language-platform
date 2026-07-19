@@ -3,6 +3,12 @@ import 'package:llamadart/llamadart.dart';
 
 import '../language/local_llm/llm_prompt_builder.dart';
 
+/// Removes reasoning-model think blocks (closed, or unclosed at stream end)
+/// so internal reasoning is never shown or spoken. Pure; unit-tested.
+String stripThink(String text) => text
+    .replaceAll(RegExp(r'<think>[\s\S]*?(</think>|$)'), '')
+    .trim();
+
 /// Real on-device GGUF inference (Phase 36) over llama.cpp via llamadart —
 /// the neural wording generator behind the packet teacher path. It receives
 /// ONLY the structured [LlmPrompt] (TeacherBrain decides, this words) and
@@ -106,10 +112,13 @@ class GgufTeacherVoice {
           }
           out.write(text);
           tokens++;
-          onPartial?.call(out.toString());
+          // Live text with any (possibly unclosed) think-block hidden.
+          onPartial?.call(stripThink(out.toString()));
         }
       }
-      final text = out.toString().trim();
+      // Reasoning models (Qwen3) may emit <think>…</think> blocks even with
+      // the /no_think switch (usually empty). Never show internal reasoning.
+      final text = stripThink(out.toString());
       final ms = sw.elapsedMilliseconds;
       final tps = ms == 0 ? 0 : (tokens * 1000 / ms).toStringAsFixed(1);
       debugPrint('[GGUF] gen#$myGen $tokens chunks, first=${firstMs}ms '

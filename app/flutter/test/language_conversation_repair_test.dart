@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:adaptive_exam_platform/infrastructure/gguf_teacher_voice.dart';
 import 'package:adaptive_exam_platform/infrastructure/prefs_experience_repository.dart';
 import 'package:adaptive_exam_platform/language/curriculum.dart';
 import 'package:adaptive_exam_platform/language/message_intent.dart';
@@ -353,6 +354,15 @@ void main() {
       expect(looksLikeSpanish('Tengo mucha hambre.'), isTrue);
       expect(looksLikeSpanish('Quiero un café, por favor.'), isTrue);
       expect(looksLikeSpanish('Hola'), isTrue);
+    });
+
+    test('reasoning think-blocks never reach the learner', () {
+      expect(stripThink('<think>internal chain</think>¡Hola! ¿Qué tal?'),
+          '¡Hola! ¿Qué tal?');
+      expect(stripThink('<think></think>Claro.'), 'Claro.');
+      // Unclosed block mid-stream → hidden entirely.
+      expect(stripThink('<think>still reason'), isEmpty);
+      expect(stripThink('Sin bloques.'), 'Sin bloques.');
     });
 
     test('the whole conversation is deterministic', () async {

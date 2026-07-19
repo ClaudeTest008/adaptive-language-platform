@@ -7,7 +7,32 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
-### Changed
+### Added
+
+- **Model-evaluation framework (no model change; no winner declared).**
+  Groundwork for comparing small on-device tutor LLMs on identical prompts:
+  `LlmModelSpec` (id/name/version/type/url/sha256/exact bytes/context/
+  template-suffix) + two pinned candidates — baseline Qwen2.5-1.5B-Instruct
+  Q4_K_M (official repo) and challenger **Qwen3-1.7B Q4_K_S** (unsloth,
+  1,060,190,784 B, sha 71eed840…1805; official Qwen3 GGUF repo ships only
+  Q8_0). `LlmModelManager` now takes a spec (same downloader/repo — nothing
+  duplicated); downloads use per-model filenames with a hash-verified
+  skip-if-present fast path so switching never re-downloads; persisted
+  `selectedLlmSpecProvider` + a model picker in LLM settings; the spec's
+  template suffix (Qwen3 `/no_think`) rides the system prompt as template
+  plumbing, keeping evaluation prompt content identical; `stripThink` hides
+  reasoning blocks from streamed and final output. **Phi-4 Mini excluded with
+  evidence:** no official Microsoft GGUF (community conversions with
+  documented tokenizer issues at intro) and 2.49 GB Q4 ≈ 2.2× current weights
+  on a device already at ~0.5 tok/s → multi-minute replies; the 3B class was
+  already measured-rejected. 462 tests (+3: spec integrity, per-spec manager
+  install/version-mismatch switch, think-strip). analyze clean; apk debug
+  green. **HONEST: the on-device comparative benchmark did NOT run** — the
+  device force-slept/display-covered for the whole window (owner in
+  possession), so Qwen3 was neither downloaded nor evaluated on hardware.
+  NO recommendation is made; the baseline Qwen2.5-1.5B remains the default
+  and active model. The benchmark script + framework are ready for the next
+  idle-device window.
 
 - **Streaming tutor replies (perceived-latency fix).** `engine.create()` already
   yielded per-token deltas — we were buffering the whole reply before showing

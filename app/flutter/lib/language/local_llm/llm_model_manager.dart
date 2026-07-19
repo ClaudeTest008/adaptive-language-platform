@@ -7,16 +7,73 @@ import 'llm_repository.dart';
 /// request (the isolate owns the loaded model). All I/O is behind seams so the
 /// logic is fully unit-testable without a device.
 
-/// The interchangeable default GGUF model. Everything is abstract — swapping
-/// tiny/small/medium/large is a matter of changing these constants + the URL.
-// Qwen2.5-1.5B-Instruct Q4_K_M — substantially stronger wording than the
-// previous 0.5B (which echoed prior replies on-device). Same qwen2
-// architecture/tokenizer/chat template family, so the proven llamadart
-// binding needs no changes. Real published size + SHA-256 from the official
-// Qwen GGUF repository
-// (huggingface.co/api/models/Qwen/Qwen2.5-1.5B-Instruct-GGUF/tree/main).
-// Version bump = automatic upgrade: the manager treats the installed 0.5B as
-// a version mismatch and redownloads.
+/// One installable GGUF wording model. All values are REAL published data
+/// (exact bytes + SHA-256 from the hosting repo) — never placeholders.
+class LlmModelSpec {
+  const LlmModelSpec({
+    required this.id,
+    required this.displayName,
+    required this.version,
+    required this.type,
+    required this.url,
+    required this.sha256,
+    required this.sizeBytes,
+    this.contextLength = 4096,
+    this.systemSuffix = '',
+  });
+
+  final String id;
+  final String displayName;
+  final String version;
+  final String type;
+  final String url;
+  final String sha256;
+  final int sizeBytes;
+  final int contextLength;
+
+  /// Model-specific chat-template control appended to the system prompt
+  /// (e.g. Qwen3's `/no_think` soft switch). This is template plumbing — the
+  /// evaluation prompt CONTENT stays identical across models.
+  final String systemSuffix;
+}
+
+/// Baseline — official Qwen GGUF repo, proven on-device since the 1.5B
+/// upgrade session (exact bytes + sha from
+/// huggingface.co/api/models/Qwen/Qwen2.5-1.5B-Instruct-GGUF/tree/main).
+const llmSpecQwen25 = LlmModelSpec(
+  id: 'qwen2.5-1.5b',
+  displayName: 'Qwen2.5 1.5B (baseline)',
+  version: 'qwen2.5-1.5b-instruct-q4km-v1',
+  type: 'Medium',
+  url: 'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/'
+      'qwen2.5-1.5b-instruct-q4_k_m.gguf',
+  sha256: '6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e',
+  sizeBytes: 1117320736,
+);
+
+/// Challenger — Qwen3-1.7B Q4_K_S (the official Qwen3 GGUF repo ships only
+/// Q8_0, so this uses unsloth's well-maintained quantization; exact bytes +
+/// sha from huggingface.co/api/models/unsloth/Qwen3-1.7B-GGUF/tree/main).
+/// `/no_think` is Qwen3's documented soft switch disabling thinking blocks —
+/// required for a chat tutor so the token budget isn't burned on reasoning.
+const llmSpecQwen3 = LlmModelSpec(
+  id: 'qwen3-1.7b',
+  displayName: 'Qwen3 1.7B (challenger)',
+  version: 'qwen3-1.7b-q4ks-v1',
+  type: 'Medium',
+  url: 'https://huggingface.co/unsloth/Qwen3-1.7B-GGUF/resolve/main/'
+      'Qwen3-1.7B-Q4_K_S.gguf',
+  sha256: '71eed840867db10f14b3332e3e0bf0a36b98b762c5b0bf9e091a3e00ecd21805',
+  sizeBytes: 1060190784,
+  systemSuffix: ' /no_think',
+);
+
+/// Candidate wording models (model-evaluation framework).
+const llmModelSpecs = <LlmModelSpec>[llmSpecQwen25, llmSpecQwen3];
+
+/// The default spec (baseline). Legacy constant aliases below keep existing
+/// call sites/tests working unchanged.
+const llmDefaultSpec = llmSpecQwen25;
 const llmModelVersion = 'qwen2.5-1.5b-instruct-q4km-v1';
 const llmModelType = 'Medium';
 const llmModelSizeBytes = 1117320736; // 1.12 GB exact
@@ -70,18 +127,23 @@ class LlmModelManager {
   LlmModelManager({
     required LlmModelRepository repository,
     required LlmModelDownloader downloader,
+    this.spec = llmDefaultSpec,
   }) : _repo = repository,
        _downloader = downloader;
 
   final LlmModelRepository _repo;
   final LlmModelDownloader _downloader;
 
+  /// The model this manager installs/serves (evaluation framework: one
+  /// manager per selected spec; same downloader/repo infrastructure).
+  final LlmModelSpec spec;
+
   Future<LlmModelState> status() async {
     final info = await _repo.load();
     if (info == null) {
       return const LlmModelState(status: LlmModelStatus.absent);
     }
-    if (info.version != llmModelVersion) {
+    if (info.version != spec.version) {
       return LlmModelState(status: LlmModelStatus.versionMismatch, info: info);
     }
     return LlmModelState(status: LlmModelStatus.ready, info: info);
@@ -98,8 +160,8 @@ class LlmModelManager {
     onState?.call(const LlmModelState(status: LlmModelStatus.downloading));
     try {
       final path = await _downloader.download(
-        llmModelUrl,
-        expectedSha256: llmModelSha256,
+        spec.url,
+        expectedSha256: spec.sha256,
         onProgress: (p) => onState?.call(
           LlmModelState(status: LlmModelStatus.downloading, progress: p),
         ),
@@ -107,8 +169,8 @@ class LlmModelManager {
       onState?.call(const LlmModelState(status: LlmModelStatus.verifying));
       final ok = await _downloader.verify(
         path,
-        expectedSha256: llmModelSha256,
-        expectedBytes: llmModelSizeBytes,
+        expectedSha256: spec.sha256,
+        expectedBytes: spec.sizeBytes,
       );
       if (!ok) {
         final err = const LlmModelState(
@@ -119,12 +181,12 @@ class LlmModelManager {
         return err;
       }
       final info = LlmModelInfo(
-        version: llmModelVersion,
-        sizeBytes: llmModelSizeBytes,
+        version: spec.version,
+        sizeBytes: spec.sizeBytes,
         path: path,
-        sha256: llmModelSha256,
-        contextLength: llmModelContextLength,
-        modelType: llmModelType,
+        sha256: spec.sha256,
+        contextLength: spec.contextLength,
+        modelType: spec.type,
       );
       await _repo.save(info);
       final ready = LlmModelState(status: LlmModelStatus.ready, info: info);

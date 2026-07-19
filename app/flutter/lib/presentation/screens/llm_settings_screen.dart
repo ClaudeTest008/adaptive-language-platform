@@ -51,12 +51,14 @@ class _LlmSettingsScreenState extends ConsumerState<LlmSettingsScreen> {
     await _refresh();
   }
 
-  String _size() => '${(llmModelSizeBytes / (1024 * 1024)).round()} MB';
+  String _size(LlmModelSpec spec) =>
+      '${(spec.sizeBytes / (1024 * 1024)).round()} MB';
 
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
+    final spec = ref.watch(selectedLlmSpecProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('On-device teacher voice (LLM)')),
       body: _loading
@@ -75,14 +77,34 @@ class _LlmSettingsScreenState extends ConsumerState<LlmSettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: AppSpace.lg),
+                // Model-evaluation framework: pick the candidate to run. The
+                // benchmark compares candidates on identical prompts.
+                DropdownButtonFormField<LlmModelSpec>(
+                  initialValue: spec,
+                  decoration: const InputDecoration(labelText: 'Model'),
+                  items: [
+                    for (final s in llmModelSpecs)
+                      DropdownMenuItem(value: s, child: Text(s.displayName)),
+                  ],
+                  onChanged: (s) async {
+                    if (s == null) return;
+                    await ref
+                        .read(selectedLlmSpecProvider.notifier)
+                        .select(s);
+                    // New spec → engine must reload its file on next use.
+                    await ref.read(ggufTeacherVoiceProvider).unload();
+                    await _refresh();
+                  },
+                ),
+                const SizedBox(height: AppSpace.lg),
                 Card(
                   child: Column(
                     children: [
                       _row('Status', _statusLabel(_state.status)),
-                      _row('Type', llmModelType),
-                      _row('Version', llmModelVersion),
-                      _row('Size', _size()),
-                      _row('Context length', '$llmModelContextLength tokens'),
+                      _row('Type', spec.type),
+                      _row('Version', spec.version),
+                      _row('Size', _size(spec)),
+                      _row('Context length', '${spec.contextLength} tokens'),
                     ],
                   ),
                 ),
@@ -101,8 +123,8 @@ class _LlmSettingsScreenState extends ConsumerState<LlmSettingsScreen> {
                     icon: const Icon(Icons.download),
                     label: Text(
                       _state.status == LlmModelStatus.versionMismatch
-                          ? 'Upgrade model · ${_size()}'
-                          : 'Download model · ${_size()}',
+                          ? 'Switch model · ${_size(spec)}'
+                          : 'Download model · ${_size(spec)}',
                     ),
                   ),
                 },

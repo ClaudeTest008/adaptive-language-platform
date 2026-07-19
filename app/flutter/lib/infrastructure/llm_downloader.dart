@@ -52,7 +52,22 @@ class GgufModelDownloader implements LlmModelDownloader {
     final root = (await getApplicationSupportDirectory()).path;
     final dir = Directory('$root/llm');
     if (!dir.existsSync()) dir.createSync(recursive: true);
-    final modelPath = '${dir.path}/model.gguf';
+    // Per-model filename (evaluation framework): different specs coexist on
+    // disk, so switching between candidates never re-downloads a model that
+    // is already installed and hash-valid.
+    final name = Uri.parse(url).pathSegments.isEmpty
+        ? 'model.gguf'
+        : Uri.parse(url).pathSegments.last;
+    final modelPath = '${dir.path}/$name';
+    final done = File(modelPath);
+    if (done.existsSync() && done.lengthSync() > 1024 * 1024) {
+      if (await verify(modelPath,
+          expectedSha256: expectedSha256, expectedBytes: done.lengthSync())) {
+        onProgress(1.0);
+        return modelPath;
+      }
+      done.deleteSync(); // invalid remnants never get reused
+    }
     final part = File('$modelPath.part');
     final existing = part.existsSync() ? part.lengthSync() : 0;
 

@@ -9,12 +9,17 @@ import 'llm_repository.dart';
 
 /// The interchangeable default GGUF model. Everything is abstract — swapping
 /// tiny/small/medium/large is a matter of changing these constants + the URL.
-const llmModelVersion = 'qwen2.5-0.5b-instruct-q4-v1';
+const llmModelVersion = 'qwen2.5-0.5b-instruct-q4km-v1';
 const llmModelType = 'Small';
-const llmModelSizeBytes = 400 * 1024 * 1024; // ~400 MB
+// Real published size + SHA-256 from the official Qwen GGUF repository
+// (huggingface.co/api/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/tree/main).
+const llmModelSizeBytes = 491400032; // 491.4 MB exact
 const llmModelContextLength = 4096;
-const llmModelSha256 = 'PLACEHOLDER_SHA256_SET_WITH_REAL_MODEL';
-const llmModelUrl = 'https://huggingface.co/local-gguf/model.gguf';
+const llmModelSha256 =
+    '74a4da8c9fdbcd15bd1f6d01d621410d31c6fc00986f5eb687824e7b93d7a9db';
+const llmModelUrl =
+    'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/'
+    'qwen2.5-0.5b-instruct-q4_k_m.gguf';
 
 enum LlmModelStatus {
   absent,

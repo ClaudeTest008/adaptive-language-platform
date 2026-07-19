@@ -19,6 +19,9 @@ dependencies:
   audioplayers: ^6.8.1
   archive: ^4.0.9
   path_provider: ^2.1.6
+  # Phase 36: real on-device GGUF inference (llama.cpp via llamadart).
+  llamadart: ^0.8.16
+  llamadart_llama_cpp_flutter: ^0.0.10
 
 dev_dependencies:
   flutter_test:

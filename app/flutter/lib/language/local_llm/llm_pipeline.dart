@@ -43,12 +43,19 @@ class LlmPipeline {
   final TeacherIntelligenceEngine intelligence;
 
   /// Produces the teacher's next reply from the live brain + conversation.
-  LlmResponse respond({
+  ///
+  /// Phase 36: [generate] is the real neural wording generator (on-device
+  /// GGUF). When provided and successful its text is used; on null/empty the
+  /// deterministic voice words the SAME plan — the neural model only ever
+  /// changes wording, never the teacher's decision, and failure never
+  /// invents anything.
+  Future<LlmResponse> respond({
     required TeacherBrain brain,
     required ConversationContext context,
     required String userMessage,
     required TeacherSupportMode supportMode,
-  }) {
+    Future<String?> Function(LlmPrompt prompt)? generate,
+  }) async {
     final plan = intelligence.plan(brain, turn: context.turns.length);
     final prompt = buildTeacherPrompt(
       brain: brain,
@@ -57,7 +64,16 @@ class LlmPipeline {
       userMessage: userMessage,
       supportMode: supportMode,
     );
-    final worded = voice.word(plan, context, brain);
+    var worded = voice.word(plan, context, brain);
+    if (generate != null) {
+      try {
+        final neural = await generate(prompt);
+        if (neural != null && neural.trim().isNotEmpty) worded = neural.trim();
+      } catch (_) {
+        // Neural generator failure is never fatal — the deterministic voice
+        // has already worded the same plan.
+      }
+    }
     // Language policy is enforced here, never left to the generator: the
     // strict voice gate keeps only target-language sentences for speech, and
     // immersion drops native support entirely.

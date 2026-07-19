@@ -41,6 +41,7 @@ import '../language/reasoning_engine.dart';
 import '../language/local_llm/llm_memory.dart';
 import '../language/local_llm/llm_model_manager.dart';
 import '../language/local_llm/llm_pipeline.dart';
+import '../language/local_llm/llm_prompt_builder.dart';
 import '../language/local_llm/llm_repository.dart';
 import '../language/local_llm/local_llm.dart';
 import '../infrastructure/prefs_teacher_memory_repository.dart';
@@ -57,6 +58,7 @@ import '../language/teacher_memory.dart';
 import '../language/teacher_memory_engine.dart';
 import '../language/speaking_session.dart';
 import '../language/teacher_intelligence.dart';
+import '../infrastructure/gguf_teacher_voice.dart';
 import '../infrastructure/llm_downloader.dart';
 import '../language/whisper/whisper_model_manager.dart';
 import '../language/whisper/whisper_pipeline.dart';
@@ -902,11 +904,12 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
     String openerText;
     ConversationContext conversation = const ConversationContext();
     if (brain != null) {
-      final response = ref.read(llmPipelineProvider).respond(
+      final response = await ref.read(llmPipelineProvider).respond(
             brain: brain,
             context: conversation,
             userMessage: 'Start the session.',
             supportMode: ref.read(teacherSupportModeProvider),
+            generate: await _neuralGenerator(),
           );
       openerText = response.text;
       conversation = response.context;
@@ -935,6 +938,22 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
       busy: false,
       conversation: conversation,
     );
+  }
+
+  /// Phase 36: returns the real GGUF wording generator when — and only when —
+  /// a verified model is installed AND the engine loads. Anything else → null
+  /// → the deterministic voice words the plan. Never fabricates readiness.
+  Future<Future<String?> Function(LlmPrompt prompt)?> _neuralGenerator() async {
+    try {
+      final state = await ref.read(llmModelManagerProvider).status();
+      final path = state.info?.path;
+      if (!state.isReady || path == null) return null;
+      final voice = ref.read(ggufTeacherVoiceProvider);
+      if (!await voice.ensureLoaded(path)) return null;
+      return voice.word;
+    } catch (_) {
+      return null; // any failure = honest fallback, never a crash
+    }
   }
 
   /// Starts (or resumes) a roleplay scene (Phase 30/35). The engine selects
@@ -1009,11 +1028,12 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
     if (brain != null) {
       final withLearner = s.conversation
           .withTurn(ConversationTurn(fromLearner: true, text: message));
-      final response = ref.read(llmPipelineProvider).respond(
+      final response = await ref.read(llmPipelineProvider).respond(
             brain: brain,
             context: withLearner,
             userMessage: message,
             supportMode: ref.read(teacherSupportModeProvider),
+            generate: await _neuralGenerator(),
           );
       replyText = response.text;
       nextConversation = response.context;
@@ -1079,6 +1099,8 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
   /// the teacher's long-term memory, so the teacher remembers it next time.
   /// Fire-and-forget, guarded — a bare/empty session records nothing.
   void reset() {
+    // Phase 36: abort any in-flight neural generation with the session.
+    ref.read(ggufTeacherVoiceProvider).cancel();
     final s = state;
     state = null;
     if (s == null || s.transcript.length <= 1) return;
@@ -1305,6 +1327,11 @@ final localLlmProvider = Provider<LocalLlm>((ref) => const LocalLlm());
 /// The response pipeline: TeacherBrain → plan → prompt → voice → language
 /// policy. Words the teacher's decision offline, without repetition.
 final llmPipelineProvider = Provider<LlmPipeline>((ref) => const LlmPipeline());
+
+/// Phase 36: the real on-device GGUF wording generator (llama.cpp via
+/// llamadart). Long-lived singleton — the engine owns the loaded model.
+final ggufTeacherVoiceProvider =
+    Provider<GgufTeacherVoice>((ref) => GgufTeacherVoice());
 
 /// The Teacher Intelligence Engine (Phase 24) — decides WHAT/WHY/WHEN to teach
 /// from the brain. A future local LLM (P25) consumes this to word responses;

@@ -164,9 +164,9 @@ void main() {
   });
 
   group('LlmPipeline — brain decides, voice words, policy enforced', () {
-    test('produces a reply and advances context', () {
+    test('produces a reply and advances context', () async {
       final brain = _brain(currentConceptId: _hambre);
-      final res = const LlmPipeline().respond(
+      final res = await const LlmPipeline().respond(
         brain: brain,
         context: const ConversationContext(),
         userMessage: 'Tengo hambre',
@@ -180,6 +180,65 @@ void main() {
 
     test('LocalLlm seam reports not-ready until a real model loads', () {
       expect(const LocalLlm().isReady, isFalse);
+    });
+
+    test('neural generator words the reply when it succeeds (Phase 36)', () async {
+      final brain = _brain(currentConceptId: _hambre);
+      final res = await const LlmPipeline().respond(
+        brain: brain,
+        context: const ConversationContext(),
+        userMessage: 'Tengo hambre',
+        supportMode: TeacherSupportMode.mentor,
+        generate: (prompt) async {
+          expect(prompt.system, contains('Spanish')); // real prompt delivered
+          return 'Muy bien. ¿Qué quieres comer hoy?';
+        },
+      );
+      expect(res.text, 'Muy bien. ¿Qué quieres comer hoy?');
+    });
+
+    test('null/throwing neural generator falls back to deterministic voice',
+        () async {
+      final brain = _brain(currentConceptId: _hambre);
+      final deterministic = await const LlmPipeline().respond(
+        brain: brain,
+        context: const ConversationContext(),
+        userMessage: 'Tengo hambre',
+        supportMode: TeacherSupportMode.mentor,
+      );
+      final nullGen = await const LlmPipeline().respond(
+        brain: brain,
+        context: const ConversationContext(),
+        userMessage: 'Tengo hambre',
+        supportMode: TeacherSupportMode.mentor,
+        generate: (_) async => null,
+      );
+      final throwing = await const LlmPipeline().respond(
+        brain: brain,
+        context: const ConversationContext(),
+        userMessage: 'Tengo hambre',
+        supportMode: TeacherSupportMode.mentor,
+        generate: (_) async => throw StateError('engine died'),
+      );
+      // Both failure modes produce exactly the deterministic wording.
+      expect(nullGen.text, deterministic.text);
+      expect(throwing.text, deterministic.text);
+    });
+
+    test('immersion speech gate still applies to neural output', () async {
+      final brain = _brain(currentConceptId: _hambre);
+      final res = await const LlmPipeline().respond(
+        brain: brain,
+        context: const ConversationContext(),
+        userMessage: 'Tengo hambre',
+        supportMode: TeacherSupportMode.immersion,
+        generate: (_) async =>
+            'Muy bien, sigue así. This is the English explanation of it all.',
+      );
+      // The pipeline, not the model, enforces language policy: the English
+      // support sentence is dropped in immersion.
+      expect(res.text, isNot(contains('English explanation')));
+      expect(res.text, contains('Muy bien'));
     });
   });
 

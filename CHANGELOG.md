@@ -9,6 +9,28 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- **Phase 36 — REAL on-device GGUF inference (device-verified on CPH2037).**
+  Binding: `llamadart ^0.8.16` + `llamadart_llama_cpp_flutter` (verified
+  publisher, llama.cpp FFI, arm64 libs auto-bundled — confirmed present in the
+  APK). Model: official Qwen2.5-0.5B-Instruct Q4_K_M GGUF, real URL + exact
+  size (491,400,032 bytes) + real SHA-256 pinned in `llm_model_manager.dart`
+  (placeholder retired). New `infrastructure/gguf_teacher_voice.dart`
+  (`GgufTeacherVoice`: load-once engine, generation-token cancellation,
+  unload, `[GGUF]` logcat). `LlmPipeline.respond` is now async and takes an
+  optional neural `generate` hook — neural text words the SAME deterministic
+  plan; null/error/empty falls back to `DeterministicTeacherVoice` (now the
+  fallback voice). Tutor passes the generator only when a verified model is
+  installed and loads. DEVICE-VERIFIED via adb/logcat: in-app download of
+  491,400,032 bytes → Status Ready (SHA pass), `model loaded in 3798ms`,
+  gen#1 15.5s Spanish opener rendered + spoken, gen#2 13.9s conversational
+  turn, 0 ANRs, 0 skipped-frame warnings, ~2.26 GB PSS during inference.
+  HONEST LIMITS: ~14-15 s/reply on this hardware; the 0.5B model's wording
+  quality is weak (rambles; sometimes answers in English — the speech gate
+  still blocks spoken English and decisions are unaffected); live mid-
+  generation barge-in, unload and model-switching not yet exercised on
+  device. 432 tests (+3: neural-used, null/throw fallback, immersion gate on
+  neural output). analyze clean; apk debug green.
+
 - **Phase 35 (increment 8) — Roleplay session loop + persistence.** The
   Phase 30 roleplay engine becomes playable: `TutorSessionController.
   startRoleplay()` selects the scene from the brain, resumes a matching

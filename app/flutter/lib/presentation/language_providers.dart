@@ -46,6 +46,8 @@ import '../infrastructure/prefs_teacher_memory_repository.dart';
 import '../language/conversation_continuity.dart';
 import '../language/lesson_outcomes.dart';
 import '../language/roleplay_engine.dart';
+import '../language/learning_journey_engine.dart';
+import '../language/recommendation_engine.dart';
 import '../language/teacher_memory.dart';
 import '../language/teacher_memory_engine.dart';
 import '../language/speaking_session.dart';
@@ -1234,6 +1236,33 @@ final teacherMemorySummaryProvider =
     lessons: lessons,
     today: _notebookDay(DateTime.now()),
   );
+});
+
+// ---------- Recommendations + journeys (Phase 32) ----------
+
+/// Ranked, explainable recommendations derived from the brain + long-term
+/// memory (no storage — recomputed each brain rebuild). Empty until ready.
+final recommendationsProvider =
+    FutureProvider<List<Recommendation>>((ref) async {
+  final brain = ref.watch(teacherBrainProvider).value;
+  if (brain == null) return const [];
+  final memory = await ref.watch(teacherMemorySummaryProvider.future);
+  return recommend(brain, memory: memory);
+});
+
+/// The single most important recommendation (or null).
+final topRecommendationProvider = Provider<Recommendation?>((ref) {
+  final list = ref.watch(recommendationsProvider).value ?? const [];
+  return list.isEmpty ? null : list.first;
+});
+
+/// Each engaged domain's journey with assessed health + prediction.
+final journeyReportsProvider = FutureProvider<List<JourneyReport>>((ref) async {
+  final brain = ref.watch(teacherBrainProvider).value;
+  final curriculum = ref.watch(curriculumProvider).value;
+  if (brain == null || curriculum == null) return const [];
+  final memory = await ref.watch(teacherMemorySummaryProvider.future);
+  return assessJourneys(brain, curriculum.graph, memory: memory);
 });
 
 /// The roleplay the teacher would run now, chosen deterministically from the

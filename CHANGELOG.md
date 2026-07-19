@@ -68,6 +68,38 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 32 — Recommendation & Learning Journey Engine. Two new
+  pure, deterministic, offline engines; recommendations become another derived
+  layer of the Teacher Brain (no parallel state, no persistence — recomputed
+  each rebuild). **Recommendation Engine** (`lib/language/recommendation_engine.dart`,
+  brain-only): `recommend(brain, {memory})` produces a ranked list of typed
+  `Recommendation`s (15 `RecommendationKind`s — continueJourney, recoverWeakConcept,
+  review, conversation, roleplay, reading, story, mentalModel, connection,
+  speaking, curiosity, milestone, challenge, confidence, celebrate), each with
+  id, priority, reason, required concepts, estimated effort, expected value,
+  blocking prerequisite, confidence and urgency. Priority is never random —
+  recovery beats everything, then active/recurring misconceptions, then
+  confidence protection / speaking avoidance, then connections & mental models,
+  then celebrate / curiosity, then a stretch. It genuinely **consumes the
+  TeacherMemorySummary**: recurring misconceptions rank high, faded skills
+  become "reconnect" (never "you forgot"), a declining confidence trend
+  triggers a confidence recommendation, recent achievements + positive momentum
+  trigger a celebration. Ties break deterministically (urgency → value → id).
+  **Learning Journey Engine** (`lib/language/learning_journey_engine.dart`):
+  reuses the existing curriculum `LearningJourney` (no second graph) and adds
+  `JourneyHealth` (healthy/recovering/plateau/stalled/accelerating/completed,
+  from progress + memory momentum + recovery) and `JourneyPrediction`
+  (estimated effort, next milestone, likely obstacle = hardest remaining stage,
+  required review = faded concepts in the journey) → `assessJourneys`. A domain
+  with no engaged concepts yields no journey. **TeacherPacket expanded**
+  (additive): top recommendations + journey health/prediction, serialized for
+  the LLM (RECOMMEND / JOURNEY HEALTH lines, omitted when absent). Providers:
+  `recommendationsProvider`, `topRecommendationProvider`, `journeyReportsProvider`
+  (all derived, no storage). 402 tests (+10: recommendation determinism/recovery-
+  priority/empty-no-fabrication/memory-consumption/reconnect, journey health +
+  prediction + none-for-empty + completed, packet expansion + omission), analyze
+  clean, Android debug build green. Fully offline/deterministic; no native/device.
+
 - 2026-07-18: Phase 31 — Persistent Teacher Memory + lesson-completion
   pipeline. Completes the infrastructure Phase 30 left: the teacher now
   genuinely remembers completed lessons across app restarts, all derived from

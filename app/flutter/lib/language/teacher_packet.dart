@@ -1,6 +1,8 @@
 import 'conversation_continuity.dart';
 import 'curriculum_intelligence.dart';
+import 'learning_journey_engine.dart';
 import 'lesson_outcomes.dart';
+import 'recommendation_engine.dart';
 import 'local_llm/llm_memory.dart';
 import 'local_llm/llm_prompt_builder.dart';
 import 'pipeline.dart';
@@ -38,6 +40,8 @@ class TeacherPacket {
     this.recentEvents = const [],
     this.reflectionSummary,
     this.memory,
+    this.recommendations = const [],
+    this.journeyReport,
   });
 
   final TeacherResponsePlan plan;
@@ -71,6 +75,12 @@ class TeacherPacket {
   /// Longitudinal teaching memory (Phase 31) — long-term trends, recurring
   /// misconceptions, recovered/forgotten skills, momentum.
   final TeacherMemorySummary? memory;
+
+  /// Ranked recommendations (Phase 32) — top few, most important first.
+  final List<Recommendation> recommendations;
+
+  /// The active journey's health + prediction (Phase 32).
+  final JourneyReport? journeyReport;
 }
 
 /// Assembles the packet from the brain + engines + live conversation. All
@@ -88,6 +98,8 @@ TeacherPacket buildTeacherPacket({
   LessonResult? lastLesson,
   TeacherReflection? reflection,
   TeacherMemorySummary? memory,
+  List<Recommendation> recommendations = const [],
+  JourneyReport? journeyReport,
 }) {
   final plan = intelligence.plan(brain, turn: context.turns.length);
   final summary = summarizeConversation(context);
@@ -141,6 +153,8 @@ TeacherPacket buildTeacherPacket({
             if (reflection.nextAdjustment != null) reflection.nextAdjustment,
           ].whereType<String>().join(' · '),
     memory: (memory == null || memory.isEmpty) ? null : memory,
+    recommendations: recommendations.take(3).toList(),
+    journeyReport: journeyReport,
   );
 }
 
@@ -220,6 +234,15 @@ String serializeTeacherPacket(TeacherPacket p) {
     if (m.recurringMisconceptions.isNotEmpty) {
       b.writeln('RECURRING: ${m.recurringMisconceptions.join(', ')}');
     }
+  }
+  for (final r in p.recommendations) {
+    b.writeln('RECOMMEND (${r.kind.name}, urgency ${r.urgency}): ${r.reason}');
+  }
+  final jr = p.journeyReport;
+  if (jr != null) {
+    b.writeln('JOURNEY HEALTH: ${jr.journey.name} is ${jr.health.name}'
+        '${jr.prediction.nextMilestone == null ? '' : ' — next: ${jr.prediction.nextMilestone}'}'
+        '${jr.prediction.likelyObstacle == null ? '' : ', watch ${jr.prediction.likelyObstacle}'}');
   }
   return b.toString().trim();
 }

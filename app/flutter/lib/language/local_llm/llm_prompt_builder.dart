@@ -160,9 +160,23 @@ LlmPrompt buildTeacherPrompt({
       'level ${brain.facts.cefr}, '
       'vocabulary ${_pct(brain.facts.vocabulary.mastery)}, '
       'confidence ${_pct(brain.profile.confidence.overall)}.');
-  if (brain.mentalModels.isNotEmpty) {
+  // A mental model is only worth its prefill cost when it explains THIS
+  // turn's concept. Sending the first one unconditionally spent ~300 chars
+  // per reply and could nudge the model toward an unrelated contrast (a
+  // por/para insight while the turn was correcting tener).
+  final turnConcepts = <String>{
+    ...plan.moment.conceptIds,
+    ?plan.correction?.conceptId,
+    ?brain.objectives.currentConceptId,
+  };
+  final relevantModel = brain.mentalModels
+      .where((m) =>
+          turnConcepts.contains(m.anchorConceptId) ||
+          m.relatedConceptIds.any(turnConcepts.contains))
+      .firstOrNull;
+  if (relevantModel != null) {
     b.writeln('Prefer this mental model over rote rules: '
-        '${brain.mentalModels.first.insight}');
+        '${relevantModel.insight}');
   }
 
   // Anti-repetition: never reuse a phrasing already used this conversation.

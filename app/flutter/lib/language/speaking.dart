@@ -10,19 +10,65 @@ library;
 import 'entities.dart';
 import 'relationships.dart';
 
+/// What kind of speaking work a drill asks for. Speaking is not only
+/// "repeat this phrase": some prompts train articulation, some train
+/// fluent delivery, and some ask the learner to produce their own words.
+enum SpeakingDrillKind {
+  /// One word or a minimal pair — articulation only.
+  pronunciation,
+
+  /// Hear a full sentence, say it back.
+  listenRepeat,
+
+  /// A longer sentence spoken at natural pace — speak along with it.
+  shadowing,
+
+  /// An open question. There is no single correct answer, so nothing here
+  /// can honestly be scored against a target string.
+  spontaneous,
+
+  /// One line of a scene — say your part.
+  roleplay;
+
+  /// Only kinds with a single correct utterance can be scored against it.
+  /// [spontaneous] answers are free production: no target, no score.
+  bool get scored => this != SpeakingDrillKind.spontaneous;
+
+  /// Instruction shown to the learner for this kind.
+  String get instruction => switch (this) {
+    SpeakingDrillKind.pronunciation => 'Say it clearly',
+    SpeakingDrillKind.listenRepeat => 'Listen, then repeat',
+    SpeakingDrillKind.shadowing => 'Say it at natural speed',
+    SpeakingDrillKind.spontaneous => 'Answer in your own words',
+    SpeakingDrillKind.roleplay => 'Say your line',
+  };
+}
+
 class SpeakingDrill {
   const SpeakingDrill({
     required this.node,
     required this.target,
     this.translation,
+    this.kind = SpeakingDrillKind.pronunciation,
+    this.scene,
   });
 
   /// Concept exercised — its lineage feeds the engine + signals.
   final LanguageNode node;
 
-  /// What the learner must say (target language).
+  /// What the learner must say (target language). For a [
+  /// SpeakingDrillKind.spontaneous] drill this is the prompt question,
+  /// not a string to repeat.
   final String target;
   final String? translation;
+
+  final SpeakingDrillKind kind;
+
+  /// Scene set-up for a roleplay line (null for other kinds).
+  final String? scene;
+
+  /// Whether an attempt at this drill yields a pronunciation score.
+  bool get scored => kind.scored;
 }
 
 /// Builds a deterministic drill queue from the graph: vocabulary lemmas,
@@ -47,12 +93,14 @@ List<SpeakingDrill> generateSpeakingDrills(
           node: p,
           target: p.text,
           translation: p.translation,
+          kind: SpeakingDrillKind.listenRepeat,
         ));
       case ExampleSentenceNode s when s.text.split(' ').length <= 6:
         drills.add(SpeakingDrill(
           node: s,
           target: s.text,
           translation: s.translation,
+          kind: SpeakingDrillKind.listenRepeat,
         ));
       default:
     }

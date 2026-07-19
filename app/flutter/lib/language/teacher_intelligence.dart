@@ -561,7 +561,7 @@ class TeacherIntelligenceEngine {
             learnerMoment.conceptIds.isEmpty ? null : learnerMoment.conceptIds.first,
       );
     } else if (isChat) {
-      chosen = _converseMoment(brain);
+      chosen = _converseMoment(brain, turn: turn);
       decision = TeacherDecision(
         intent: chosen.intent,
         rationale: chosen.rationale,
@@ -608,12 +608,26 @@ class TeacherIntelligenceEngine {
     );
   }
 
+  /// Fallback openers for a free-conversation beat. The neural voice words the
+  /// real reaction from the learner's message; these are what the offline
+  /// deterministic path says, so they must not be a single line repeated every
+  /// chat turn. Rotated by conversation position in [_converseMoment].
+  static const converseOpeners = [
+    '¡Qué interesante! Cuéntame un poco más.',
+    'Ah, ¿sí? ¿Y cómo fue eso?',
+    'Vaya, qué bien. ¿Qué más me cuentas?',
+    'Me alegra saberlo. ¿Desde cuándo?',
+    'Entiendo. ¿Y qué piensas tú de eso?',
+    'Suena interesante. Cuéntame los detalles.',
+  ];
+
   /// A free-conversation beat: react to the learner and keep the exchange
   /// flowing. The concrete reaction is produced by the model from the learner's
-  /// actual message; this only sets the intent + a Spanish fallback line.
-  TeachingMoment _converseMoment(TeacherBrain brain) => const TeachingMoment(
+  /// actual message; this only sets the intent + a rotating Spanish fallback.
+  TeachingMoment _converseMoment(TeacherBrain brain, {int turn = 0}) =>
+      TeachingMoment(
         intent: TeacherIntent.encourage,
-        message: '¡Qué interesante! Cuéntame un poco más.',
+        message: converseOpeners[turn % converseOpeners.length],
         converse: true,
         rationale: 'The learner is chatting — converse naturally, no correction.',
       );

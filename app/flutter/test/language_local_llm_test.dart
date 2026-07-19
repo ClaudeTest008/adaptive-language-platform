@@ -98,6 +98,38 @@ void main() {
       expect(prompt.user, 'Hola');
     });
 
+    test('a mental model is only sent when it explains this turn', () {
+      final brain = _brain(currentConceptId: _hambre);
+      final plan = intelligence.plan(brain);
+      final prompt = buildTeacherPrompt(
+        brain: brain,
+        plan: plan,
+        context: const ConversationContext(),
+        userMessage: 'Hola',
+        supportMode: TeacherSupportMode.mentor,
+      );
+      // Any mental model that IS included must be anchored in a concept this
+      // turn is actually about — an unrelated contrast cost ~300 chars of
+      // prefill on every reply and pulled the model off-topic.
+      if (prompt.system.contains('Prefer this mental model')) {
+        final turnConcepts = <String>{
+          ...plan.moment.conceptIds,
+          ?plan.correction?.conceptId,
+          ?brain.objectives.currentConceptId,
+        };
+        final used = brain.mentalModels.where(
+          (m) => prompt.system.contains(m.insight),
+        );
+        expect(used, isNotEmpty);
+        expect(
+          used.every((m) =>
+              turnConcepts.contains(m.anchorConceptId) ||
+              m.relatedConceptIds.any(turnConcepts.contains)),
+          isTrue,
+        );
+      }
+    });
+
     test('replayed history is capped, so prefill cost stops growing', () {
       final brain = _brain();
       final plan = intelligence.plan(brain);

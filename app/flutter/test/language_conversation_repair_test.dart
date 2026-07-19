@@ -404,6 +404,41 @@ void main() {
       c.dispose();
     });
 
+    test('free-chat openers rotate instead of repeating one line', () async {
+      final c = await _boot();
+      final brain = c.read(teacherBrainProvider).value!;
+      const eng = TeacherIntelligenceEngine();
+
+      // Consecutive chat turns must not produce the same fallback opener —
+      // a single fixed line made the offline tutor read as a chatbot.
+      final lines = [
+        for (var turn = 1; turn <= 6; turn++)
+          eng
+              .plan(brain,
+                  turn: turn,
+                  learnerIntent: LearnerIntent.statement,
+                  producedTarget: false)
+              .moment
+              .message,
+      ];
+      expect(lines.toSet().length, greaterThan(3));
+      for (var i = 1; i < lines.length; i++) {
+        expect(lines[i], isNot(equals(lines[i - 1])));
+      }
+      // Still deterministic: the same turn always gives the same opener.
+      expect(
+        eng
+            .plan(brain,
+                turn: 2,
+                learnerIntent: LearnerIntent.statement,
+                producedTarget: false)
+            .moment
+            .message,
+        lines[1],
+      );
+      c.dispose();
+    });
+
     test('the correction clock only advances on learner turns', () {
       const start = ConversationContext();
       final afterTeacher = start

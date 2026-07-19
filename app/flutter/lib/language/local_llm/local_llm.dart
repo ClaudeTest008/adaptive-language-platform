@@ -113,11 +113,17 @@ class DeterministicTeacherVoice {
                 'Bien dicho. Solo un detalle:$tail',
                 'Muy bien. Afinemos una cosa:$tail',
                 'Se entiende. Un pequeño ajuste:$tail',
+                'Te entendí perfectamente. Una cosita:$tail',
+                'Casi perfecto. Mira esto:$tail',
+                'Buen intento, y funciona. Un matiz:$tail',
               ]
             : [
                 'Well said. Just one thing:$tail',
                 'Nicely done. Let’s tighten one thing:$tail',
                 'That’s clear. One small fix:$tail',
+                'I understood you perfectly. One detail:$tail',
+                'Almost there. Look at this:$tail',
+                'Good attempt, and it works. One nuance:$tail',
               ];
       case TeacherIntent.review:
         return es
@@ -125,11 +131,15 @@ class DeterministicTeacherVoice {
                 'Antes de seguir, repasemos un momento lo que ya sabes.',
                 'Demos un paso atrás y afiancemos lo aprendido.',
                 'Sin prisa: revisemos juntos antes de avanzar.',
+                'Volvamos un momento a lo anterior; así se queda mejor.',
+                'Repasar no es perder tiempo. Vamos a ello.',
               ]
             : [
                 'Before we go on, let’s revisit what you know.',
                 'Let’s step back and lock in what we’ve built.',
                 'No rush — a quick review before anything new.',
+                'Let’s return to the earlier point; it sticks better that way.',
+                'Reviewing isn’t lost time. Here we go.',
               ];
       case TeacherIntent.encourage:
         return es
@@ -137,11 +147,17 @@ class DeterministicTeacherVoice {
                 '¡Vas muy bien! Sigamos.',
                 'Me gusta tu progreso. Continuemos.',
                 '¡Un paso más y lo tienes!',
+                'Se nota que estás practicando. Sigamos así.',
+                'Muy bien, de verdad. ¿Continuamos?',
+                'Cada vez te sale más natural.',
               ]
             : [
                 'You’re doing well — let’s keep going.',
                 'I like your progress. Onward.',
                 'One more step and it’s yours.',
+                'I can tell you’ve been practising. Let’s keep at it.',
+                'Really good. Shall we continue?',
+                'It’s sounding more natural each time.',
               ];
       case TeacherIntent.reflect:
       case TeacherIntent.previewNext:
@@ -161,10 +177,16 @@ class DeterministicTeacherVoice {
             ? [
                 '¡Hola de nuevo! ¿Seguimos donde lo dejamos?',
                 '¡Qué bueno verte! ¿Empezamos?',
+                '¡Hola! ¿Cómo va el día?',
+                'Me alegro de verte otra vez. ¿Listo?',
+                '¡Buenas! ¿Con qué te apetece empezar?',
               ]
             : [
                 'Good to see you again! Pick up where we left off?',
                 'Welcome back! Shall we begin?',
+                'Hello! How’s your day going?',
+                'Glad to see you again. Ready?',
+                'Hi there — what would you like to start with?',
               ];
       case TeacherIntent.practice:
       case TeacherIntent.challenge:
@@ -172,10 +194,16 @@ class DeterministicTeacherVoice {
             ? [
                 'Tu turno: dilo con tus propias palabras.',
                 'Inténtalo ahora, sin miedo.',
+                'Pruébalo tú. Si sale torcido, lo arreglamos juntos.',
+                'Ahora tú. No importa si dudas.',
+                'Venga, dime cómo lo dirías.',
               ]
             : [
                 'Your turn — say it in your own words.',
                 'Give it a try now.',
+                'You try it. If it comes out crooked, we’ll fix it together.',
+                'Now you. Hesitating is fine.',
+                'Go on — tell me how you’d say it.',
               ];
     }
   }

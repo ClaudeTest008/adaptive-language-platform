@@ -9,6 +9,32 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- **Model upgrade: Qwen2.5-1.5B-Instruct Q4_K_M replaces the 0.5B as the
+  tutor wording model.** Official Qwen GGUF release; real values pinned:
+  1,117,320,736 bytes, SHA-256 6a1a2eb6…e9407e, context capped at 4096
+  (native 32k). Same qwen2 family → proven llamadart binding unchanged;
+  version bump triggers the built-in upgrade path (device-verified: installed
+  0.5B → "Update available" → byte-exact download → SHA pass → Ready).
+  Prompt budget measured: full system+packet+6-turn history ≈593 tokens of
+  4096. DEVICE (CPH2037): load 6178 ms (was 4812), replies 38–88 s
+  (avg ≈60 s, growing with history; was 20–27 s), PSS ~2.36 GB, 0 ANRs.
+  QUALITY vs 0.5B (same script, honest): echo-loop GONE — statements get real
+  topical teaching; confusion → natural Spanish empathy ("Estoy un poco
+  confuso con eso. Pero vamos a resolverlo paso a paso."); example request →
+  correct estar-location example with translation ("El libro está en la
+  mesa."); Spanish meal order UNDERSTOOD and answered in Spanish ("Está bien
+  — has pedido café y tostada."); deterministic fact recalls verified through
+  the new stack ("Vives en London."). NOT improved: brain-driven correction
+  still fires repetitively with node-name text on plain statements (the 1.5B
+  words the prompt faithfully — content authoring issue, queued); the
+  brain-driven greet message is English (same cause); roleplay topic requests
+  don't steer scenario kind (resumed the persisted friendly-chat scene
+  instead of a restaurant). Script coverage: 10/11 mandated messages ("You
+  are a waiter." obviated by the resumed scene; final la-cuenta reply
+  unconfirmed) and ~11 learner turns — the full 15-turn free continuation was
+  not run at ~85 s/reply on the owner's device. 454 tests; analyze clean;
+  apk debug green.
+
 - **Tutor polish: dev login, watertight Spanish-only speech, female voice,
   speaking progression.** (1) Debug-only "Dev login" button (`kDebugMode`
   compile-time gate — tree-shaken from release; dev@test.local via the normal

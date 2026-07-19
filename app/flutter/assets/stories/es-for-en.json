@@ -248,6 +248,352 @@
         { "prompt": "¿Cuál es la lección que aprende Lázaro?",
           "options": ["Debe espabilar solo", "Debe confiar en todos", "Debe volver a casa"], "answer": 0 }
       ]
+    },
+    {
+      "id": "es-a1-reencuentro",
+      "title": "Un café con una vieja amiga",
+      "author": "Historia original",
+      "level": "a1",
+      "topics": ["daily-life", "friends", "city"],
+      "vocabulary": [
+        { "word": "encontrarse con", "meaning": "to run into (someone)" },
+        { "word": "hace mucho tiempo", "meaning": "a long time ago" },
+        { "word": "la esquina", "meaning": "the corner" },
+        { "word": "quedar", "meaning": "to arrange to meet" },
+        { "word": "echar de menos", "meaning": "to miss (someone)" }
+      ],
+      "phrases": [
+        { "text": "Diego camina por la calle Mayor con dos bolsas pesadas y mucha prisa. En la esquina, cerca de la panadería, ve una cara conocida. Es Marta, su amiga del colegio, y hace mucho tiempo que no la ve.",
+          "translation": "Diego walks down Calle Mayor with two heavy bags and in a big hurry. On the corner, near the bakery, he sees a familiar face. It is Marta, his friend from school, and he has not seen her in a long time." },
+        { "text": "—¡Marta! ¿Eres tú? —dice él, muy sorprendido—. ¡Estás igual que antes! Ella se ríe, deja su bolso en el suelo y le da dos besos. —¡Diego! Te echaba de menos. ¿Cómo estás? ¿Sigues viviendo en el centro?",
+          "translation": "\"Marta! Is that you?\" he says, very surprised. \"You look just the same!\" She laughs, puts her bag on the ground and gives him two kisses. \"Diego! I missed you. How are you? Do you still live downtown?\"" },
+        { "text": "Los dos hablan durante diez minutos en medio de la calle, sin parar. Diego mira el reloj y ve que ya es muy tarde para su reunión. —Tengo que irme, pero quiero verte otra vez —dice él con calma.",
+          "translation": "The two of them talk for ten minutes in the middle of the street, without stopping. Diego looks at his watch and sees that it is already very late for his meeting. \"I have to go, but I want to see you again,\" he says calmly." },
+        { "text": "—Entonces quedamos el jueves para tomar un café —responde Marta con una sonrisa grande. Escriben sus teléfonos en un papel viejo, porque él no encuentra el móvil. Diego sigue su camino contento, y ya no tiene prisa.",
+          "translation": "\"Then let's meet on Thursday for a coffee,\" Marta answers with a big smile. They write their phone numbers on an old piece of paper, because he cannot find his mobile. Diego carries on his way happy, and he is no longer in a hurry." }
+      ],
+      "questions": [
+        { "prompt": "¿Dónde se encuentran Diego y Marta?",
+          "options": ["En la esquina de la calle", "En el colegio", "En la oficina"], "answer": 0 },
+        { "prompt": "¿Por qué tiene que irse Diego?",
+          "options": ["Porque tiene una reunión", "Porque está enfadado", "Porque llueve"], "answer": 0 },
+        { "prompt": "¿Qué deciden hacer el jueves?",
+          "options": ["Tomar un café", "Ir al médico", "Comprar pan"], "answer": 0 }
+      ]
+    },
+    {
+      "id": "es-a1-medico",
+      "title": "En la consulta del médico",
+      "author": "Historia original",
+      "level": "a1",
+      "topics": ["health", "daily-life"],
+      "vocabulary": [
+        { "word": "la consulta", "meaning": "the doctor's office / appointment" },
+        { "word": "me duele", "meaning": "it hurts me / I have a pain in" },
+        { "word": "la garganta", "meaning": "the throat" },
+        { "word": "la receta", "meaning": "the prescription" },
+        { "word": "descansar", "meaning": "to rest" }
+      ],
+      "phrases": [
+        { "text": "Ana llega a la consulta a las nueve y media y se sienta en la sala de espera. Hay tres personas delante de ella y una televisión sin sonido. Le duele la garganta desde el domingo y tiene un poco de fiebre.",
+          "translation": "Ana arrives at the doctor's office at nine thirty and sits down in the waiting room. There are three people ahead of her and a television with no sound. Her throat has hurt since Sunday and she has a slight fever." },
+        { "text": "—Buenos días, Ana. ¿Qué te pasa? —pregunta la doctora con voz tranquila. —Me duele mucho la garganta y por la noche no puedo dormir bien. Además, estoy muy cansada y no tengo hambre desde el sábado.",
+          "translation": "\"Good morning, Ana. What's wrong?\" the doctor asks in a calm voice. \"My throat hurts a lot and at night I can't sleep well. Also, I'm very tired and I haven't been hungry since Saturday.\"" },
+        { "text": "La doctora mira la garganta de Ana y le toma la temperatura con cuidado. —No es nada grave, pero tienes que descansar tres días en casa —dice ella. Después escribe una receta y explica cómo tomar el jarabe.",
+          "translation": "The doctor looks at Ana's throat and takes her temperature carefully. \"It's nothing serious, but you have to rest at home for three days,\" she says. Then she writes a prescription and explains how to take the syrup." },
+        { "text": "—Bebe mucha agua caliente con limón y no hables demasiado —añade la doctora sonriendo. Ana da las gracias, coge la receta y va directamente a la farmacia de la esquina. El viernes ya está mucho mejor y vuelve al trabajo.",
+          "translation": "\"Drink plenty of hot water with lemon and don't talk too much,\" the doctor adds, smiling. Ana says thank you, takes the prescription and goes straight to the pharmacy on the corner. By Friday she is much better and goes back to work." }
+      ],
+      "questions": [
+        { "prompt": "¿Qué le duele a Ana?",
+          "options": ["La cabeza", "La garganta", "El pie"], "answer": 1 },
+        { "prompt": "¿Qué tiene que hacer Ana durante tres días?",
+          "options": ["Trabajar más", "Descansar en casa", "Viajar"], "answer": 1 },
+        { "prompt": "¿Adónde va Ana después de la consulta?",
+          "options": ["A la farmacia", "Al mercado", "A la estación"], "answer": 0 }
+      ]
+    },
+    {
+      "id": "es-a1-estacion",
+      "title": "El tren de las siete",
+      "author": "Historia original",
+      "level": "a1",
+      "topics": ["travel", "city", "daily-life"],
+      "vocabulary": [
+        { "word": "el andén", "meaning": "the platform" },
+        { "word": "el billete", "meaning": "the ticket" },
+        { "word": "la taquilla", "meaning": "the ticket office" },
+        { "word": "el retraso", "meaning": "the delay" },
+        { "word": "la maleta", "meaning": "the suitcase" }
+      ],
+      "phrases": [
+        { "text": "Son las seis y media de la mañana y la estación está llena de gente con maletas. Pablo busca la taquilla porque quiere comprar un billete para Valencia. En la pantalla grande lee que su tren sale a las siete del andén cuatro.",
+          "translation": "It is six thirty in the morning and the station is full of people with suitcases. Pablo looks for the ticket office because he wants to buy a ticket to Valencia. On the big screen he reads that his train leaves at seven from platform four." },
+        { "text": "—Un billete de ida y vuelta para Valencia, por favor —dice al hombre de la taquilla. —¿Para hoy o para mañana? —pregunta él sin levantar la cabeza. —Para hoy, para el tren de las siete, si todavía hay sitio.",
+          "translation": "\"A return ticket to Valencia, please,\" he says to the man at the ticket office. \"For today or for tomorrow?\" he asks without lifting his head. \"For today, for the seven o'clock train, if there are still seats.\"" },
+        { "text": "Pablo paga con tarjeta, guarda el billete en el bolsillo y corre hacia el andén cuatro. Allí una voz anuncia que el tren tiene veinte minutos de retraso. Él respira, deja la maleta en el suelo y compra un café en la máquina.",
+          "translation": "Pablo pays by card, puts the ticket in his pocket and runs towards platform four. There a voice announces that the train has a twenty-minute delay. He breathes out, puts his suitcase on the ground and buys a coffee from the machine." },
+        { "text": "Cuando por fin llega el tren, Pablo encuentra su asiento junto a la ventana. Fuera, la ciudad todavía está gris, pero el cielo empieza a abrirse. Saca un libro de la maleta y piensa que el viaje va a ser tranquilo.",
+          "translation": "When the train finally arrives, Pablo finds his seat next to the window. Outside, the city is still grey, but the sky is beginning to clear. He takes a book out of his suitcase and thinks the journey is going to be a calm one." }
+      ],
+      "questions": [
+        { "prompt": "¿Adónde viaja Pablo?",
+          "options": ["A Sevilla", "A Valencia", "A Bilbao"], "answer": 1 },
+        { "prompt": "¿Qué problema tiene el tren?",
+          "options": ["Tiene veinte minutos de retraso", "No existe", "Está lleno"], "answer": 0 },
+        { "prompt": "¿Qué hace Pablo mientras espera?",
+          "options": ["Compra un café", "Vuelve a casa", "Llama a su jefe"], "answer": 0 }
+      ]
+    },
+    {
+      "id": "es-a2-primer-dia",
+      "title": "El primer día de trabajo",
+      "author": "Historia original",
+      "level": "a2",
+      "topics": ["work", "daily-life", "city"],
+      "vocabulary": [
+        { "word": "el compañero", "meaning": "the colleague, workmate" },
+        { "word": "el jefe", "meaning": "the boss" },
+        { "word": "el horario", "meaning": "the schedule, working hours" },
+        { "word": "el despacho", "meaning": "the office (room)" },
+        { "word": "estar nervioso", "meaning": "to be nervous" }
+      ],
+      "phrases": [
+        { "text": "Elena se levanta media hora antes de lo normal porque hoy empieza en la empresa nueva. Se prueba tres camisas delante del espejo y al final elige la más sencilla. Está nerviosa, pero también tiene muchas ganas de conocer a sus compañeros.",
+          "translation": "Elena gets up half an hour earlier than usual because today she starts at the new company. She tries on three shirts in front of the mirror and in the end chooses the simplest one. She is nervous, but she is also really looking forward to meeting her colleagues." },
+        { "text": "En la recepción, una mujer amable le da una tarjeta y la acompaña hasta la tercera planta. Allí la esperan seis personas alrededor de una mesa larga con café y galletas. —Bienvenida, Elena. Aquí nadie muerde —dice su jefe, y todos se ríen.",
+          "translation": "At reception, a friendly woman gives her a badge and takes her up to the third floor. There, six people are waiting for her around a long table with coffee and biscuits. \"Welcome, Elena. Nobody bites here,\" says her boss, and everyone laughs." },
+        { "text": "Por la mañana le explican el horario, las herramientas del equipo y dónde está cada despacho. Elena escribe todo en una libreta porque tiene miedo de olvidar los nombres. Su compañero Javier le dice que la primera semana siempre parece más difícil de lo que es.",
+          "translation": "In the morning they explain the schedule, the team's tools and where each office is. Elena writes everything in a notebook because she is afraid of forgetting the names. Her colleague Javier tells her that the first week always seems harder than it really is." },
+        { "text": "A las dos bajan todos juntos a comer en un bar cercano y hablan de fútbol y de series. Elena se da cuenta de que ya no está tan nerviosa como por la mañana. Cuando vuelve a casa está cansada, pero contenta con su decisión.",
+          "translation": "At two o'clock they all go down together to eat at a nearby bar and talk about football and TV series. Elena realises that she is no longer as nervous as she was in the morning. When she gets home she is tired, but happy with her decision." }
+      ],
+      "questions": [
+        { "prompt": "¿Por qué se levanta Elena más temprano?",
+          "options": ["Porque empieza un trabajo nuevo", "Porque va al médico", "Porque viaja a Valencia"], "answer": 0 },
+        { "prompt": "¿Por qué escribe Elena todo en una libreta?",
+          "options": ["Para no olvidar los nombres", "Para dibujar", "Para el jefe"], "answer": 0 },
+        { "prompt": "¿Cómo se siente Elena al final del día?",
+          "options": ["Cansada pero contenta", "Muy enfadada", "Igual de nerviosa"], "answer": 0 }
+      ]
+    },
+    {
+      "id": "es-a2-piso",
+      "title": "Se alquila piso",
+      "author": "Historia original",
+      "level": "a2",
+      "topics": ["housing", "city", "daily-life"],
+      "vocabulary": [
+        { "word": "alquilar", "meaning": "to rent" },
+        { "word": "el alquiler", "meaning": "the rent" },
+        { "word": "amueblado", "meaning": "furnished" },
+        { "word": "los gastos", "meaning": "the bills, expenses" },
+        { "word": "el contrato", "meaning": "the contract, lease" }
+      ],
+      "phrases": [
+        { "text": "Carlos busca piso desde hace tres semanas y ya ha visto siete anuncios sin suerte. Esta tarde queda con una agente delante de un edificio antiguo del barrio de Gracia. El piso está en la cuarta planta y, por desgracia, no hay ascensor.",
+          "translation": "Carlos has been looking for a flat for three weeks and has already seen seven listings with no luck. This afternoon he is meeting an agent in front of an old building in the Gràcia neighbourhood. The flat is on the fourth floor and, unfortunately, there is no lift." },
+        { "text": "—Son cincuenta metros, está amueblado y tiene mucha luz por la mañana —explica la agente. Carlos abre las ventanas, mira la cocina y prueba el agua caliente del baño. La habitación es pequeña, pero el salón le parece perfecto para trabajar.",
+          "translation": "\"It's fifty square metres, it's furnished and it gets a lot of light in the morning,\" the agent explains. Carlos opens the windows, looks at the kitchen and tests the hot water in the bathroom. The bedroom is small, but the living room seems perfect to him for working." },
+        { "text": "—¿Cuánto es el alquiler y están incluidos los gastos? —pregunta él con cuidado. —Son setecientos euros al mes, más luz y agua, que van aparte. El contrato es de un año y hay que dejar dos meses de fianza.",
+          "translation": "\"How much is the rent, and are the bills included?\" he asks carefully. \"It's seven hundred euros a month, plus electricity and water, which are separate. The contract is for one year and you have to leave a two-month deposit.\"" },
+        { "text": "Carlos pide un día para pensarlo y por la noche habla con su hermana por teléfono. Ella le recuerda que el barrio está cerca de su oficina y tiene buen transporte. A la mañana siguiente llama a la agente y dice que sí, que se queda con el piso.",
+          "translation": "Carlos asks for a day to think about it and in the evening he talks to his sister on the phone. She reminds him that the neighbourhood is close to his office and has good transport. The next morning he calls the agent and says yes, he will take the flat." }
+      ],
+      "questions": [
+        { "prompt": "¿Qué problema tiene el edificio?",
+          "options": ["No hay ascensor", "No tiene ventanas", "No hay agua"], "answer": 0 },
+        { "prompt": "¿Están incluidos los gastos en el alquiler?",
+          "options": ["Sí, todo incluido", "No, van aparte", "Solo el agua"], "answer": 1 },
+        { "prompt": "¿Qué decide Carlos al final?",
+          "options": ["Se queda con el piso", "Busca en otra ciudad", "Vive con su hermana"], "answer": 0 }
+      ]
+    },
+    {
+      "id": "es-a1-dialogo-panaderia",
+      "title": "Diálogo: en la panadería",
+      "author": "Diálogo original",
+      "level": "a1",
+      "topics": ["food", "shopping", "conversation"],
+      "vocabulary": [
+        { "word": "la barra de pan", "meaning": "the loaf (baguette) of bread" },
+        { "word": "¿algo más?", "meaning": "anything else?" },
+        { "word": "el cambio", "meaning": "the change (money)" },
+        { "word": "recién hecho", "meaning": "freshly made" },
+        { "word": "llevar", "meaning": "to take, to carry (here: to buy)" }
+      ],
+      "phrases": [
+        { "text": "PANADERA: Buenos días, ¿qué le pongo hoy? CLIENTE: Buenos días. Quería una barra de pan y dos croissants, por favor. PANADERA: El pan está recién hecho, todavía caliente. Es de esta mañana, de las seis.",
+          "translation": "BAKER: Good morning, what can I get you today? CUSTOMER: Good morning. I'd like a loaf of bread and two croissants, please. BAKER: The bread is freshly made, still warm. It's from this morning, from six o'clock." },
+        { "text": "CLIENTE: Perfecto, huele muy bien. ¿Y tienen leche también? PANADERA: Sí, está en la nevera pequeña, al lado de la puerta. CLIENTE: Entonces llevo una botella de leche. ¿Cuánto es todo?",
+          "translation": "CUSTOMER: Perfect, it smells great. And do you have milk as well? BAKER: Yes, it's in the small fridge, next to the door. CUSTOMER: Then I'll take a bottle of milk. How much is everything?" },
+        { "text": "PANADERA: Son cuatro euros con sesenta, ¿algo más? CLIENTE: No, nada más, gracias. Aquí tiene cinco euros. PANADERA: Y aquí tiene su cambio, cuarenta céntimos. Que tenga un buen día y hasta mañana.",
+          "translation": "BAKER: That's four euros sixty, anything else? CUSTOMER: No, nothing else, thank you. Here's five euros. BAKER: And here's your change, forty cents. Have a good day and see you tomorrow." }
+      ],
+      "questions": [
+        { "prompt": "¿Qué compra el cliente?",
+          "options": ["Pan, croissants y leche", "Solo café", "Fruta y queso"], "answer": 0 },
+        { "prompt": "¿Cuánto cambio recibe el cliente?",
+          "options": ["Cuarenta céntimos", "Cinco euros", "Nada"], "answer": 0 },
+        { "prompt": "¿Dónde está la leche?",
+          "options": ["En la nevera pequeña", "En el horno", "En la calle"], "answer": 0 }
+      ]
+    },
+    {
+      "id": "es-a1-dialogo-taxi",
+      "title": "Diálogo: un taxi al aeropuerto",
+      "author": "Diálogo original",
+      "level": "a1",
+      "topics": ["travel", "city", "conversation"],
+      "vocabulary": [
+        { "word": "el aeropuerto", "meaning": "the airport" },
+        { "word": "la terminal", "meaning": "the terminal" },
+        { "word": "tardar", "meaning": "to take (time)" },
+        { "word": "el tráfico", "meaning": "the traffic" },
+        { "word": "el maletero", "meaning": "the boot, trunk" }
+      ],
+      "phrases": [
+        { "text": "PASAJERA: Buenas tardes, al aeropuerto, por favor. TAXISTA: Muy bien. ¿A qué terminal va usted? PASAJERA: A la terminal dos. Mi vuelo sale a las siete y media y todavía tengo que facturar la maleta.",
+          "translation": "PASSENGER: Good afternoon, to the airport, please. TAXI DRIVER: Very well. Which terminal are you going to? PASSENGER: To terminal two. My flight leaves at seven thirty and I still have to check in my suitcase." },
+        { "text": "TAXISTA: Tranquila, llegamos con tiempo. ¿Le pongo la maleta en el maletero? PASAJERA: Sí, gracias, pesa bastante. ¿Cuánto se tarda a esta hora? TAXISTA: Normalmente media hora, pero hoy hay bastante tráfico en la salida de la ciudad.",
+          "translation": "TAXI DRIVER: Don't worry, we'll get there in time. Shall I put your suitcase in the boot? PASSENGER: Yes, thank you, it's quite heavy. How long does it take at this hour? TAXI DRIVER: Normally half an hour, but today there's a lot of traffic leaving the city." },
+        { "text": "PASAJERA: Entonces mejor salimos ya. ¿Puedo pagar con tarjeta? TAXISTA: Sí, sin problema, tengo la máquina aquí delante. PASAJERA: Perfecto. Muchas gracias por la ayuda con la maleta, es usted muy amable.",
+          "translation": "PASSENGER: Then we'd better set off now. Can I pay by card? TAXI DRIVER: Yes, no problem, I have the machine right here in front. PASSENGER: Perfect. Thank you very much for the help with the suitcase, you are very kind." }
+      ],
+      "questions": [
+        { "prompt": "¿A qué terminal va la pasajera?",
+          "options": ["A la terminal dos", "A la terminal cinco", "Al centro"], "answer": 0 },
+        { "prompt": "¿Por qué puede tardar más el viaje hoy?",
+          "options": ["Por el tráfico", "Porque llueve", "Porque el taxi es viejo"], "answer": 0 },
+        { "prompt": "¿Cómo quiere pagar la pasajera?",
+          "options": ["Con tarjeta", "En efectivo", "Mañana"], "answer": 0 }
+      ]
+    },
+    {
+      "id": "es-a2-dialogo-farmacia",
+      "title": "Diálogo: en la farmacia",
+      "author": "Diálogo original",
+      "level": "a2",
+      "topics": ["health", "daily-life", "conversation"],
+      "vocabulary": [
+        { "word": "la farmacia", "meaning": "the pharmacy" },
+        { "word": "el jarabe", "meaning": "the (cough) syrup" },
+        { "word": "las pastillas", "meaning": "the tablets, pills" },
+        { "word": "el mostrador", "meaning": "the counter" },
+        { "word": "cada ocho horas", "meaning": "every eight hours" }
+      ],
+      "phrases": [
+        { "text": "FARMACÉUTICO: Buenas tardes, ¿en qué puedo ayudarle? CLIENTA: Traigo esta receta de la doctora, es para la garganta. FARMACÉUTICO: Déjeme ver, por favor. Sí, aquí pone un jarabe y unas pastillas para bajar la fiebre.",
+          "translation": "PHARMACIST: Good afternoon, how can I help you? CUSTOMER: I've brought this prescription from the doctor, it's for my throat. PHARMACIST: Let me see, please. Yes, it says here a syrup and some tablets to bring the fever down." },
+        { "text": "CLIENTA: ¿Cómo tengo que tomar el jarabe? Nunca lo he tomado antes. FARMACÉUTICO: Una cuchara después de cada comida, tres veces al día. Las pastillas, en cambio, solo si tiene fiebre, cada ocho horas y nunca con el estómago vacío.",
+          "translation": "CUSTOMER: How do I have to take the syrup? I've never taken it before. PHARMACIST: One spoonful after each meal, three times a day. The tablets, on the other hand, only if you have a fever, every eight hours and never on an empty stomach." },
+        { "text": "CLIENTA: Entendido. ¿Y puedo tomarlo si conduzco por la tarde? FARMACÉUTICO: Con este jarabe es mejor no conducir, porque da bastante sueño. CLIENTA: Entonces lo tomaré por la noche. Muchas gracias por la explicación, ha sido muy claro.",
+          "translation": "CUSTOMER: Understood. And can I take it if I drive in the afternoon? PHARMACIST: With this syrup it's better not to drive, because it makes you quite sleepy. CUSTOMER: Then I'll take it at night. Thank you very much for the explanation, you've been very clear." }
+      ],
+      "questions": [
+        { "prompt": "¿Qué lleva la clienta a la farmacia?",
+          "options": ["Una receta de la doctora", "Una maleta", "Un contrato"], "answer": 0 },
+        { "prompt": "¿Cada cuánto se toman las pastillas?",
+          "options": ["Cada ocho horas", "Cada hora", "Una vez a la semana"], "answer": 0 },
+        { "prompt": "¿Por qué es mejor no conducir?",
+          "options": ["Porque el jarabe da sueño", "Porque no tiene coche", "Porque hay tráfico"], "answer": 0 }
+      ]
+    },
+    {
+      "id": "es-a2-horarios",
+      "title": "Los horarios de las comidas en España",
+      "author": "Artículo cultural",
+      "level": "a2",
+      "topics": ["culture", "food", "daily-life"],
+      "vocabulary": [
+        { "word": "el desayuno", "meaning": "breakfast" },
+        { "word": "la comida", "meaning": "lunch (the main meal in Spain)" },
+        { "word": "la merienda", "meaning": "the afternoon snack" },
+        { "word": "la cena", "meaning": "dinner, supper" },
+        { "word": "el horario", "meaning": "the timetable, schedule" }
+      ],
+      "phrases": [
+        { "text": "Muchos visitantes llegan a España y descubren que los horarios de las comidas son diferentes. El desayuno suele ser ligero: un café con leche y una tostada o un bollo. Por eso, a media mañana mucha gente toma algo pequeño antes de seguir trabajando.",
+          "translation": "Many visitors arrive in Spain and discover that meal times are different. Breakfast is usually light: a white coffee and a slice of toast or a pastry. That is why, in the middle of the morning, many people have something small before carrying on with work." },
+        { "text": "La comida principal del día no es la cena, sino la comida del mediodía. Normalmente se come entre las dos y las tres y media de la tarde. En muchas casas hay un primer plato, un segundo plato y algo de fruta o café después.",
+          "translation": "The main meal of the day is not dinner, but the midday meal. It is normally eaten between two and half past three in the afternoon. In many homes there is a first course, a second course and some fruit or a coffee afterwards." },
+        { "text": "Sobre las seis de la tarde llega la merienda, muy popular entre los niños y los mayores. Suele ser un bocadillo, fruta o un chocolate con galletas para aguantar hasta la noche. La merienda existe porque quedan muchas horas entre la comida y la cena.",
+          "translation": "Around six in the evening comes the merienda, very popular among children and older people. It is usually a sandwich, fruit or a hot chocolate with biscuits to keep going until the evening. The merienda exists because there are many hours between lunch and dinner." },
+        { "text": "La cena es más ligera y llega tarde, casi siempre entre las nueve y las diez de la noche. En verano, con el calor, muchas familias cenan todavía más tarde en la terraza. Si un extranjero busca un restaurante abierto a las siete, a menudo encuentra la cocina cerrada.",
+          "translation": "Dinner is lighter and comes late, almost always between nine and ten at night. In summer, with the heat, many families eat dinner even later on the terrace. If a foreigner looks for an open restaurant at seven, they often find the kitchen closed." }
+      ],
+      "questions": [
+        { "prompt": "¿Cuál es la comida principal del día en España?",
+          "options": ["El desayuno", "La comida del mediodía", "La cena"], "answer": 1 },
+        { "prompt": "¿Para qué sirve la merienda?",
+          "options": ["Para aguantar hasta la cena", "Para desayunar", "Para dormir mejor"], "answer": 0 },
+        { "prompt": "¿A qué hora se cena normalmente?",
+          "options": ["Entre las nueve y las diez", "A las seis", "A las dos"], "answer": 0 }
+      ]
+    },
+    {
+      "id": "es-b1-siesta",
+      "title": "El mito de la siesta",
+      "author": "Artículo cultural",
+      "level": "b1",
+      "topics": ["culture", "work", "daily-life"],
+      "vocabulary": [
+        { "word": "la siesta", "meaning": "the afternoon nap" },
+        { "word": "el mito", "meaning": "the myth" },
+        { "word": "la jornada laboral", "meaning": "the working day" },
+        { "word": "el huso horario", "meaning": "the time zone" },
+        { "word": "a diario", "meaning": "daily, every day" }
+      ],
+      "phrases": [
+        { "text": "Pocas ideas sobre España están tan extendidas fuera del país como la de la siesta diaria. Sin embargo, la mayoría de los españoles que trabajan fuera de casa no duerme la siesta a diario. En las grandes ciudades, la distancia entre la oficina y el domicilio lo hace prácticamente imposible.",
+          "translation": "Few ideas about Spain are as widespread outside the country as that of the daily siesta. However, most Spaniards who work away from home do not take a nap every day. In large cities, the distance between the office and home makes it practically impossible." },
+        { "text": "Lo que sí existe es una pausa larga al mediodía, sobre todo en pueblos y en comercios pequeños. Muchas tiendas cierran a las dos y vuelven a abrir a las cinco de la tarde. Esa pausa nace del calor del verano y de un tiempo en que muchos trabajadores tenían dos empleos.",
+          "translation": "What does exist is a long midday break, above all in villages and in small shops. Many shops close at two and open again at five in the afternoon. That break comes from the summer heat and from a time when many workers had two jobs." },
+        { "text": "El horario español también tiene una explicación histórica curiosa relacionada con el reloj. Desde 1940, España sigue el huso horario de Europa Central, aunque geográficamente le correspondería el de Londres. Por eso el sol se pone tarde y toda la vida social parece desplazada una hora.",
+          "translation": "The Spanish timetable also has a curious historical explanation connected with the clock. Since 1940, Spain has followed Central European time, although geographically it would correspond to London's. That is why the sun sets late and all social life seems shifted by an hour." },
+        { "text": "Hoy se debate si conviene acortar la pausa del mediodía para terminar antes la jornada laboral. Los defensores del cambio hablan de conciliación familiar y de dormir más horas por la noche. Otros responden que comer con calma y sin prisa es una costumbre que merece la pena conservar.",
+          "translation": "Today there is debate about whether it would be better to shorten the midday break in order to finish the working day earlier. Those in favour of the change talk about work-life balance and sleeping more hours at night. Others reply that eating calmly and without rushing is a custom worth keeping." }
+      ],
+      "questions": [
+        { "prompt": "Según el texto, ¿duermen la siesta a diario la mayoría de los españoles que trabajan fuera de casa?",
+          "options": ["Sí, todos los días", "No, la mayoría no", "Solo en invierno"], "answer": 1 },
+        { "prompt": "¿Qué huso horario sigue España desde 1940?",
+          "options": ["El de Europa Central", "El de Londres", "El de Canarias"], "answer": 0 },
+        { "prompt": "¿Qué se debate hoy sobre el horario?",
+          "options": ["Acortar la pausa del mediodía", "Cerrar todas las tiendas", "Cenar a las seis"], "answer": 0 }
+      ]
+    },
+    {
+      "id": "es-b1-lenguas",
+      "title": "Las lenguas de España",
+      "author": "Artículo cultural",
+      "level": "b1",
+      "topics": ["culture", "language", "history"],
+      "vocabulary": [
+        { "word": "la lengua", "meaning": "the language" },
+        { "word": "cooficial", "meaning": "co-official" },
+        { "word": "el hablante", "meaning": "the speaker" },
+        { "word": "la comunidad autónoma", "meaning": "the autonomous region" },
+        { "word": "el rótulo", "meaning": "the sign (street, shop)" }
+      ],
+      "phrases": [
+        { "text": "Cuando alguien dice que estudia español, casi siempre se refiere al castellano. El castellano es la lengua oficial en todo el Estado y la que se enseña en las escuelas de idiomas. Pero España es un país con varias lenguas, y en algunas regiones se oyen a diario.",
+          "translation": "When someone says they are studying Spanish, they almost always mean Castilian. Castilian is the official language throughout the country and the one taught in language schools. But Spain is a country with several languages, and in some regions they are heard every day." },
+        { "text": "El catalán es cooficial en Cataluña y en las Islas Baleares, y en la Comunidad Valenciana recibe el nombre de valenciano. El gallego es cooficial en Galicia y se parece bastante al portugués. Un estudiante de castellano suele entender parte de un texto en gallego o en catalán sin haberlos estudiado.",
+          "translation": "Catalan is co-official in Catalonia and the Balearic Islands, and in the Valencian Community it is called Valencian. Galician is co-official in Galicia and is quite similar to Portuguese. A student of Castilian can usually understand part of a text in Galician or Catalan without having studied them." },
+        { "text": "El euskera, o vasco, es cooficial en el País Vasco y en una parte de Navarra. Es un caso especial en Europa, porque no procede del latín ni de ninguna lengua vecina conocida. Su origen sigue siendo objeto de estudio y no se parece al castellano ni en el vocabulario ni en la gramática.",
+          "translation": "Basque, or euskera, is co-official in the Basque Country and in part of Navarre. It is a special case in Europe, because it does not come from Latin or from any known neighbouring language. Its origin is still being studied and it resembles Castilian neither in vocabulary nor in grammar." },
+        { "text": "En la práctica, esto significa que los rótulos, los documentos y las escuelas pueden funcionar en dos lenguas. En el Valle de Arán, en el Pirineo, el aranés también es lengua oficial de la zona. Para el viajero, escuchar estas lenguas no es un obstáculo: en todas partes se puede hablar castellano.",
+          "translation": "In practice, this means that signs, documents and schools can operate in two languages. In the Aran Valley, in the Pyrenees, Aranese is also an official language of the area. For the traveller, hearing these languages is not an obstacle: Castilian can be spoken everywhere." }
+      ],
+      "questions": [
+        { "prompt": "¿Cómo se llama el catalán en la Comunidad Valenciana?",
+          "options": ["Aranés", "Valenciano", "Gallego"], "answer": 1 },
+        { "prompt": "¿Qué hace especial al euskera?",
+          "options": ["No procede del latín", "Se habla en toda España", "Es igual que el gallego"], "answer": 0 },
+        { "prompt": "¿Dónde es oficial el aranés?",
+          "options": ["En el Valle de Arán", "En Galicia", "En Baleares"], "answer": 0 }
+      ]
     }
   ]
 }

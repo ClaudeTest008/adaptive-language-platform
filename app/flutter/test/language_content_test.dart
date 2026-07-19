@@ -58,6 +58,45 @@ void main() {
       expect(mercado.questions, isEmpty);
     });
 
+    test('graded library covers a1-b1 with usable vocab + valid quizzes', () {
+      final stories = parseStories(_storiesJson());
+      // Progressive difficulty: every CEFR band the reader offers is stocked.
+      for (final level in [CefrLevel.a1, CefrLevel.a2, CefrLevel.b1]) {
+        expect(stories.where((s) => s.level == level), isNotEmpty);
+      }
+      for (final s in stories) {
+        for (final v in s.vocabulary) {
+          expect(v.word, isNotEmpty);
+          expect(v.meaning, isNotEmpty);
+        }
+        for (final q in s.questions) {
+          expect(q.prompt, isNotEmpty);
+          expect(q.options.length, greaterThanOrEqualTo(2));
+          expect(q.answerIndex, inInclusiveRange(0, q.options.length - 1));
+        }
+      }
+      // Everyday-situation pieces, dialogues and cultural articles all carry
+      // key words and a comprehension check (the reader supports both).
+      for (final id in [
+        'es-a1-medico',
+        'es-a1-estacion',
+        'es-a1-reencuentro',
+        'es-a2-primer-dia',
+        'es-a2-piso',
+        'es-a1-dialogo-panaderia',
+        'es-a1-dialogo-taxi',
+        'es-a2-dialogo-farmacia',
+        'es-a2-horarios',
+        'es-b1-siesta',
+        'es-b1-lenguas',
+      ]) {
+        final s = stories.firstWhere((s) => s.id == id);
+        expect(s.author, isNotEmpty, reason: id);
+        expect(s.vocabulary, isNotEmpty, reason: id);
+        expect(s.questions, isNotEmpty, reason: id);
+      }
+    });
+
     test('flagship novel parses with chapters and real length', () {
       final novel = parseStories(
         jsonDecode(

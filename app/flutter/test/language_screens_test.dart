@@ -5,6 +5,7 @@ import 'package:adaptive_language_platform/infrastructure/prefs_experience_repos
 import 'package:adaptive_language_platform/language/curriculum.dart';
 import 'package:adaptive_language_platform/language/curriculum_intelligence.dart';
 import 'package:adaptive_language_platform/language/entities.dart';
+import 'package:adaptive_language_platform/language/exercises.dart';
 import 'package:adaptive_language_platform/language/learning_journey_engine.dart';
 import 'package:adaptive_language_platform/language/notebook_repository.dart';
 import 'package:adaptive_language_platform/language/recommendation_engine.dart';
@@ -158,6 +159,10 @@ void main() {
     await _settle(tester);
 
     await tester.scrollUntilVisible(find.text('What to focus on next'), 150);
+    // scrollUntilVisible stops as soon as the target is attached, which
+    // can leave it just below the 600px test viewport as content grows.
+    await tester.ensureVisible(find.text('What to focus on next'));
+    await tester.pump();
     await tester.tap(find.text('What to focus on next'));
     await _settle(tester);
     await tester.scrollUntilVisible(
@@ -210,6 +215,10 @@ void main() {
 
     expect(container.read(homeTabProvider), 0);
     await tester.scrollUntilVisible(find.text('What to focus on next'), 150);
+    // scrollUntilVisible stops as soon as the target is attached, which
+    // can leave it just below the 600px test viewport as content grows.
+    await tester.ensureVisible(find.text('What to focus on next'));
+    await tester.pump();
     await tester.tap(find.text('What to focus on next'));
     await _settle(tester);
     await tester.scrollUntilVisible(
@@ -552,6 +561,10 @@ void main() {
 
     // Simulate a wrong answer — real engine + detector run, UI updates.
     await tester.scrollUntilVisible(find.text('Wrong'), 200);
+    // scrollUntilVisible stops as soon as the target is attached, which
+    // can leave it just below the 600px test viewport as content grows.
+    await tester.ensureVisible(find.text('Wrong'));
+    await tester.pump();
     await tester.tap(find.text('Wrong'));
     await _settle(tester);
     expect(find.textContaining('seen 3×'), findsWidgets);
@@ -573,7 +586,14 @@ void main() {
     expect(find.textContaining("What does 'embarazada' mean?"), findsOneWidget);
 
     // Pick a deliberately wrong option (any option that isn't the answer).
-    await tester.tap(find.text('apple').last);
+    // Derived from the generator so it stays valid as the curriculum grows.
+    final mc = generateExercises(
+      curriculum.graph,
+      focusConceptIds: const [embarazadaId],
+      limit: 1,
+    ).first;
+    final wrong = mc.options.firstWhere((o) => o != mc.answer);
+    await tester.tap(find.text(wrong).last);
     await _settle(tester);
 
     expect(find.text('Not quite'), findsOneWidget);
@@ -583,6 +603,10 @@ void main() {
 
     // Advance: progress header moves to item 2.
     await tester.scrollUntilVisible(find.text('Next'), 200);
+    // scrollUntilVisible stops as soon as the target is attached, which
+    // can leave it just below the 600px test viewport as content grows.
+    await tester.ensureVisible(find.text('Next'));
+    await tester.pump();
     await tester.tap(find.text('Next'));
     await _settle(tester);
     expect(find.textContaining('Practice 2/'), findsOneWidget);

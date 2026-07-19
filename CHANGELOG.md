@@ -7,6 +7,53 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
+### Added (validation pass)
+
+- **Layout-safety matrix** (`test/language_layout_test.dart`). A RenderFlex
+  overflow only paints a yellow bar in release, so "no overflow" had been a
+  manual observation on one device in one theme. The matrix pumps 11 screens
+  across 3 viewports (320×640, 411×891, 891×411 landscape), text scales 1.0
+  and 1.5, and both brightnesses — **132 configurations** — and fails if any
+  layout error is reported. It also asserts the design tokens never resolve
+  text to its own background.
+- **Curriculum expanded to A2/B1**: +173 nodes (140 content), relations
+  8 → 57. A2 preterite, imperfect, preterite-vs-imperfect, `ir a` +
+  infinitive, reflexives, object pronouns, `gustar`-type verbs, por vs para,
+  comparatives, present perfect; B1 present subjunctive, conditional,
+  discourse connectors. Vocabulary and conversation scenarios across travel,
+  dining, shopping, work, health, family and daily life, wired in with real
+  prerequisites and English-interference edges.
+- **Reading library**: 11 new pieces (A1–B1) — five everyday-situation
+  stories, three two-speaker dialogues, three cultural articles — each with
+  key vocabulary and comprehension questions.
+- **Speaking practice**: five drill kinds (pronunciation, listen-and-repeat,
+  shadowing, spontaneous response, roleplay line) over a 65-prompt curated
+  pool across eight domains, deduped and mixed so a session is not eight
+  repeat-after-me drills and consecutive sessions draw new material.
+  Spontaneous answers are explicitly **unscored** — no pronunciation number is
+  invented for an open question with no target string.
+
+### Fixed (found by the matrix)
+
+- `PrimaryButton`'s label was unconstrained: a long label overflowed the
+  button by up to 164px on a 320px-wide phone. Flexible + ellipsis.
+- The onboarding welcome and language pages were fixed Columns and overflowed
+  by up to 480px in landscape and at large text scale. Now scrollable.
+
+### Changed (validation pass)
+
+- The system prompt attached `brain.mentalModels.first` unconditionally — a
+  por/para insight was being sent while the turn corrected *tener*. It is now
+  sent only when it explains a concept the turn is actually about: measured
+  **1249 → 999 system chars (−20%)** on that turn, and the block removed was
+  the off-topic one.
+- The offline free-chat fallback was one fixed line repeated every chat turn;
+  it now rotates six openers by conversation position (still deterministic).
+  Correction, review, encouragement, greeting and practice pools widened from
+  2–3 to 5–6 variants.
+- Card shadows unified behind `AppTones.cardShadow`/`softShadow` (four screens
+  had each invented their own alpha).
+
 ### Changed
 
 - **Design system rebuild + full screen redesign (production polish pass).**

@@ -7,6 +7,7 @@ import 'package:adaptive_exam_platform/language/curriculum_intelligence.dart';
 import 'package:adaptive_exam_platform/language/learning_journey_engine.dart';
 import 'package:adaptive_exam_platform/language/notebook_repository.dart';
 import 'package:adaptive_exam_platform/language/recommendation_engine.dart';
+import 'package:adaptive_exam_platform/language/roleplay_engine.dart';
 import 'package:adaptive_exam_platform/language/teacher_memory.dart';
 import 'package:adaptive_exam_platform/language/speech.dart';
 import 'package:adaptive_exam_platform/presentation/language_providers.dart';
@@ -256,6 +257,55 @@ void main() {
     expect(find.text('Present tense verbs'), findsOneWidget);
     expect(find.text('Accelerating'), findsOneWidget);
     expect(find.textContaining('Irregular yo-forms'), findsOneWidget);
+  });
+
+  testWidgets('dashboard surfaces the suggested practice scene', (
+    tester,
+  ) async {
+    // Fixed roleplay scenario so the card is asserted deterministically (the
+    // engine's own selection logic is covered by language_phase30_test.dart).
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          curriculumProvider.overrideWith((ref) => Future.value(curriculum)),
+          speechServiceProvider.overrideWithValue(NoopSpeechService()),
+          teacherNotebookRepositoryProvider.overrideWithValue(
+            InMemoryTeacherNotebookRepository(),
+          ),
+          experienceRepositoryProvider.overrideWithValue(
+            InMemoryExperienceRepository(),
+          ),
+          teacherMemoryRepositoryProvider.overrideWithValue(
+            InMemoryTeacherMemoryRepository(),
+          ),
+          roleplaySelectionProvider.overrideWithValue(
+            const RoleplayScenario(
+              kind: RoleplayKind.restaurant,
+              title: 'At the café',
+              setting: 'Ordering a coffee in Madrid.',
+              difficulty: RoleplayDifficulty.standard,
+              stages: [],
+              focusConceptIds: [],
+              rationale: 'You are ready to use greetings in a real scene.',
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: LanguageDashboardScreen()),
+      ),
+    );
+    await _settle(tester);
+
+    await tester.scrollUntilVisible(find.text('Suggested practice scene'), 150);
+    // The section sits low on the long dashboard; ensure the header is fully in
+    // the 600px test viewport before tapping so the expand hit-test lands.
+    await tester.ensureVisible(find.text('Suggested practice scene'));
+    await _settle(tester);
+    await tester.tap(find.text('Suggested practice scene'));
+    await _settle(tester);
+    await tester.scrollUntilVisible(find.text('At the café'), 120);
+    expect(find.text('At the café'), findsOneWidget);
+    expect(find.text('Standard'), findsOneWidget);
+    expect(find.textContaining('Ordering a coffee'), findsOneWidget);
   });
 
   testWidgets('language selector switches curriculum and reseeds learner', (

@@ -7,6 +7,7 @@ import '../../language/learning_journey_engine.dart';
 import '../../language/lesson.dart';
 import '../../language/notebook.dart';
 import '../../language/recommendation_engine.dart';
+import '../../language/roleplay_engine.dart';
 import '../../language/tutor.dart';
 import '../language_providers.dart';
 import '../providers.dart';
@@ -173,6 +174,19 @@ class LanguageDashboardScreen extends ConsumerWidget {
                   title: 'Your learning journeys',
                   subtitle: 'Where each path stands',
                   child: _JourneysCard(),
+                ),
+              ),
+              const SizedBox(height: AppSpace.md),
+              // 4d · Suggested practice scene — the Phase 30 Roleplay Engine
+              // (roleplaySelectionProvider) made visible: the scene the teacher
+              // would run now, with its rationale. Read-only preview.
+              const FadeInUp(
+                delayMs: 380,
+                child: _ExpandableSection(
+                  icon: Icons.theater_comedy_outlined,
+                  title: 'Suggested practice scene',
+                  subtitle: 'A roleplay picked for you',
+                  child: _RoleplaySuggestionCard(),
                 ),
               ),
               const SizedBox(height: AppSpace.md),
@@ -1028,6 +1042,84 @@ String _journeyHealthLabel(JourneyHealth h) => switch (h) {
       JourneyHealth.stalled => 'Stalled',
       JourneyHealth.accelerating => 'Accelerating',
       JourneyHealth.completed => 'Complete',
+    };
+
+/// Surfaces the Phase 30 Roleplay Engine (`roleplaySelectionProvider`) — the
+/// scene the teacher would run now, with its rationale. Read-only preview and
+/// derived; no state, no fabrication (null → an honest "not yet" line). Starting
+/// the scene is a separate, later increment (needs a roleplay session loop).
+class _RoleplaySuggestionCard extends ConsumerWidget {
+  const _RoleplaySuggestionCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final scene = ref.watch(roleplaySelectionProvider);
+
+    if (scene == null) {
+      return GlassCard(
+        child: Row(
+          children: [
+            Icon(Icons.theater_comedy_outlined,
+                size: 18, color: scheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'A practice scene will appear once your teacher knows you a '
+                'little.',
+                style:
+                    text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: scheme.tertiaryContainer,
+                child: Icon(Icons.theater_comedy,
+                    size: 18, color: scheme.onTertiaryContainer),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  scene.resumed ? '${scene.title} (resume)' : scene.title,
+                  style: text.titleSmall,
+                ),
+              ),
+              _Pill(
+                label: _roleplayDifficultyLabel(scene.difficulty),
+                color: scheme.tertiaryContainer,
+                textColor: scheme.onTertiaryContainer,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(scene.setting, style: text.bodyMedium),
+          const SizedBox(height: 4),
+          Text(
+            scene.rationale,
+            style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Presentation label for roleplay difficulty. Exhaustive over the enum.
+String _roleplayDifficultyLabel(RoleplayDifficulty d) => switch (d) {
+      RoleplayDifficulty.gentle => 'Gentle',
+      RoleplayDifficulty.standard => 'Standard',
+      RoleplayDifficulty.stretch => 'Stretch',
     };
 
 class _RecommendedNextLessonCard extends ConsumerWidget {

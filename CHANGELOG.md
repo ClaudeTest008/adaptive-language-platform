@@ -9,6 +9,17 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- **Phase 35 (increment 4) — Suggested practice scene surfaced.** The Phase 30
+  Roleplay Engine (`roleplaySelectionProvider`) was computed but consumed by no
+  screen. Added a read-only **"Suggested practice scene"** dashboard section
+  (`_RoleplaySuggestionCard` + exhaustive `_roleplayDifficultyLabel`) showing the
+  scene the teacher would run now — title, setting, difficulty, rationale.
+  Read-only preview; no engine/provider/state added; TeacherBrain and all
+  reasoning engines untouched. Null → honest "not yet" line. Starting the scene
+  is deferred (needs a roleplay session loop). 423 tests (+1 deterministic widget
+  test with a fixed `RoleplayScenario`). `flutter analyze` clean;
+  `flutter build apk --debug` green. Not device-verified.
+
 - **Phase 35 (increment 3) — Learning journeys surfaced.** The Phase 32 Journey
   Engine (`journeyReportsProvider`) was computed but consumed by no screen. Added
   a read-only **"Your learning journeys"** dashboard section (`_JourneysCard` +

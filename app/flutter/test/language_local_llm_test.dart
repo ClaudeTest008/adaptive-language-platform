@@ -91,7 +91,7 @@ void main() {
         supportMode: TeacherSupportMode.mentor,
       );
       expect(prompt.system, contains('Spanish'));
-      expect(prompt.system, contains('Speak only es'));
+      expect(prompt.system, contains('reply ENTIRELY in Spanish'));
       expect(prompt.constraints.targetLanguage, 'es');
       expect(prompt.constraints.maxCorrections, 1);
       expect(prompt.constraints.doNotRepeat, contains('¡Vas muy bien! Sigamos.'));
@@ -111,7 +111,7 @@ void main() {
       );
       expect(mentor.constraints.mentorMode, isTrue);
       expect(imm.constraints.mentorMode, isFalse);
-      expect(imm.system, contains('Immersion'));
+      expect(imm.system, contains('immersion'));
     });
 
     test('same inputs → identical prompt (deterministic)', () {

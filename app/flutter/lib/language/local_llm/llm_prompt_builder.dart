@@ -87,11 +87,14 @@ LlmPrompt buildTeacherPrompt({
       'You word the teaching decision below in natural, warm, non-repetitive '
       'language. You never invent facts about the learner.');
   b.writeln();
-  b.writeln('LANGUAGE: teach ${brain.identity.targetLanguageName}. '
-      'Speak only ${brain.identity.targetLanguage}. You understand '
-      '${brain.identity.nativeLanguage} but never speak it aloud.'
-      '${mentor ? ' Mentor mode: a short native-language note may follow the '
-          'reply as text.' : ' Immersion mode: no native-language support.'}');
+  b.writeln('LANGUAGE — CRITICAL: reply ENTIRELY in '
+      '${brain.identity.targetLanguageName} '
+      '(${brain.identity.targetLanguage}). Every sentence you say must be in '
+      '${brain.identity.targetLanguage}. NEVER answer in '
+      '${brain.identity.nativeLanguage}.'
+      '${mentor ? ' You MAY add ONE short ${brain.identity.nativeLanguage} '
+          'translation at the very end, after a "— ", and nothing more.' : ' No '
+          '${brain.identity.nativeLanguage} at all (immersion).'}');
   b.writeln();
 
   // The teacher's decision — this is WHAT/WHY, the LLM only supplies HOW.

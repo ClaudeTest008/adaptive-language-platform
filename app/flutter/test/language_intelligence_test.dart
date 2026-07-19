@@ -152,7 +152,8 @@ void main() {
           conceptId: _hambre,
         ),
       );
-      expect(moment.message, contains('family'));
+      // Spanish-first now (English leaked into spoken replies before).
+      expect(moment.message, contains('familia'));
       expect(moment.conceptIds, isNotEmpty);
     });
   });

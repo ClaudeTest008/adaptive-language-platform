@@ -6,6 +6,8 @@ import 'package:adaptive_exam_platform/language/curriculum.dart';
 import 'package:adaptive_exam_platform/language/message_intent.dart';
 import 'package:adaptive_exam_platform/language/notebook_repository.dart';
 import 'package:adaptive_exam_platform/language/pipeline.dart';
+import 'package:adaptive_exam_platform/language/roleplay_engine.dart';
+import 'package:adaptive_exam_platform/language/teacher_intelligence.dart';
 import 'package:adaptive_exam_platform/language/speech.dart';
 import 'package:adaptive_exam_platform/language/teacher_memory.dart';
 import 'package:adaptive_exam_platform/language/tutor.dart';
@@ -253,6 +255,61 @@ void main() {
       final nextTarget = c.read(speakingProvider)!.current.target;
       // The completed phrase never immediately leads the queue again.
       expect(nextTarget, isNot(equals(firstTarget)));
+    });
+
+    test('brain-driven teacher moments are Spanish, no node names', () async {
+      final c = await _boot();
+      final brain = c.read(teacherBrainProvider).value!;
+      const engine = TeacherIntelligenceEngine();
+      for (final intent in [
+        TeacherIntent.greet,
+        TeacherIntent.correct,
+        TeacherIntent.encourage,
+        TeacherIntent.review,
+        TeacherIntent.practice,
+        TeacherIntent.reflect,
+      ]) {
+        final m = engine.moment(
+          brain,
+          TeacherDecision(intent: intent, rationale: 'r'),
+        );
+        final low = m.message.toLowerCase();
+        expect(low, isNot(contains('let me')));
+        expect(low, isNot(contains('one thing to tighten')));
+        expect(low, isNot(contains('physical and emotional')));
+        expect(low, isNot(contains('present tense')));
+        expect(m.message, isNotEmpty);
+      }
+      // The weak-grammar correction never dumps the internal concept label.
+      final corr = engine.correction(brain);
+      if (corr != null) {
+        expect(corr.correction.toLowerCase(), isNot(contains('one thing')));
+        expect(corr.praise, isNot(contains('came through clearly')));
+      }
+    });
+
+    test('roleplay request classification + kind steering', () {
+      expect(classifyLearnerMessage('You are a waiter.'),
+          LearnerIntent.roleplayRequest);
+      expect(roleplayKindFromRequest('You are a waiter.'),
+          RoleplayKind.restaurant);
+      expect(roleplayKindFromRequest("Let's practice ordering food."),
+          RoleplayKind.restaurant);
+      expect(roleplayKindFromRequest('Can we check into a hotel?'),
+          RoleplayKind.hotel);
+      expect(roleplayKindFromRequest('At the airport please'),
+          RoleplayKind.airport);
+      expect(roleplayKindFromRequest('I live in London.'), isNull);
+    });
+
+    test('explicit scene request builds that exact scenario', () async {
+      final c = await _boot();
+      final tutor = c.read(tutorSessionProvider.notifier);
+      await tutor.start(TutorMode.teacher);
+      await tutor.send('You are a waiter.');
+      final s = c.read(tutorSessionProvider)!;
+      expect(s.roleplay, isNotNull);
+      expect(s.roleplay!.scenario.kind, RoleplayKind.restaurant);
     });
 
     test('the whole conversation is deterministic', () async {

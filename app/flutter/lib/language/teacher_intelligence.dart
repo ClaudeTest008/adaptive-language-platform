@@ -361,16 +361,18 @@ class TeacherIntelligenceEngine {
       ..sort((a, b) => a.confidence.compareTo(b.confidence));
     if (weak.isEmpty) return null;
     final g = weak.first;
-    // Anchor the "why" to a family member the learner already holds — worded
-    // like a teacher, never a list dump.
+    // Spanish-first, teacher-natural. Never dump the internal concept label
+    // (g.name is an English curriculum tag like "Physical and emotional
+    // states" — the exact robotic leak seen on device). The "why" anchors to
+    // a Spanish family leaf the learner already holds.
     final family = _familyOf(brain, g.conceptId);
     final why = family.isEmpty
-        ? "it's part of a pattern we're building together."
-        : "it works just like ${family.first.toLowerCase()}.";
+        ? 'es parte de un patrón que estamos construyendo juntos.'
+        : 'funciona igual que ${family.first.toLowerCase()}.';
     return CorrectionPlan(
       conceptId: g.conceptId,
-      praise: 'Good — the meaning came through clearly.',
-      correction: 'One thing to tighten: ${g.name}.',
+      praise: 'Bien dicho, se entiende la idea.',
+      correction: 'Afinemos un pequeño detalle.',
       why: why,
     );
   }
@@ -381,40 +383,43 @@ class TeacherIntelligenceEngine {
         ? const <String>[]
         : _familyOf(brain, decision.conceptId!);
     switch (decision.intent) {
+      // Brain-driven moment text is authored SPANISH-FIRST: it seeds the
+      // wording model's "message to convey" and is the deterministic voice's
+      // fallback, so English here leaked into spoken replies. Concept family
+      // names are Spanish leaf names (post depth-filter), safe to weave in.
       case TeacherIntent.discover:
         // Invisible teaching: show, ask, let them see it — do not announce.
         return TeachingMoment(
           intent: decision.intent,
           message: family.length >= 2
-              ? 'Look at these together: ${family.take(3).join(', ')}.'
-              : "Here's an example — read it aloud and notice how it feels.",
+              ? 'Fíjate en estos juntos: ${family.take(3).join(', ')}.'
+              : 'Aquí tienes un ejemplo. Léelo en voz alta y fíjate cómo suena.',
           conceptIds: decision.conceptId == null ? const [] : [decision.conceptId!],
           socraticPrompt: family.length >= 2
-              ? 'What do they have in common? Does it remind you of something '
-                    'you already know?'
-              : 'What pattern do you notice?',
+              ? '¿Qué tienen en común? ¿Te recuerda a algo que ya sabes?'
+              : '¿Qué patrón notas?',
           rationale: decision.rationale,
         );
       case TeacherIntent.connect:
         return TeachingMoment(
           intent: decision.intent,
           message: family.isEmpty
-              ? 'This connects to what you already know.'
-              : 'This belongs to the same family as ${family.take(3).join(', ')}.',
+              ? 'Esto se conecta con lo que ya sabes.'
+              : 'Esto es de la misma familia que ${family.take(3).join(', ')}.',
           conceptIds: family.isEmpty ? const [] : family.take(4).toList(),
           rationale: decision.rationale,
         );
       case TeacherIntent.review:
         return TeachingMoment(
           intent: decision.intent,
-          message: "Before anything new, let's revisit what we've been "
-              'building — a quick, low-pressure pass.',
+          message: 'Antes de seguir, repasemos un momento lo que ya vimos, '
+              'sin prisa.',
           rationale: decision.rationale,
         );
       case TeacherIntent.correct:
         return TeachingMoment(
           intent: decision.intent,
-          message: 'Nicely said. Let me point out one small thing.',
+          message: 'Bien dicho. Déjame señalar un pequeño detalle.',
           conceptIds: decision.conceptId == null ? const [] : [decision.conceptId!],
           rationale: decision.rationale,
         );
@@ -422,7 +427,7 @@ class TeacherIntelligenceEngine {
         return TeachingMoment(
           intent: decision.intent,
           message: brain.curiosities.isEmpty
-              ? "You're making real progress — keep going."
+              ? '¡Vas muy bien! Sigamos así.'
               : brain.curiosities.first.text,
           rationale: decision.rationale,
         );
@@ -430,14 +435,14 @@ class TeacherIntelligenceEngine {
       case TeacherIntent.warmUp:
         return TeachingMoment(
           intent: decision.intent,
-          message: 'Good to see you again. Ready to pick up where we left off?',
+          message: '¡Hola de nuevo! ¿Seguimos donde lo dejamos?',
           rationale: decision.rationale,
         );
       case TeacherIntent.practice:
       case TeacherIntent.challenge:
         return TeachingMoment(
           intent: decision.intent,
-          message: 'Your turn — try it now, in your own words.',
+          message: 'Tu turno: dilo con tus propias palabras.',
           conceptIds: decision.conceptId == null ? const [] : [decision.conceptId!],
           rationale: decision.rationale,
         );
@@ -445,7 +450,7 @@ class TeacherIntelligenceEngine {
       case TeacherIntent.previewNext:
         return TeachingMoment(
           intent: decision.intent,
-          message: 'A quick recap before we stop.',
+          message: 'Un repaso rápido antes de terminar.',
           rationale: decision.rationale,
         );
     }

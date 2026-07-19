@@ -297,6 +297,32 @@ String serializeTeacherPacket(TeacherPacket p) {
   return b.toString().trim();
 }
 
+/// A SLIM serialization for the live wording model. The full
+/// [serializeTeacherPacket] dumps decision-support telemetry (stage/intent
+/// enums, curriculum-node numbers, known/unknown concept lists, journey/reader/
+/// memory metrics, recommendation urgencies, events) that the base prompt
+/// already reflects as a concrete teaching instruction — so it only duplicates
+/// context and inflates prefill (the 60–88 s device latency) without changing
+/// how a reply is worded. This brief keeps ONLY the packet-unique, wording-
+/// relevant facts: what the learner told you, the active scene, one recall.
+/// Everything here is Spanish-first guidance; nothing internal leaks.
+String serializeTeacherPacketBrief(TeacherPacket p) {
+  final b = StringBuffer();
+  if (p.learnerFacts.isNotEmpty) {
+    b.writeln('SOBRE EL ALUMNO (te lo contó — úsalo con naturalidad, en '
+        'español): ${factsBrief(p.learnerFacts)}');
+  }
+  if (p.roleplay != null) {
+    b.writeln('ESCENA (rol): ${p.roleplay!.title} — ${p.roleplay!.setting}. '
+        'Mantente en personaje, solo en español.');
+  }
+  final m = p.memory;
+  if (m != null && !m.isEmpty && m.recentAchievements.isNotEmpty) {
+    b.writeln('PUEDES RECORDAR: ${m.recentAchievements.first}');
+  }
+  return b.toString().trim();
+}
+
 /// Bridges the packet into the existing prompt builder so a generator gets one
 /// consistent prompt: packet brief as system context, constraints unchanged.
 LlmPrompt packetPrompt({
@@ -313,9 +339,11 @@ LlmPrompt packetPrompt({
     userMessage: userMessage,
     supportMode: supportMode,
   );
+  final brief = serializeTeacherPacketBrief(packet);
   return LlmPrompt(
-    system: '${base.system}\n\n${serializeTeacherPacket(packet)}',
+    system: brief.isEmpty ? base.system : '${base.system}\n\n$brief',
     user: base.user,
+    history: base.history,
     constraints: base.constraints,
   );
 }

@@ -52,7 +52,9 @@ final _translation = RegExp(
     caseSensitive: false);
 final _roleplay = RegExp(
     r'\b(role-?play|pretend|practice (ordering|buying|asking|checking)|'
-    r'can we practice \w+ing|simulat|escena|imagina que)\b',
+    r'can we practice \w+ing|simulat|escena|imagina que|'
+    r"you are (a|an|the|my) (waiter|server|doctor|receptionist|clerk|"
+    r'shopkeeper|friend|guide|host)|be my (waiter|guide|friend))\b',
     caseSensitive: false);
 final _practice = RegExp(
     r'\b(practice|practise|exercise|drill|quiz me|test me|practicar)\b',

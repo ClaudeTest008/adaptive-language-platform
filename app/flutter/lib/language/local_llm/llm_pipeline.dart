@@ -83,10 +83,14 @@ class LlmPipeline {
       userMessage: userMessage,
       supportMode: supportMode,
     );
-    final prompt = packet == null
+    // Slim packet (Phase 2/6): only the wording-relevant, non-duplicative
+    // facts reach the model — the full telemetry inflated prefill without
+    // changing the reply.
+    final brief = packet == null ? '' : serializeTeacherPacketBrief(packet);
+    final prompt = brief.isEmpty
         ? base
         : LlmPrompt(
-            system: '${base.system}\n\n${serializeTeacherPacket(packet)}',
+            system: '${base.system}\n\n$brief',
             user: base.user,
             history: base.history,
             constraints: base.constraints,

@@ -250,12 +250,14 @@ void main() {
       expect(s1, contains('LANGUAGE POLICY:'));
     });
 
-    test('packetPrompt merges packet brief into the prompt, policy intact', () {
+    test('packetPrompt merges the slim brief (facts) into the prompt, policy intact',
+        () {
       final brain = _brain();
       final packet = buildTeacherPacket(
         brain: brain, graph: _graph(),
         context: const ConversationContext(),
         supportMode: TeacherSupportMode.immersion,
+        learnerFacts: const {'name': 'John', 'city': 'London'},
       );
       final prompt = packetPrompt(
         brain: brain, packet: packet,
@@ -263,7 +265,12 @@ void main() {
         userMessage: 'Hola',
         supportMode: TeacherSupportMode.immersion,
       );
-      expect(prompt.system, contains('OBJECTIVE:'));
+      // Base teaching decision survives (lowercase from the base builder)…
+      expect(prompt.system, contains('Objective:'));
+      // …and the slim brief carries the learner facts (not the old telemetry).
+      expect(prompt.system, contains('SOBRE EL ALUMNO'));
+      expect(prompt.system, contains('John'));
+      expect(prompt.system, isNot(contains('RECOMMEND (')));
       expect(prompt.constraints.mentorMode, isFalse);
     });
   });

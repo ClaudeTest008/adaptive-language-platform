@@ -7,7 +7,38 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
-### Added
+### Changed
+
+- **Tutor naturalness + latency pass (Qwen2.5-1.5B kept; no architecture
+  change).** (Phase 2/6) The live prompt now sends a SLIM packet
+  (`serializeTeacherPacketBrief`: only learner-shared facts, active scene, one
+  recall) instead of the full telemetry dump (stage/intent enums, curriculum-
+  node numbers, known/unknown concept lists, journey/reader/memory metrics,
+  recommendation urgencies, events) that merely duplicated the base prompt.
+  Measured: total prompt 575→375 tokens (**−34.7%**; packet 906→108 chars).
+  Device latency dropped from ~60 s avg to **~26 s** (load 7.6 s; early gens
+  19–32 s; 0 ANRs; ~2.48 GB PSS). (Phase 3/5) Every brain-driven teacher
+  moment (greet/correct/encourage/review/practice/reflect/discover/connect) is
+  authored **Spanish-first**; the correction no longer dumps the internal
+  concept label ("One thing to tighten: Physical and emotional states" →
+  "Afinemos un pequeño detalle."). (Phase 4) The language directive is
+  hardened ("reply ENTIRELY in Spanish; never answer in English"). (Phase 5)
+  Explicit scene requests now steer roleplay: `roleplayKindFromRequest`
+  maps "you are a waiter"/"ordering food"/"hotel"/… to the exact scenario
+  kind, and `selectRoleplay(requestedKind:)` builds it (overriding
+  interest-based selection and resume). 457 tests (+4: brief content,
+  Spanish moments, request classification, exact-scene build). analyze clean;
+  apk debug green. DEVICE (CPH2037, partial): Spanish greeting (replacing the
+  old English opener), Spanish correction wording, ~26 s latency, and
+  deterministic fact recall confirmed via logcat + screenshots. NOT completed:
+  the full 20-turn free continuation (≈26 s/reply on the owner's phone) and a
+  clean on-device roleplay reproduction (adb-input/session flakiness — the
+  steering itself is proven by the passing unit test). Residual: the 1.5B
+  still occasionally slips an English word ("— Remember") which the speech
+  gate keeps out of TTS but shows on screen; the planner still selects the
+  correction intent on most statement turns (Spanish now, but repetitive) —
+  a planner-frequency issue, not wording. Voice unchanged (es_MX-claude-high
+  female, from the prior pass; not audibly verifiable over adb).
 
 - **Model upgrade: Qwen2.5-1.5B-Instruct Q4_K_M replaces the 0.5B as the
   tutor wording model.** Official Qwen GGUF release; real values pinned:

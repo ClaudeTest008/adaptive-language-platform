@@ -1028,14 +1028,21 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
   /// teacher memory resumes at its stage. Requires the brain (packet path).
   /// [preserveSession] keeps the current transcript/conversation (a mid-chat
   /// "can we practice ordering food?" flows into the scene naturally).
-  Future<void> startRoleplay({bool preserveSession = false}) async {
+  Future<void> startRoleplay({
+    bool preserveSession = false,
+    RoleplayKind? requestedKind,
+  }) async {
     final brain = ref.read(teacherBrainProvider).value;
     final context = assembleTutorContext(ref);
     if (brain == null || context == null) return;
     final repo = ref.read(teacherMemoryRepositoryProvider);
     final saved = await repo.loadRoleplay();
-    final scenario =
-        selectRoleplay(brain, continuation: const ConversationContinuation());
+    // An explicit scene request skips resume; the requested kind is built.
+    final scenario = selectRoleplay(
+      brain,
+      requestedKind: requestedKind,
+      continuation: const ConversationContinuation(),
+    );
     final resumeIndex = (saved != null &&
             !saved.done &&
             saved.kind == scenario.kind &&
@@ -1104,9 +1111,13 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
       ref.read(learnerFactsProvider.notifier).record(newFacts);
     }
 
-    // A roleplay request starts a real scene in-place (existing engine).
-    if (intent == LearnerIntent.roleplayRequest && s.roleplay == null) {
-      await startRoleplay(preserveSession: true);
+    // A roleplay request starts (or switches to) the requested scene in-place.
+    // An explicit scene ("you are a waiter") steers the scenario kind; a bare
+    // request without one only starts when not already in a scene.
+    final requestedScene = roleplayKindFromRequest(message);
+    if (intent == LearnerIntent.roleplayRequest &&
+        (s.roleplay == null || requestedScene != null)) {
+      await startRoleplay(preserveSession: true, requestedKind: requestedScene);
       state = state?.copyWith(busy: false);
       return;
     }

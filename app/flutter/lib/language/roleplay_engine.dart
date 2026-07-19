@@ -169,9 +169,40 @@ List<RoleplayStage> _stages(RoleplayKind kind) {
 /// Chooses the scenario deterministically from the brain (and any interrupted
 /// roleplay to resume). Recovery → gentle; strained motivation → gentle;
 /// confident + easy → stretch.
+/// Maps an explicit learner scene request ("you are a waiter", "let's practice
+/// ordering food", "at the hotel") to a scenario kind. Null when no known
+/// scene is named. Deterministic keyword match — the learner's stated wish
+/// always wins over interest-based selection.
+RoleplayKind? roleplayKindFromRequest(String message) {
+  final m = message.toLowerCase();
+  bool has(String re) => RegExp(re, caseSensitive: false).hasMatch(m);
+  if (has(r'\b(waiter|server|restaurant|order(ing)?\s+(food|a\s+meal|coffee)|'
+      r'menu|dinner|lunch|breakfast|camarero|mesero|restaurante|comida)\b')) {
+    return RoleplayKind.restaurant;
+  }
+  if (has(r'\b(airport|flight|boarding|aeropuerto|vuelo|check\s?in)\b')) {
+    return RoleplayKind.airport;
+  }
+  if (has(r'\b(hotel|reception(ist)?|room\s+key|recepci[oó]n|habitaci[oó]n)\b')) {
+    return RoleplayKind.hotel;
+  }
+  if (has(r'\b(shop(ping)?|market|store|buy(ing)?|mercado|tienda|comprar)\b')) {
+    return RoleplayKind.shopping;
+  }
+  if (has(r'\b(doctor|clinic|hospital|pharmacy|m[eé]dico|farmacia|s[ií]ntoma)\b')) {
+    return RoleplayKind.doctor;
+  }
+  if (has(r'\b(directions|how\s+to\s+get\s+to|lost|direcciones|c[oó]mo\s+llego)\b')) {
+    return RoleplayKind.directions;
+  }
+  if (has(r'\b(friends?|amigos?)\b')) return RoleplayKind.friends;
+  return null;
+}
+
 RoleplayScenario selectRoleplay(
   TeacherBrain brain, {
   ConversationContinuation? continuation,
+  RoleplayKind? requestedKind,
 }) {
   final recovery = brain.pedagogy?.recoveryMode ?? false;
   final strained = brain.profile.motivation.state == MotivationState.strained;
@@ -179,6 +210,22 @@ RoleplayScenario selectRoleplay(
     if (brain.objectives.currentConceptId != null)
       brain.objectives.currentConceptId!,
   ];
+
+  // An explicit request overrides everything — build that exact scene.
+  if (requestedKind != null) {
+    final s = _settings[requestedKind]!;
+    return RoleplayScenario(
+      kind: requestedKind,
+      title: s.title,
+      setting: s.setting,
+      difficulty: (recovery || strained)
+          ? RoleplayDifficulty.gentle
+          : RoleplayDifficulty.standard,
+      stages: _stages(requestedKind),
+      focusConceptIds: focus,
+      rationale: 'You asked for this scene — let’s do it.',
+    );
+  }
 
   // Resume an interrupted roleplay first.
   if (continuation?.thread == 'roleplay') {

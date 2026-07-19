@@ -68,6 +68,35 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 29 — Speaking analytics upgrade + P28 cache review +
+  robustness (**real Whisper inference NOT delivered — see honesty note**).
+  Mandatory P28 review done: the cache logic is correct (LRU keeps the playing
+  file, prefetch aborts on the generation token, voice-scoped invalidation,
+  ordered current→next prefetch); one real nit fixed — `PiperAudioCache.contains`
+  has metric side-effects, so prefetch now probes via a new pure `has()` and no
+  longer distorts the playback hit rate. **Upgraded speaking analytics**
+  (`speaking_session.dart`, pure, measured-only): `analyzeSpeaking` now also
+  measures self-corrections (from "no digo / quiero decir / i mean" markers),
+  restarts (adjacent word repetitions), speech rate (WPM, null without a
+  measured duration), and response latency (when the caller measures it); self-
+  corrections now lower behavioural confidence. Nothing estimated — every new
+  field is null when unmeasured. **Whisper model manager robustness**: `repair()`
+  (verify → on failure delete + redownload) and `storageBytes()` reporting.
+  **Voice-pipeline guarantee re-verified** with regression tests: English is
+  never in the Spanish-voice output; immersion hides native support, mentor
+  keeps it as text. 370 tests (+9), analyze clean, Android debug build green.
+
+  **HONEST — the phase's core goal was NOT met.** Genuine on-device Whisper
+  inference requires (a) a raw-PCM microphone-capture plugin (not a dependency
+  in this project) and (b) a physical Android device to verify — neither exists
+  in this build environment, and I will not add unverifiable native code or
+  claim untested functionality. The fallback platform recognizer therefore
+  remains the speech-input path; the sherpa `OfflineRecognizer` isolate + PCM
+  capture stay a documented seam for a device session. This phase delivered
+  only the parts that are real and verifiable offline (analytics, cache fix,
+  manager robustness, pipeline regression). No device verification was
+  performed; no latency/recognition numbers are claimed.
+
 - 2026-07-18: Phase 28 — Real Piper audio cache + prefetch (playback
   performance; **NOT device-verified — see below**). Wires the pure
   `audio_cache.dart` policy into the real `PiperSpeechService` so identical

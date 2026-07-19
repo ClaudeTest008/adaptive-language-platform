@@ -25,6 +25,10 @@ class SpeakingSession {
     this.fluency,
     this.hesitationCount = 0,
     this.fillerCount = 0,
+    this.selfCorrections = 0,
+    this.restarts = 0,
+    this.speechRateWpm,
+    this.responseLatencyMs,
     this.confidence,
     this.conceptId,
   });
@@ -46,11 +50,30 @@ class SpeakingSession {
   final int hesitationCount;
   final int fillerCount;
 
+  /// Times the learner audibly corrected themselves ("no, digo…") — measured
+  /// from correction markers in the transcript.
+  final int selfCorrections;
+
+  /// Adjacent word repetitions ("yo yo tengo") — false starts.
+  final int restarts;
+
+  /// Words per minute; null without a measured duration.
+  final double? speechRateWpm;
+
+  /// Milliseconds from prompt to first speech, when the caller measured it.
+  final int? responseLatencyMs;
+
   /// Behavioural confidence (0…1): high pronunciation + low hesitation + few
   /// repairs. Null when the learner said nothing.
   final double? confidence;
   final String? conceptId;
 }
+
+/// Self-correction markers in Spanish/English.
+final _correctionMarkers = RegExp(
+  r'\b(no,? digo|quiero decir|mejor dicho|perdón|es decir|i mean|sorry)\b',
+  caseSensitive: false,
+);
 
 int _wordCount(String s) =>
     s.trim().isEmpty ? 0 : s.trim().split(RegExp(r'\s+')).length;
@@ -62,30 +85,36 @@ SpeakingSession analyzeSpeaking(
   String transcript, {
   int? durationMs,
   int retries = 0,
+  int? responseLatencyMs,
   String? conceptId,
 }) {
   final pron = scorePronunciation(target, transcript);
   final words = transcript.toLowerCase().split(RegExp(r'[^a-záéíóúüñ]+'))
     ..removeWhere((w) => w.isEmpty);
   final fillerCount = words.where(_fillers.contains).length;
-  // Hesitation: repeated adjacent words ("yo yo tengo") + fillers.
-  var repeats = 0;
+  // Restarts: repeated adjacent words ("yo yo tengo") — false starts.
+  var restarts = 0;
   for (var i = 1; i < words.length; i++) {
-    if (words[i] == words[i - 1]) repeats++;
+    if (words[i] == words[i - 1]) restarts++;
   }
-  final hesitation = fillerCount + repeats;
+  final selfCorrections = _correctionMarkers.allMatches(transcript).length;
+  final hesitation = fillerCount + restarts;
   final completed = _wordCount(transcript) > 0;
 
   double? fluency;
+  double? speechRateWpm;
   if (durationMs != null && durationMs > 0 && completed) {
     final wps = _wordCount(transcript) / (durationMs / 1000);
     // ~2 words/sec is a comfortable learner pace → 1.0; clamp.
     fluency = double.parse((wps / 2.0).clamp(0.0, 1.0).toStringAsFixed(2));
+    speechRateWpm = double.parse((wps * 60).toStringAsFixed(1));
   }
 
   double? confidence;
   if (completed) {
-    final penalty = (hesitation * 0.08) + (retries * 0.1);
+    // More self-corrections/restarts = lower behavioural confidence.
+    final penalty =
+        (hesitation * 0.08) + (retries * 0.1) + (selfCorrections * 0.05);
     confidence = double.parse(
       (pron - penalty).clamp(0.0, 1.0).toStringAsFixed(2),
     );
@@ -100,6 +129,10 @@ SpeakingSession analyzeSpeaking(
     fluency: fluency,
     hesitationCount: hesitation,
     fillerCount: fillerCount,
+    selfCorrections: selfCorrections,
+    restarts: restarts,
+    speechRateWpm: speechRateWpm,
+    responseLatencyMs: responseLatencyMs,
     confidence: confidence,
     conceptId: conceptId,
   );

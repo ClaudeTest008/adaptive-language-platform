@@ -35,7 +35,12 @@ class PiperAudioCache {
 
   String pathFor(String key) => '$dir/$key';
 
-  /// True if audio for [key] is already on disk.
+  /// Pure existence probe — no metric side effects. Use for prefetch checks so
+  /// background probing does not distort the playback hit rate (Phase 29).
+  bool has(String key) => File(pathFor(key)).existsSync();
+
+  /// True if audio for [key] is already on disk. Counts as a hit/miss — use
+  /// only on the real playback path, not for prefetch probing.
   bool contains(String key) {
     final present = File(pathFor(key)).existsSync();
     if (present) {

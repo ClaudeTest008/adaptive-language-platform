@@ -450,7 +450,7 @@ class PiperSpeechService implements SpeechService {
         if (_disposed || _gen != startGen) return; // playback started → stop
         final key = audioCacheKey(
           text: s, langCode: langCode, voice: voiceDir, speed: speed);
-        if (_cache!.contains(key)) continue; // already cached
+        if (_cache!.has(key)) continue; // already cached (metric-free probe)
         final tmp = await _synthesize(s, speed, startGen);
         if (tmp == null || _gen != startGen) return;
         await _cache!.store(key, tmp);

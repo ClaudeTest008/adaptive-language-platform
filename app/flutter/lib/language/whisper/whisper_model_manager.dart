@@ -157,4 +157,19 @@ class WhisperModelManager {
     if (info == null) return false;
     return _downloader.verify(info.path, expectedBytes: info.sizeBytes);
   }
+
+  /// Repairs a corrupt/incomplete model: verify, and if it fails, delete and
+  /// download afresh (Phase 29 robustness). Returns the resulting state.
+  Future<WhisperModelState> repair({
+    void Function(WhisperModelState state)? onState,
+  }) async {
+    if (await verify()) {
+      return status();
+    }
+    await delete();
+    return ensureDownloaded(onState: onState);
+  }
+
+  /// Installed model size in bytes, or 0 when absent (storage reporting).
+  Future<int> storageBytes() async => (await _repo.load())?.sizeBytes ?? 0;
 }

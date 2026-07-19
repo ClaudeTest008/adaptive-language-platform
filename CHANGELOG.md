@@ -7,6 +7,22 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
+### Added
+
+- **Phase 35 (increment 1) — Surface the Teacher: recommendations on the home.**
+  The unified recommendation list (`recommendationsProvider` — Phase 32
+  recommendation engine already merged with Phase 33 reader recommendations and
+  Phase 34 connection bridges) was computed and tested but consumed by no
+  screen. Added a read-only **"What to focus on next"** dashboard section
+  (`_TeacherRecommendationsCard` + exhaustive `_recIcon` kind→icon map in
+  `language_dashboard_screen.dart`) that shows the top three ranked, explainable
+  recommendations. Purely derived and read-only — TeacherBrain stays the single
+  source of truth, no new state/engine/provider, no change to Piper/Whisper/
+  reasoning/graph. Empty list renders an honest "nothing urgent" line, never a
+  fabricated item. 420 tests (+1 deterministic widget test with a fixed
+  recommendation list). `flutter analyze` clean; `flutter build apk --debug`
+  green. Not device-verified (visual layout on hardware still pending).
+
 ### Fixed
 
 - 2026-07-18: Piper ANR crash — FIXED and verified on the physical device

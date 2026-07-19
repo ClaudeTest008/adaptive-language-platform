@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:adaptive_exam_platform/infrastructure/prefs_experience_repository.dart';
 import 'package:adaptive_exam_platform/language/curriculum.dart';
 import 'package:adaptive_exam_platform/language/notebook_repository.dart';
+import 'package:adaptive_exam_platform/language/recommendation_engine.dart';
 import 'package:adaptive_exam_platform/language/teacher_memory.dart';
 import 'package:adaptive_exam_platform/language/speech.dart';
 import 'package:adaptive_exam_platform/presentation/language_providers.dart';
@@ -98,6 +99,59 @@ void main() {
     expect(find.textContaining('Repair:'), findsOneWidget);
     await tester.scrollUntilVisible(find.textContaining('minutes today'), 150);
     expect(find.textContaining('minutes today'), findsWidgets);
+  });
+
+  testWidgets('dashboard surfaces the unified recommendation list', (
+    tester,
+  ) async {
+    // Override the ONE recommendation list with a fixed, ranked set so the
+    // widget is asserted deterministically (the engines' own determinism is
+    // covered by language_phase32/33/34 tests).
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          curriculumProvider.overrideWith((ref) => Future.value(curriculum)),
+          speechServiceProvider.overrideWithValue(NoopSpeechService()),
+          teacherNotebookRepositoryProvider.overrideWithValue(
+            InMemoryTeacherNotebookRepository(),
+          ),
+          experienceRepositoryProvider.overrideWithValue(
+            InMemoryExperienceRepository(),
+          ),
+          teacherMemoryRepositoryProvider.overrideWithValue(
+            InMemoryTeacherMemoryRepository(),
+          ),
+          recommendationsProvider.overrideWith(
+            (ref) async => const [
+              Recommendation(
+                id: 'r1',
+                kind: RecommendationKind.recoverWeakConcept,
+                priority: 0,
+                reason: 'Revisit ser vs estar — it keeps tripping you up.',
+              ),
+              Recommendation(
+                id: 'r2',
+                kind: RecommendationKind.connection,
+                priority: 3,
+                reason: 'Reinforce tener by connecting it to tener hambre.',
+              ),
+            ],
+          ),
+        ],
+        child: const MaterialApp(home: LanguageDashboardScreen()),
+      ),
+    );
+    await _settle(tester);
+
+    await tester.scrollUntilVisible(find.text('What to focus on next'), 150);
+    await tester.tap(find.text('What to focus on next'));
+    await _settle(tester);
+    await tester.scrollUntilVisible(
+      find.textContaining('Revisit ser vs estar'),
+      120,
+    );
+    expect(find.textContaining('Revisit ser vs estar'), findsOneWidget);
+    expect(find.textContaining('Reinforce tener'), findsOneWidget);
   });
 
   testWidgets('language selector switches curriculum and reseeds learner', (

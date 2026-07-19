@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../language/entities.dart';
 import '../../language/lesson.dart';
 import '../../language/notebook.dart';
+import '../../language/recommendation_engine.dart';
 import '../../language/tutor.dart';
 import '../language_providers.dart';
 import '../providers.dart';
@@ -143,6 +144,21 @@ class LanguageDashboardScreen extends ConsumerWidget {
                       _PracticeCta(),
                     ],
                   ),
+                ),
+              ),
+              const SizedBox(height: AppSpace.md),
+              // 4b · What to focus on next — the ONE unified recommendation list
+              // (Phase 32 engine, merged with Phase 33 reader recs + Phase 34
+              // connection bridges) made visible for the first time. Read-only:
+              // TeacherBrain stays the single source of truth; this only shows
+              // what the engines already derived.
+              const FadeInUp(
+                delayMs: 350,
+                child: _ExpandableSection(
+                  icon: Icons.recommend_outlined,
+                  title: 'What to focus on next',
+                  subtitle: 'From your whole learning history',
+                  child: _TeacherRecommendationsCard(),
                 ),
               ),
               const SizedBox(height: AppSpace.md),
@@ -765,6 +781,94 @@ class _CurrentFocusCard extends ConsumerWidget {
 /// 5 · Recommended Next Lesson — one pick derived from today's plan (the
 /// first non-repair block), with a one-tap start. Falls back to a sensible
 /// placeholder when the plan is all repair.
+/// Surfaces the single unified recommendation list (Phase 32 recommendation
+/// engine, already merged with Phase 33 reader recs + Phase 34 connection
+/// bridges in `recommendationsProvider`). Purely derived and read-only — it
+/// shows what the engines computed, holds no state, and never invents an item:
+/// an empty list means the engines found nothing pressing.
+class _TeacherRecommendationsCard extends ConsumerWidget {
+  const _TeacherRecommendationsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final async = ref.watch(recommendationsProvider);
+
+    if (async.isLoading && !async.hasValue) {
+      return const Padding(
+        padding: EdgeInsets.all(AppSpace.md),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    final recs = async.value ?? const <Recommendation>[];
+    if (recs.isEmpty) {
+      return GlassCard(
+        child: Row(
+          children: [
+            Icon(Icons.check_circle_outline, size: 18, color: scheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Nothing urgent right now — keep going.',
+                style:
+                    text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    final top = recs.take(3).toList();
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < top.length; i++) ...[
+            if (i > 0) const Divider(height: AppSpace.md),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: scheme.secondaryContainer,
+                  child: Icon(
+                    _recIcon(top[i].kind),
+                    size: 18,
+                    color: scheme.onSecondaryContainer,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: Text(top[i].reason, style: text.bodyMedium)),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Presentation-only icon for each recommendation kind. Exhaustive over the
+/// enum so a new kind is a compile error, never a silent default.
+IconData _recIcon(RecommendationKind kind) => switch (kind) {
+      RecommendationKind.continueJourney => Icons.route_outlined,
+      RecommendationKind.recoverWeakConcept => Icons.healing_outlined,
+      RecommendationKind.review => Icons.refresh,
+      RecommendationKind.conversation => Icons.forum_outlined,
+      RecommendationKind.roleplay => Icons.theater_comedy_outlined,
+      RecommendationKind.reading => Icons.menu_book_outlined,
+      RecommendationKind.story => Icons.auto_stories_outlined,
+      RecommendationKind.mentalModel => Icons.hub_outlined,
+      RecommendationKind.connection => Icons.share_outlined,
+      RecommendationKind.speaking => Icons.record_voice_over_outlined,
+      RecommendationKind.curiosity => Icons.lightbulb_outline,
+      RecommendationKind.milestone => Icons.flag_outlined,
+      RecommendationKind.challenge => Icons.trending_up,
+      RecommendationKind.confidence => Icons.favorite_outline,
+      RecommendationKind.celebrate => Icons.celebration_outlined,
+    };
+
 class _RecommendedNextLessonCard extends ConsumerWidget {
   const _RecommendedNextLessonCard();
 

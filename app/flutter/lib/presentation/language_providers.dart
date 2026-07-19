@@ -38,6 +38,7 @@ import '../language/notebook.dart';
 import '../language/notebook_repository.dart';
 import '../language/pipeline.dart';
 import '../language/reasoning_engine.dart';
+import '../language/local_llm/llm_memory.dart';
 import '../language/local_llm/llm_model_manager.dart';
 import '../language/local_llm/llm_pipeline.dart';
 import '../language/local_llm/llm_repository.dart';
@@ -823,6 +824,7 @@ class TutorSessionState {
     required this.context,
     this.transcript = const [],
     this.busy = false,
+    this.conversation = const ConversationContext(),
   });
 
   final TutorMode mode;
@@ -832,14 +834,21 @@ class TutorSessionState {
   final List<(bool, String)> transcript;
   final bool busy;
 
+  /// Conversation-scoped memory for the packet teacher path (Phase 25/35):
+  /// recent turns + used phrasings. Session-scoped by design — NOT learner
+  /// memory, which lives in the brain/teacher memory.
+  final ConversationContext conversation;
+
   TutorSessionState copyWith({
     List<(bool, String)>? transcript,
     bool? busy,
+    ConversationContext? conversation,
   }) => TutorSessionState(
     mode: mode,
     context: context,
     transcript: transcript ?? this.transcript,
     busy: busy ?? this.busy,
+    conversation: conversation ?? this.conversation,
   );
 }
 
@@ -874,16 +883,37 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
     );
     if (context == null) return;
     state = TutorSessionState(mode: mode, context: context, busy: true);
-    final reply = await ref.read(languageTutorProvider).respond(
-      mode: mode,
-      context: context,
-      userMessage: 'Start the session.',
-    );
+    // Phase 35 activation: when the brain is ready, every live reply comes
+    // from the packet teacher path — TeacherIntelligence plans, the
+    // deterministic voice words, the language pipeline gates speech
+    // (Phase 24/25). The prompt it builds is what a real GGUF model will
+    // consume in P36; only the wording generator changes then. The legacy
+    // LanguageTutor/DemoTutorModel path remains the fallback while the brain
+    // is still loading.
+    final brain = ref.read(teacherBrainProvider).value;
+    String openerText;
+    ConversationContext conversation = const ConversationContext();
+    if (brain != null) {
+      final response = ref.read(llmPipelineProvider).respond(
+            brain: brain,
+            context: conversation,
+            userMessage: 'Start the session.',
+            supportMode: ref.read(teacherSupportModeProvider),
+          );
+      openerText = response.text;
+      conversation = response.context;
+    } else {
+      final reply = await ref.read(languageTutorProvider).respond(
+        mode: mode,
+        context: context,
+        userMessage: 'Start the session.',
+      );
+      openerText = reply.text;
+    }
     // The teacher opens personally, from what it actually knows (Phase 21):
     // the brain's leading curiosity/observation precedes the lesson opener.
     // Phase 24: a genuine memory reference ("Remember…") makes the teacher
     // feel persistent — drawn from real connections/history, never invented.
-    final brain = ref.read(teacherBrainProvider).value;
     final greeting = brain == null ? null : teacherGreeting(brain);
     final memory = brain == null
         ? null
@@ -892,9 +922,10 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
       transcript: [
         if (greeting != null) (true, greeting),
         if (memory != null) (true, memory),
-        (true, reply.text),
+        (true, openerText),
       ],
       busy: false,
+      conversation: conversation,
     );
   }
 
@@ -917,28 +948,48 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
       );
     }
 
-    final history = [
-      for (final (isTutor, text) in s.transcript)
-        AiMessage(isTutor ? AiRole.assistant : AiRole.user, text),
-    ];
-    final reply = await ref.read(languageTutorProvider).respond(
-      mode: s.mode,
-      context: s.context,
-      userMessage: message,
-      history: history,
-    );
+    // Phase 35 activation: packet teacher path when the brain is ready,
+    // legacy LanguageTutor fallback otherwise (same rule as start()).
+    final brain = ref.read(teacherBrainProvider).value;
+    String replyText;
+    ConversationContext? nextConversation;
+    if (brain != null) {
+      final withLearner = s.conversation
+          .withTurn(ConversationTurn(fromLearner: true, text: message));
+      final response = ref.read(llmPipelineProvider).respond(
+            brain: brain,
+            context: withLearner,
+            userMessage: message,
+            supportMode: ref.read(teacherSupportModeProvider),
+          );
+      replyText = response.text;
+      nextConversation = response.context;
+    } else {
+      final history = [
+        for (final (isTutor, text) in s.transcript)
+          AiMessage(isTutor ? AiRole.assistant : AiRole.user, text),
+      ];
+      final reply = await ref.read(languageTutorProvider).respond(
+        mode: s.mode,
+        context: s.context,
+        userMessage: message,
+        history: history,
+      );
+      replyText = reply.text;
+    }
     // Dedupe guard (Phase 21): never show the identical tutor reply twice in
     // a row — a repeated line reads as a bug, so acknowledge-and-advance.
     final lastTutor = state?.transcript.lastWhere(
       (t) => t.$1,
       orElse: () => (true, ''),
     );
-    final text = reply.text.trim() == lastTutor?.$2.trim()
-        ? '${reply.text} ¿Algo más que quieras contarme?'
-        : reply.text;
+    final text = replyText.trim() == lastTutor?.$2.trim()
+        ? '$replyText ¿Algo más que quieras contarme?'
+        : replyText;
     state = state?.copyWith(
       transcript: [...?state?.transcript, (true, text)],
       busy: false,
+      conversation: nextConversation,
     );
   }
 

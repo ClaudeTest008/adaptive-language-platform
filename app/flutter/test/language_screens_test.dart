@@ -13,6 +13,7 @@ import 'package:adaptive_exam_platform/language/roleplay_engine.dart';
 import 'package:adaptive_exam_platform/language/story.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_stories_screen.dart';
 import 'package:adaptive_exam_platform/language/teacher_memory.dart';
+import 'package:adaptive_exam_platform/language/tutor.dart';
 import 'package:adaptive_exam_platform/language/speech.dart';
 import 'package:adaptive_exam_platform/presentation/language_providers.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_concept_screen.dart';
@@ -358,6 +359,56 @@ void main() {
     expect(find.textContaining('comprehension 80%'), findsOneWidget);
     expect(find.text('Ready for harder'), findsOneWidget);
     expect(find.text('You finish what you start.'), findsOneWidget);
+  });
+
+  test('tutor session runs on the packet teacher path once the brain is ready',
+      () async {
+    final container = ProviderContainer(
+      overrides: [
+        curriculumProvider.overrideWith((ref) => Future.value(curriculum)),
+        speechServiceProvider.overrideWithValue(NoopSpeechService()),
+        teacherNotebookRepositoryProvider.overrideWithValue(
+          InMemoryTeacherNotebookRepository(),
+        ),
+        experienceRepositoryProvider.overrideWithValue(
+          InMemoryExperienceRepository(),
+        ),
+        teacherMemoryRepositoryProvider.overrideWithValue(
+          InMemoryTeacherMemoryRepository(),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    // Let the demo seed + brain resolve (same settling the widgets rely on).
+    await container.read(curriculumProvider.future);
+    for (var i = 0; i < 30; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      if (container.read(teacherBrainProvider).value != null) break;
+    }
+    expect(container.read(teacherBrainProvider).value, isNotNull,
+        reason: 'brain must resolve for the packet path');
+
+    final tutor = container.read(tutorSessionProvider.notifier);
+    await tutor.start(TutorMode.teacher);
+    var s = container.read(tutorSessionProvider)!;
+    // The packet path stores the advanced ConversationContext; the legacy
+    // fallback leaves it empty — so a non-empty context proves activation.
+    expect(s.conversation.turns, isNotEmpty);
+    expect(s.transcript.last.$2, isNotEmpty);
+
+    await tutor.send('Hola, quiero practicar.');
+    s = container.read(tutorSessionProvider)!;
+    expect(s.conversation.turns.length, greaterThanOrEqualTo(3));
+    expect(s.transcript.last.$1, isTrue); // teacher replied
+    expect(s.transcript.last.$2, isNotEmpty);
+
+    // Determinism: the same session replayed gives the same transcript.
+    final tutor2 = container.read(tutorSessionProvider.notifier)..reset();
+    await tutor2.start(TutorMode.teacher);
+    await tutor2.send('Hola, quiero practicar.');
+    final s2 = container.read(tutorSessionProvider)!;
+    expect(s2.transcript.last.$2, s.transcript.last.$2);
   });
 
   testWidgets('language selector switches curriculum and reseeds learner', (

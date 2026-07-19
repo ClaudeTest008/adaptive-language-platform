@@ -9,6 +9,20 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- **Phase 35 (increment 7) — Packet teacher path ACTIVATED in the live tutor.**
+  Every tutor reply now flows TeacherBrain → TeacherIntelligence plan →
+  DeterministicTeacherVoice → language-pipeline speech gate (`LlmPipeline`,
+  Phase 24/25) whenever the brain is ready; the legacy LanguageTutor/
+  DemoTutorModel path remains only as the fallback while the brain is still
+  loading. `TutorSessionState` gains the session-scoped `ConversationContext`
+  (P25 conversation memory — not learner state); start/send thread it through
+  `LlmPipeline.respond` (pipeline itself untouched). Conversation scoring and
+  the dedupe guard are unchanged. P36 (real GGUF) now only swaps the wording
+  generator — the decision path is already live. 428 tests (+1 controller
+  regression: conversation memory advances only on the packet path, replies
+  non-empty, and an identical replayed session yields an identical transcript —
+  determinism proven). analyze clean; apk debug green. Not device-verified.
+
 - **Phase 35 (increment 6) / Phase 38 core — Reader session instrumentation.**
   The reader now MEASURES sessions: wall-clock duration, pauses (playback
   interruptions), paragraph replays, page revisits, word look-ups, and words

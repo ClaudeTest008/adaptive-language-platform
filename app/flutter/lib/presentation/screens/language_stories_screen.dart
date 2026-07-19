@@ -317,15 +317,7 @@ class _BookCover extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                boxShadow: tones.dark
-                    ? null
-                    : const [
-                        BoxShadow(
-                          color: Color(0x14000000),
-                          blurRadius: 16,
-                          offset: Offset(0, 6),
-                        ),
-                      ],
+                boxShadow: tones.cardShadow,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

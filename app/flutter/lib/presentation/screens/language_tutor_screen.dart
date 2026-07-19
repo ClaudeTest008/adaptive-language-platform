@@ -150,15 +150,7 @@ class _Bubble extends StatelessWidget {
           bottomLeft: Radius.circular(isTutor ? 6 : 20),
           bottomRight: Radius.circular(isTutor ? 20 : 6),
         ),
-        boxShadow: tones.dark
-            ? null
-            : const [
-                BoxShadow(
-                  color: Color(0x0F000000),
-                  blurRadius: 14,
-                  offset: Offset(0, 4),
-                ),
-              ],
+        boxShadow: tones.softShadow,
       ),
       child: Text.rich(
         TextSpan(
@@ -186,7 +178,11 @@ class _Bubble extends StatelessWidget {
               width: 30,
               height: 30,
               decoration: BoxDecoration(color: teacher, shape: BoxShape.circle),
-              child: const Icon(Icons.school, size: 16, color: Colors.white),
+              child: Icon(
+                Icons.school,
+                size: 16,
+                color: tones.onTint(AppTint.mint),
+              ),
             ),
             const SizedBox(width: AppSpace.sm + 2),
           ],
@@ -392,7 +388,10 @@ class _ModeSelector extends ConsumerWidget {
                     color: tones.solid(AppTint.mint),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.school, color: Colors.white),
+                  child: Icon(
+                    Icons.school,
+                    color: tones.onTint(AppTint.mint),
+                  ),
                 ),
                 const SizedBox(height: AppSpace.lg),
                 Text(
@@ -1068,7 +1067,7 @@ class _TranslationReveal extends StatelessWidget {
                     : 'No $nativeName translation for this reply — it was '
                         'spoken in the target language only.',
                 style: TextStyle(
-                  color: tones.dark ? tones.ink : const Color(0xFF1B1E28),
+                  color: tones.ink,
                   fontSize: 13.5,
                   height: 1.4,
                   fontStyle: has ? FontStyle.normal : FontStyle.italic,

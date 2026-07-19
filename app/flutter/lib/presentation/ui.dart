@@ -128,6 +128,30 @@ class AppTones {
         _ => dark ? const Color(0xFFEDEFF3) : const Color(0xFF1B1E28),
       };
 
+  /// The one card shadow in the system. Dark mode uses none (elevation reads
+  /// as surface tint there), so every raised surface asks for this instead of
+  /// hand-rolling its own alpha.
+  List<BoxShadow>? get cardShadow => dark
+      ? null
+      : const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 18,
+            offset: Offset(0, 6),
+          ),
+        ];
+
+  /// A tighter shadow for small raised elements (chat bubbles, covers).
+  List<BoxShadow>? get softShadow => dark
+      ? null
+      : const [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 14,
+            offset: Offset(0, 4),
+          ),
+        ];
+
   /// The saturated version of a tint — icon strokes, progress, glows.
   Color solid(AppTint t) => switch (t) {
         AppTint.sage => const Color(0xFF7C8B5A),
@@ -196,15 +220,7 @@ class SoftCard extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
-        boxShadow: elevated && !tones.dark
-            ? const [
-                BoxShadow(
-                  color: Color(0x0D000000),
-                  blurRadius: 18,
-                  offset: Offset(0, 6),
-                ),
-              ]
-            : null,
+        boxShadow: elevated ? tones.cardShadow : null,
       ),
       child: Material(
         color: fill,
@@ -737,15 +753,7 @@ class GradientHero extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.card),
-        boxShadow: tones.dark
-            ? null
-            : const [
-                BoxShadow(
-                  color: Color(0x0F000000),
-                  blurRadius: 20,
-                  offset: Offset(0, 8),
-                ),
-              ],
+        boxShadow: tones.cardShadow,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.card),

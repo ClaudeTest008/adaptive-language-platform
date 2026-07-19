@@ -367,13 +367,18 @@ class _HeaderCard extends ConsumerWidget {
           children: [
             Text(flag, style: const TextStyle(fontSize: 26)),
             const SizedBox(width: AppSpace.sm),
-            Text(
-              languageName,
-              style: TextStyle(
-                color: tones.ink,
-                fontSize: 27,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.7,
+            // Flexible: a long language name must ellipsize, not overflow.
+            Flexible(
+              child: Text(
+                languageName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: tones.ink,
+                  fontSize: 27,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.7,
+                ),
               ),
             ),
           ],

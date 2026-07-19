@@ -367,15 +367,7 @@ class _Bubble extends StatelessWidget {
                   bottomLeft: Radius.circular(fromLearner ? 20 : 6),
                   bottomRight: Radius.circular(fromLearner ? 6 : 20),
                 ),
-                boxShadow: tones.dark
-                    ? null
-                    : const [
-                        BoxShadow(
-                          color: Color(0x0F000000),
-                          blurRadius: 14,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
+                boxShadow: tones.softShadow,
               ),
               child: Text(
                 text,

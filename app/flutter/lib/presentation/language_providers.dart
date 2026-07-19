@@ -1010,14 +1010,17 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
   /// Phase 36: returns the real GGUF wording generator when — and only when —
   /// a verified model is installed AND the engine loads. Anything else → null
   /// → the deterministic voice words the plan. Never fabricates readiness.
-  Future<Future<String?> Function(LlmPrompt prompt)?> _neuralGenerator() async {
+  Future<Future<String?> Function(LlmPrompt prompt)?> _neuralGenerator({
+    void Function(String partial)? onPartial,
+  }) async {
     try {
       final state = await ref.read(llmModelManagerProvider).status();
       final path = state.info?.path;
       if (!state.isReady || path == null) return null;
       final voice = ref.read(ggufTeacherVoiceProvider);
       if (!await voice.ensureLoaded(path)) return null;
-      return voice.word;
+      // Stream partial tokens to the UI as they arrive.
+      return (prompt) => voice.word(prompt, onPartial: onPartial);
     } catch (_) {
       return null; // any failure = honest fallback, never a crash
     }
@@ -1122,6 +1125,18 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
       return;
     }
 
+    // Live streaming bubble (Step 3): the model fills this in token-by-token,
+    // so the learner sees words appear instead of waiting for the whole reply.
+    final liveIndex = state?.transcript.length ?? 0;
+    state = state?.copyWith(transcript: [...?state?.transcript, (true, '')]);
+    void onPartial(String partial) {
+      final t = [...?state?.transcript];
+      if (liveIndex < t.length && t[liveIndex].$1) {
+        t[liveIndex] = (true, partial);
+        state = state?.copyWith(transcript: t);
+      }
+    }
+
     // Phase 35 activation: packet teacher path when the brain is ready,
     // legacy LanguageTutor fallback otherwise (same rule as start()).
     final brain = ref.read(teacherBrainProvider).value;
@@ -1135,7 +1150,7 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
             context: withLearner,
             userMessage: message,
             supportMode: ref.read(teacherSupportModeProvider),
-            generate: await _neuralGenerator(),
+            generate: await _neuralGenerator(onPartial: onPartial),
             learnerIntent: intent,
             learnerFacts: ref.read(learnerFactsProvider),
             packet: _buildPacket(brain, withLearner),
@@ -1159,12 +1174,15 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
       replyText = reply.text;
     }
     // Dedupe guard (Phase 21): never show the identical tutor reply twice in
-    // a row — a repeated line reads as a bug, so acknowledge-and-advance.
-    final lastTutor = state?.transcript.lastWhere(
-      (t) => t.$1,
-      orElse: () => (true, ''),
-    );
-    final text = replyText.trim() == lastTutor?.$2.trim()
+    // a row. Compare against the tutor bubble BEFORE the live streaming bubble
+    // (the live bubble already holds this reply, so it must be skipped).
+    final tr = state?.transcript ?? const [];
+    var priorTutorText = '';
+    for (var i = 0; i < liveIndex && i < tr.length; i++) {
+      if (tr[i].$1) priorTutorText = tr[i].$2;
+    }
+    final text = replyText.trim().isNotEmpty &&
+            replyText.trim() == priorTutorText.trim()
         ? '$replyText ¿Algo más que quieras contarme?'
         : replyText;
 
@@ -1190,12 +1208,17 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
           );
     }
 
+    // Replace the live streaming bubble with the finalized text (dedupe /
+    // roleplay applied), then append any scene stage line.
+    final finalTranscript = [...?state?.transcript];
+    if (liveIndex < finalTranscript.length) {
+      finalTranscript[liveIndex] = (true, text);
+    } else {
+      finalTranscript.add((true, text));
+    }
+    if (stageLine != null) finalTranscript.add((true, stageLine));
     state = state?.copyWith(
-      transcript: [
-        ...?state?.transcript,
-        (true, text),
-        if (stageLine != null) (true, stageLine),
-      ],
+      transcript: finalTranscript,
       busy: false,
       conversation: nextConversation,
       roleplay: nextRoleplay,

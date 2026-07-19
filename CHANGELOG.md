@@ -9,6 +9,36 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Changed
 
+- **Streaming tutor replies (perceived-latency fix).** `engine.create()` already
+  yielded per-token deltas — we were buffering the whole reply before showing
+  anything. Now `GgufTeacherVoice.word` takes an `onPartial` callback and the
+  tutor controller shows a live bubble that fills in token-by-token; the
+  finalized text (dedupe / roleplay applied) then replaces it. Cancel-safe
+  (generation token), deterministic (same tokens, shown incrementally), no
+  duplicate tokens; speech still fires only after the speech-safe final text.
+  `maxTokens` default trimmed 160→120 (Step 8). DEVICE-MEASURED (CPH2037):
+  time-to-first-token **13.1 s** vs full reply **31.0 s** — the learner sees
+  Spanish words ~18 s sooner; partial text confirmed rendering mid-generation
+  via screenshot; 0 ANRs; ~2.31 GB PSS. 459 tests (no regression — the
+  deterministic-fallback send path exercises the live-bubble replace + reworked
+  dedupe guard). analyze clean; apk debug green.
+  HONEST on the rest of the brief: (Step 4) **KV-cache reuse is not
+  implementable** with llamadart 0.8.16 — its `create()` is documented stateless
+  and exposes no cross-call KV-prefix API; would require swapping the binding
+  (out of scope). Not faked. (Step 9) chat format was **already correct** —
+  proper `LlamaChatMessage` system/user/assistant roles (Qwen template applied
+  by the binding), not concatenation. (Step 7) summarization is **unnecessary**
+  — the 12-turn `ConversationContext` cap already bounds history to ~147 tokens
+  after 30 turns and learner facts persist separately, so a summary would only
+  grow the prompt against the latency goal. (Step 6) packet already minimal
+  (108-char brief). (Step 10) **3B upgrade rejected** — 1.5B is already ~31 s;
+  a 3B doubles decode and worsens the primary responsiveness goal, and streaming
+  is the correct lever, not a bigger model. Not adopted; constants unchanged.
+  NOT completed: the full 40-turn device conversation (~31 s/reply on the
+  owner's phone). Remaining ceiling: 13 s prefill + 0.5 tok/s decode are
+  CPU-bound; streaming masks the wait but the absolute floor is the model on
+  this hardware.
+
 - **Root-cause fix: the tutor converses instead of correcting.** The planner was
   the problem: for a plain learner message `_momentForLearner` returned null →
   `decide(brain)` → and because the demo brain always has an active weak concept

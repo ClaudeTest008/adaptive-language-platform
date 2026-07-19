@@ -52,15 +52,23 @@ class GgufTeacherVoice {
   }
 
   /// Words the teacher's decision. Streams tokens, honours [cancel] via the
-  /// generation token, trims to [maxTokens]. Null on failure/cancel/empty —
-  /// the caller falls back to the deterministic voice; nothing is invented.
-  Future<String?> word(LlmPrompt prompt, {int maxTokens = 160}) async {
+  /// generation token, trims to [maxTokens]. [onPartial] fires with the running
+  /// text as each chunk arrives, so the UI can display words while the model is
+  /// still generating (time-to-first-token instead of wait-for-whole-reply).
+  /// Null on failure/cancel/empty — the caller falls back to the deterministic
+  /// voice; nothing is invented.
+  Future<String?> word(
+    LlmPrompt prompt, {
+    int maxTokens = 120,
+    void Function(String partial)? onPartial,
+  }) async {
     final engine = _engine;
     if (engine == null || _loading) return null;
     final myGen = ++_gen;
     final sw = Stopwatch()..start();
     final out = StringBuffer();
     var tokens = 0;
+    var firstMs = -1;
     try {
       await for (final chunk in engine.create(
         [
@@ -82,6 +90,8 @@ class GgufTeacherVoice {
             text: prompt.user,
           ),
         ],
+        // Shorter target (~a few sentences) keeps the tutor snappy; the model
+        // still stops naturally well before the cap on most turns.
         params: GenerationParams(maxTokens: maxTokens),
       )) {
         if (myGen != _gen) {
@@ -90,14 +100,20 @@ class GgufTeacherVoice {
         }
         final text = chunk.choices.first.delta.content;
         if (text != null) {
+          if (firstMs < 0) {
+            firstMs = sw.elapsedMilliseconds;
+            debugPrint('[GGUF] gen#$myGen first token in ${firstMs}ms');
+          }
           out.write(text);
           tokens++;
+          onPartial?.call(out.toString());
         }
       }
       final text = out.toString().trim();
       final ms = sw.elapsedMilliseconds;
       final tps = ms == 0 ? 0 : (tokens * 1000 / ms).toStringAsFixed(1);
-      debugPrint('[GGUF] gen#$myGen $tokens chunks in ${ms}ms (~$tps tok/s) '
+      debugPrint('[GGUF] gen#$myGen $tokens chunks, first=${firstMs}ms '
+          'total=${ms}ms (~$tps tok/s) '
           '<<${text.length > 80 ? '${text.substring(0, 80)}…' : text}>>');
       return text.isEmpty ? null : text;
     } catch (e, st) {

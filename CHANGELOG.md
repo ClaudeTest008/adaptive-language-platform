@@ -7,6 +7,73 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
+### Changed
+
+- **Design system rebuild + full screen redesign (production polish pass).**
+  A tokenised design layer (`AppTones` in `presentation/ui.dart`) replaces the
+  seeded Material approximation: warm cream canvas in light, near-black in
+  dark, four accent tints (sage/sun/mint/lilac) and a component set —
+  `SoftCard`, `ActionCard`, `CircleIconButton`, `SoftChip`, `SectionHeader`,
+  `PrimaryButton`, `HaloMicButton` — that every screen composes. Both
+  brightnesses are first-class: no widget hardcodes a colour that only reads
+  correctly in one theme, and `main.dart` now builds one explicit
+  `ColorScheme` per brightness so Material's own components (buttons, inputs,
+  nav bar, sheets, dialogs) land on the palette instead of near it.
+  Redesigned to the supplied mockups: home (greeting, ask-the-teacher bar,
+  2×2 quick-practice grid), AI Tutor (avatar bubbles, stacked context chips,
+  voice-first bottom bar with a haloed mic and an opt-in composer), Speaking
+  (iridescent orb, two-tone prompt, halo mic), Reading Library + reader +
+  companion, onboarding, login, goals, settings, practice, concept, content
+  and the three model-settings screens.
+
+- **Tutor conversation quality.** Corrections now keep a *cadence* — at least
+  two learner turns between them, and the same concept stays off-limits for
+  four — so producing Spanish no longer draws a correction on every single
+  turn (the "grammar checker" feel). Cadence lives on `ConversationContext`
+  (conversation-scoped, advanced only by learner turns), never on the learner
+  model. Roleplay transitions close the previous scene before opening a new
+  one, and a finished scene hands the conversation back instead of dead-ending.
+
+### Fixed
+
+- **The tutor transcript never followed the conversation.** New and streaming
+  messages now auto-scroll into view; a caret marks a reply still arriving.
+- **The memory line opened in English** ("Remember — …"), so an English phrase
+  became the Spanish body of the bubble and was eligible for the Spanish
+  voice. It is Spanish-first now ("¿Recuerdas? — …") with the English half as
+  support, which the speech gate keeps out of the audio.
+- **The teaching rationale could connect a concept to itself** ("connect tener
+  for physical states to tener for physical states") — the suggestion's
+  related list can contain the focus concept. Filtered out, falling back to
+  the plain rationale when nothing else remains.
+- **Reader:** four round app-bar actions truncated the title to "La lieb…",
+  and 25px body text pushed the translation off the fold. Actions are smaller,
+  the title is left-aligned, body text is 22/1.5.
+
+### Changed (tech debt)
+
+- The Dart package is `adaptive_language_platform`; it had kept the exam name
+  three phases past the rebrand. `pubspec` + the 39 test files that import it;
+  no lib file was affected (they use relative imports). The Android Kotlin
+  namespace is deliberately still `com.adaptiveexam.adaptive_exam_platform` —
+  renaming it moves MainActivity's package and directory, which is a native
+  change worth doing on its own. The installed applicationId is already
+  `com.adaptiveexam.adaptive_language_platform`.
+
+### Performance
+
+- Replayed prompt history capped at the last 6 exchanges
+  (`promptHistoryTurns`). The llama binding still exposes no KV-prefix reuse,
+  so the entire prompt is re-tokenised every turn and history is paid again on
+  each reply; halving it measurably halves that component (12 turns/864 chars
+  → 6/432 on a 30-turn conversation). Durable recall is unaffected — facts,
+  focus and misconceptions reach the model through the packet, not the raw
+  transcript. No device latency figure is claimed here; none was measured for
+  this change.
+- `splitTeacherReply` memoised in the tutor screen: a streaming reply rebuilds
+  the transcript many times a second and previously re-split every message in
+  the conversation on each rebuild.
+
 ### Removed
 
 - **Exam-era dead code sweep (tech debt, part 1 — presentation layer).**

@@ -3,7 +3,7 @@
 ## Active
 
 - Phase 8 infra: Firestore repository swap behind the existing seams (curriculum/review/signals/goals stores → real persistence), then Firebase integration + RC checklists. See `PRODUCTION_CHECKLIST.md`.
-- Package rename `adaptive_exam_platform` → `adaptive_language_platform` (Android namespace/Kotlin package churn — confirm-first; the exam-era screen deletion half of this sweep landed 2026-07-19).
+- Android Kotlin namespace rename `com.adaptiveexam.adaptive_exam_platform` → `...adaptive_language_platform` (moves MainActivity's package + directory; native-side, confirm-first). The Dart package rename and the exam-era screen deletion both landed 2026-07-19.
 
 - Phase 3: tutor history persistence seam (`tutorHistory` shape in docs/database/05) + session summaries feeding Learning DNA.
 
@@ -19,6 +19,8 @@
 - Remove demo seed once real learner accounts persist language state (Firestore swap, Phase 8).
 
 ## Done
+
+- [x] Production polish pass — design-system rebuild (`AppTones` + component kit, light **and** dark), every learner screen redesigned to the mockups, tutor correction cadence + roleplay scene transitions, transcript auto-scroll + streaming caret, prompt-history cap and split memoisation, Dart package rename; 463 tests green, analyze clean, device-verified on CPH2037 with 0 overflow errors (2026-07-19).
 
 - [x] Tech-debt sweep part 1 — presentation dead code: 7 unrouted exam screens deleted, `providers.dart` reduced to the 5 live providers, exam session controllers + their test removed (462→460), `widgets.dart` trimmed to CenteredBody, 8 orphan language providers removed (engines kept + tested); core layers untouched; 460 tests green, analyze clean, apk built (2026-07-19).
 

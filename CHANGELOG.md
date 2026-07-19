@@ -68,6 +68,38 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- 2026-07-18: Phase 31 — Persistent Teacher Memory + lesson-completion
+  pipeline. Completes the infrastructure Phase 30 left: the teacher now
+  genuinely remembers completed lessons across app restarts, all derived from
+  measured evidence. **Lesson-end pipeline wired (highest priority)**: ending a
+  tutor session (`TutorSessionController.reset`) now automatically builds a
+  `LessonResult` + `TeacherReflection` from the run's real speaking/reading
+  evidence and persists a `CompletedLesson` — no UI change required; a bare
+  session records nothing. **Persistent memory** (`lib/language/teacher_memory.dart`,
+  pure): `CompletedLesson` (measured, JSON) + `RoleplayMemory` (resume an
+  interrupted scene) + `TeacherMemoryRepository` seam (in-memory default +
+  `PrefsTeacherMemoryRepository` disk impl, one-per-day+objective merge,
+  capped). **Long-Term Memory Engine** (`lib/language/teacher_memory_engine.dart`,
+  pure): `summarizeMemory` derives `TeacherMemorySummary` — recent achievements,
+  long-term strengths/weaknesses, recurring misconceptions/connections,
+  recovered skills, confidence/motivation trends, learning + teaching momentum,
+  lessons completed — everything measured, empty/neutral when no history.
+  **Deterministic forgetting**: `decayedConcepts` fades a concept only when it
+  is both long-unpracticed AND never strongly held (mastered <3×); strongly-
+  mastered concepts stay stable — surfaced as "reconnect" candidates, never
+  "you forgot" (connection-first). **Brain integration**: persisted completed
+  lessons feed the brain's `lessonHistory` (cross-restart continuity; replaces
+  the P30 in-run feed so there is no double-counting). **TeacherPacket
+  expanded** (additive): carries the memory summary, serialized for the LLM
+  (MEMORY/ACHIEVED/LONG-TERM WEAK/RECOVERED/RECONNECT/RECURRING, omitted when
+  empty). Providers: `teacherMemoryRepositoryProvider`, `teacherMemoryProvider`,
+  `teacherMemorySummaryProvider`. 392 tests (+11: prefs restart restoration,
+  same-day merge, roleplay persist/clear, lesson→completed round-trip, memory
+  summary strengths/weaknesses/recovery/trend/momentum, forgetting decay +
+  strong-stays + recent-never, packet memory expansion + omission), analyze
+  clean, Android debug build green. Fully offline/deterministic — no native or
+  device work.
+
 - 2026-07-18: Phase 30 — Adaptive Roleplay + typed Lesson Outcomes + Teacher
   Events (teaching itself becomes data). Three new pure, deterministic, offline
   engines, all derived from the Teacher Brain — no new learner state, no

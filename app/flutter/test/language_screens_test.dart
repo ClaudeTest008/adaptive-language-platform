@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:adaptive_exam_platform/infrastructure/prefs_experience_repository.dart';
 import 'package:adaptive_exam_platform/language/curriculum.dart';
 import 'package:adaptive_exam_platform/language/notebook_repository.dart';
+import 'package:adaptive_exam_platform/language/teacher_memory.dart';
 import 'package:adaptive_exam_platform/language/speech.dart';
 import 'package:adaptive_exam_platform/presentation/language_providers.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_concept_screen.dart';
@@ -41,6 +42,9 @@ Widget _app(Curriculum c, Widget home) => ProviderScope(
     ),
     experienceRepositoryProvider.overrideWithValue(
       InMemoryExperienceRepository(),
+    ),
+    teacherMemoryRepositoryProvider.overrideWithValue(
+      InMemoryTeacherMemoryRepository(),
     ),
   ],
   child: MaterialApp(home: home),

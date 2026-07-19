@@ -8,6 +8,7 @@ import 'relationships.dart';
 import 'roleplay_engine.dart';
 import 'teacher_brain.dart';
 import 'teacher_intelligence.dart';
+import 'teacher_memory_engine.dart';
 import 'teaching_style.dart';
 
 /// TeacherPacket (Phase 26): the ONLY thing a language generator may receive.
@@ -36,6 +37,7 @@ class TeacherPacket {
     this.lessonOutcomeSummary,
     this.recentEvents = const [],
     this.reflectionSummary,
+    this.memory,
   });
 
   final TeacherResponsePlan plan;
@@ -65,6 +67,10 @@ class TeacherPacket {
 
   /// One-line reflection summary from the last lesson.
   final String? reflectionSummary;
+
+  /// Longitudinal teaching memory (Phase 31) — long-term trends, recurring
+  /// misconceptions, recovered/forgotten skills, momentum.
+  final TeacherMemorySummary? memory;
 }
 
 /// Assembles the packet from the brain + engines + live conversation. All
@@ -81,6 +87,7 @@ TeacherPacket buildTeacherPacket({
   RoleplayScenario? roleplay,
   LessonResult? lastLesson,
   TeacherReflection? reflection,
+  TeacherMemorySummary? memory,
 }) {
   final plan = intelligence.plan(brain, turn: context.turns.length);
   final summary = summarizeConversation(context);
@@ -133,6 +140,7 @@ TeacherPacket buildTeacherPacket({
               'improved: ${reflection.whatImproved.first}',
             if (reflection.nextAdjustment != null) reflection.nextAdjustment,
           ].whereType<String>().join(' · '),
+    memory: (memory == null || memory.isEmpty) ? null : memory,
   );
 }
 
@@ -192,6 +200,26 @@ String serializeTeacherPacket(TeacherPacket p) {
       p.reflection!.needsWork,
       p.reflection!.next,
     ].whereType<String>().join(' · ')}');
+  }
+  final m = p.memory;
+  if (m != null && !m.isEmpty) {
+    b.writeln('MEMORY: ${m.lessonsCompleted} lessons · '
+        'confidence ${m.confidenceTrend.name} · momentum ${m.learningMomentum}');
+    if (m.recentAchievements.isNotEmpty) {
+      b.writeln('ACHIEVED: ${m.recentAchievements.take(3).join(', ')}');
+    }
+    if (m.longTermWeaknesses.isNotEmpty) {
+      b.writeln('LONG-TERM WEAK: ${m.longTermWeaknesses.join(', ')}');
+    }
+    if (m.recoveredSkills.isNotEmpty) {
+      b.writeln('RECOVERED: ${m.recoveredSkills.join(', ')}');
+    }
+    if (m.forgottenSkills.isNotEmpty) {
+      b.writeln('RECONNECT (faded): ${m.forgottenSkills.join(', ')}');
+    }
+    if (m.recurringMisconceptions.isNotEmpty) {
+      b.writeln('RECURRING: ${m.recurringMisconceptions.join(', ')}');
+    }
   }
   return b.toString().trim();
 }

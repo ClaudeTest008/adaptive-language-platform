@@ -42,9 +42,12 @@ import '../language/local_llm/llm_model_manager.dart';
 import '../language/local_llm/llm_pipeline.dart';
 import '../language/local_llm/llm_repository.dart';
 import '../language/local_llm/local_llm.dart';
+import '../infrastructure/prefs_teacher_memory_repository.dart';
 import '../language/conversation_continuity.dart';
 import '../language/lesson_outcomes.dart';
 import '../language/roleplay_engine.dart';
+import '../language/teacher_memory.dart';
+import '../language/teacher_memory_engine.dart';
 import '../language/speaking_session.dart';
 import '../language/teacher_intelligence.dart';
 import '../infrastructure/llm_downloader.dart';
@@ -933,7 +936,39 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
     );
   }
 
-  void reset() => state = null;
+  /// Ending a session is a completed lesson (Phase 31): build the typed
+  /// outcome + reflection from the run's measured evidence and persist it to
+  /// the teacher's long-term memory, so the teacher remembers it next time.
+  /// Fire-and-forget, guarded — a bare/empty session records nothing.
+  void reset() {
+    final s = state;
+    state = null;
+    if (s == null || s.transcript.length <= 1) return;
+    _recordCompletedLesson();
+  }
+
+  Future<void> _recordCompletedLesson() async {
+    final brain = ref.read(teacherBrainProvider).value;
+    if (brain == null) return;
+    final speaking = ref.read(speakingSessionsProvider);
+    final reading = await ref.read(readingRecordsProvider.future);
+    final today = _notebookDay(DateTime.now());
+    final result = buildLessonResult(
+      brain: brain,
+      day: today,
+      objective: brain.objectives.current,
+      speaking: speaking,
+      reading: reading,
+    );
+    if (result.isEmpty) return;
+    final lesson = completedFromResult(
+      result,
+      reflection: reflectFromLesson(result),
+    );
+    await ref.read(teacherMemoryRepositoryProvider).appendLesson(lesson);
+    ref.read(lessonResultsProvider.notifier).add(result);
+    ref.read(teacherMemoryRevisionProvider.notifier).state++;
+  }
 }
 
 final tutorSessionProvider =
@@ -1042,13 +1077,14 @@ final teacherBrainProvider = FutureProvider<TeacherBrain?>((ref) async {
   final readingRecords = await ref.watch(readingRecordsProvider.future);
   // Phase 23: speaking sessions (Whisper/fallback) feed lesson history too.
   final speakingSessions = ref.watch(speakingSessionsProvider);
-  // Phase 30: typed lesson results also feed the history (empty until a
-  // lesson-end producer records them).
-  final lessonResults = ref.watch(lessonResultsProvider);
+  // Phase 31: persisted completed lessons feed the history so the teacher
+  // remembers across restarts (the in-run producer persists them, so this is
+  // the single source — no double counting).
+  final persistedLessons = await ref.watch(teacherMemoryProvider.future);
   final lessonHistory = [
     ...outcomesFromRecords(readingRecords),
     for (final s in speakingSessions) speakingOutcome(s, today),
-    for (final r in lessonResults) r.toOutcome(),
+    for (final l in persistedLessons) l.toOutcome(),
   ];
 
   final brain = engine.assemble(
@@ -1166,6 +1202,39 @@ final lessonResultsProvider =
     NotifierProvider<LessonResultsController, List<LessonResult>>(
       LessonResultsController.new,
     );
+
+// ---------- Persistent Teacher Memory (Phase 31) ----------
+
+/// Disk-backed teaching history (completed lessons + last roleplay). Tests
+/// override with an in-memory repository.
+final teacherMemoryRepositoryProvider = Provider<TeacherMemoryRepository>(
+  (ref) => PrefsTeacherMemoryRepository(),
+);
+
+/// Bumped after every persisted lesson so derived providers reload.
+final teacherMemoryRevisionProvider = StateProvider<int>((ref) => 0);
+
+/// The persisted completed lessons — the teacher's long-term memory, restored
+/// across restarts.
+final teacherMemoryProvider = FutureProvider<List<CompletedLesson>>((ref) async {
+  ref.watch(teacherMemoryRevisionProvider);
+  return ref.watch(teacherMemoryRepositoryProvider).loadLessons();
+});
+
+/// The longitudinal memory summary — achievements, long-term strengths/
+/// weaknesses, recurring misconceptions, recovered/forgotten skills, momentum.
+/// Derived from persisted lessons + the current brain; null until ready.
+final teacherMemorySummaryProvider =
+    FutureProvider<TeacherMemorySummary?>((ref) async {
+  final brain = ref.watch(teacherBrainProvider).value;
+  if (brain == null) return null;
+  final lessons = await ref.watch(teacherMemoryProvider.future);
+  return summarizeMemory(
+    brain: brain,
+    lessons: lessons,
+    today: _notebookDay(DateTime.now()),
+  );
+});
 
 /// The roleplay the teacher would run now, chosen deterministically from the
 /// brain (Phase 30, Part 5) — recovery/motivation aware, interest-driven,

@@ -1,9 +1,9 @@
-import 'package:adaptive_exam_platform/language/entities.dart';
-import 'package:adaptive_exam_platform/language/notebook.dart';
-import 'package:adaptive_exam_platform/language/reasoning_engine.dart';
-import 'package:adaptive_exam_platform/language/relationships.dart';
-import 'package:adaptive_exam_platform/language/teacher_brain.dart';
-import 'package:adaptive_exam_platform/language/teacher_intelligence.dart';
+import 'package:adaptive_language_platform/language/entities.dart';
+import 'package:adaptive_language_platform/language/notebook.dart';
+import 'package:adaptive_language_platform/language/reasoning_engine.dart';
+import 'package:adaptive_language_platform/language/relationships.dart';
+import 'package:adaptive_language_platform/language/teacher_brain.dart';
+import 'package:adaptive_language_platform/language/teacher_intelligence.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _hambre = 'es:a1:grammar:tener:hambre';

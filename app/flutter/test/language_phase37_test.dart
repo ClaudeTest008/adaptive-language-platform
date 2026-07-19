@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 
-import 'package:adaptive_exam_platform/infrastructure/sherpa_whisper_service.dart';
-import 'package:adaptive_exam_platform/language/whisper/pcm.dart';
-import 'package:adaptive_exam_platform/language/whisper/whisper_model_manager.dart';
-import 'package:adaptive_exam_platform/language/whisper/whisper_repository.dart';
-import 'package:adaptive_exam_platform/language/whisper/whisper_service.dart';
+import 'package:adaptive_language_platform/infrastructure/sherpa_whisper_service.dart';
+import 'package:adaptive_language_platform/language/whisper/pcm.dart';
+import 'package:adaptive_language_platform/language/whisper/whisper_model_manager.dart';
+import 'package:adaptive_language_platform/language/whisper/whisper_repository.dart';
+import 'package:adaptive_language_platform/language/whisper/whisper_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Phase 37 — deterministic tests for the real-Whisper capture path. The mic

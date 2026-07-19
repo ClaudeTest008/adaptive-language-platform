@@ -1,8 +1,8 @@
-import 'package:adaptive_exam_platform/language/entities.dart';
-import 'package:adaptive_exam_platform/language/misconceptions.dart';
-import 'package:adaptive_exam_platform/language/notebook.dart';
-import 'package:adaptive_exam_platform/language/reasoning_engine.dart';
-import 'package:adaptive_exam_platform/language/teacher_brain.dart';
+import 'package:adaptive_language_platform/language/entities.dart';
+import 'package:adaptive_language_platform/language/misconceptions.dart';
+import 'package:adaptive_language_platform/language/notebook.dart';
+import 'package:adaptive_language_platform/language/reasoning_engine.dart';
+import 'package:adaptive_language_platform/language/teacher_brain.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Misconception _misc(String conceptId, {int occurrences = 2}) => Misconception(

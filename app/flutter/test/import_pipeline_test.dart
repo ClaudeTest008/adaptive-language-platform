@@ -1,7 +1,7 @@
-import 'package:adaptive_exam_platform/application/import_pipeline.dart';
-import 'package:adaptive_exam_platform/domain/models.dart';
-import 'package:adaptive_exam_platform/infrastructure/content_pack.dart';
-import 'package:adaptive_exam_platform/infrastructure/demo_data.dart';
+import 'package:adaptive_language_platform/application/import_pipeline.dart';
+import 'package:adaptive_language_platform/domain/models.dart';
+import 'package:adaptive_language_platform/infrastructure/content_pack.dart';
+import 'package:adaptive_language_platform/infrastructure/demo_data.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _topics = [

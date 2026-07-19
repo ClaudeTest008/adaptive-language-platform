@@ -1,8 +1,8 @@
-import 'package:adaptive_exam_platform/infrastructure/prefs_notebook_repository.dart';
-import 'package:adaptive_exam_platform/language/entities.dart';
-import 'package:adaptive_exam_platform/language/misconceptions.dart';
-import 'package:adaptive_exam_platform/language/notebook.dart';
-import 'package:adaptive_exam_platform/language/notebook_repository.dart';
+import 'package:adaptive_language_platform/infrastructure/prefs_notebook_repository.dart';
+import 'package:adaptive_language_platform/language/entities.dart';
+import 'package:adaptive_language_platform/language/misconceptions.dart';
+import 'package:adaptive_language_platform/language/notebook.dart';
+import 'package:adaptive_language_platform/language/notebook_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

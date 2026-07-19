@@ -1,10 +1,10 @@
 import 'dart:io';
 
-import 'package:adaptive_exam_platform/infrastructure/piper_audio_cache.dart';
-import 'package:adaptive_exam_platform/language/pipeline.dart';
-import 'package:adaptive_exam_platform/language/speaking_session.dart';
-import 'package:adaptive_exam_platform/language/whisper/whisper_model_manager.dart';
-import 'package:adaptive_exam_platform/language/whisper/whisper_repository.dart';
+import 'package:adaptive_language_platform/infrastructure/piper_audio_cache.dart';
+import 'package:adaptive_language_platform/language/pipeline.dart';
+import 'package:adaptive_language_platform/language/speaking_session.dart';
+import 'package:adaptive_language_platform/language/whisper/whisper_model_manager.dart';
+import 'package:adaptive_language_platform/language/whisper/whisper_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _FakeDownloader implements ModelDownloader {

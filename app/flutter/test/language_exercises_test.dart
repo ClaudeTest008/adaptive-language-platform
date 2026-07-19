@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:adaptive_exam_platform/language/curriculum.dart';
-import 'package:adaptive_exam_platform/language/entities.dart';
-import 'package:adaptive_exam_platform/language/exercises.dart';
-import 'package:adaptive_exam_platform/language/relationships.dart';
-import 'package:adaptive_exam_platform/presentation/language_providers.dart';
+import 'package:adaptive_language_platform/language/curriculum.dart';
+import 'package:adaptive_language_platform/language/entities.dart';
+import 'package:adaptive_language_platform/language/exercises.dart';
+import 'package:adaptive_language_platform/language/relationships.dart';
+import 'package:adaptive_language_platform/presentation/language_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 

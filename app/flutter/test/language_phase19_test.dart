@@ -1,13 +1,13 @@
-import 'package:adaptive_exam_platform/language/connections.dart';
-import 'package:adaptive_exam_platform/language/curiosity.dart';
-import 'package:adaptive_exam_platform/language/entities.dart';
-import 'package:adaptive_exam_platform/language/lesson_generator.dart';
-import 'package:adaptive_exam_platform/language/mental_models.dart';
-import 'package:adaptive_exam_platform/language/misconceptions.dart';
-import 'package:adaptive_exam_platform/language/notebook.dart';
-import 'package:adaptive_exam_platform/language/reasoning_engine.dart';
-import 'package:adaptive_exam_platform/language/relationships.dart';
-import 'package:adaptive_exam_platform/language/teacher_brain.dart';
+import 'package:adaptive_language_platform/language/connections.dart';
+import 'package:adaptive_language_platform/language/curiosity.dart';
+import 'package:adaptive_language_platform/language/entities.dart';
+import 'package:adaptive_language_platform/language/lesson_generator.dart';
+import 'package:adaptive_language_platform/language/mental_models.dart';
+import 'package:adaptive_language_platform/language/misconceptions.dart';
+import 'package:adaptive_language_platform/language/notebook.dart';
+import 'package:adaptive_language_platform/language/reasoning_engine.dart';
+import 'package:adaptive_language_platform/language/relationships.dart';
+import 'package:adaptive_language_platform/language/teacher_brain.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _hambre = 'es:a1:grammar:tener:hambre';

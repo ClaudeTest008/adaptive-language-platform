@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:adaptive_exam_platform/ai/chat_model.dart';
-import 'package:adaptive_exam_platform/infrastructure/demo_tutor_model.dart';
-import 'package:adaptive_exam_platform/language/conversation.dart';
-import 'package:adaptive_exam_platform/language/curriculum.dart';
-import 'package:adaptive_exam_platform/language/misconceptions.dart';
-import 'package:adaptive_exam_platform/language/signals.dart';
-import 'package:adaptive_exam_platform/language/tutor.dart';
+import 'package:adaptive_language_platform/ai/chat_model.dart';
+import 'package:adaptive_language_platform/infrastructure/demo_tutor_model.dart';
+import 'package:adaptive_language_platform/language/conversation.dart';
+import 'package:adaptive_language_platform/language/curriculum.dart';
+import 'package:adaptive_language_platform/language/misconceptions.dart';
+import 'package:adaptive_language_platform/language/signals.dart';
+import 'package:adaptive_language_platform/language/tutor.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Curriculum _curriculum() => parseCurriculum(

@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:adaptive_exam_platform/language/curriculum.dart';
-import 'package:adaptive_exam_platform/language/entities.dart';
-import 'package:adaptive_exam_platform/language/ingestion.dart';
+import 'package:adaptive_language_platform/language/curriculum.dart';
+import 'package:adaptive_language_platform/language/entities.dart';
+import 'package:adaptive_language_platform/language/ingestion.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Curriculum _curriculum() => parseCurriculum(

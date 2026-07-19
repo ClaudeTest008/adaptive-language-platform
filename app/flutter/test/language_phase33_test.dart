@@ -1,15 +1,15 @@
-import 'package:adaptive_exam_platform/language/book_analytics.dart';
-import 'package:adaptive_exam_platform/language/entities.dart';
-import 'package:adaptive_exam_platform/language/experience.dart';
-import 'package:adaptive_exam_platform/language/lesson_generator.dart';
-import 'package:adaptive_exam_platform/language/reader_intelligence.dart';
-import 'package:adaptive_exam_platform/language/reading_analytics.dart';
-import 'package:adaptive_exam_platform/language/reasoning_engine.dart';
-import 'package:adaptive_exam_platform/language/recommendation_engine.dart';
-import 'package:adaptive_exam_platform/language/teacher_brain.dart';
-import 'package:adaptive_exam_platform/language/teaching_planner.dart';
-import 'package:adaptive_exam_platform/language/tutor.dart';
-import 'package:adaptive_exam_platform/language/vocabulary_growth.dart';
+import 'package:adaptive_language_platform/language/book_analytics.dart';
+import 'package:adaptive_language_platform/language/entities.dart';
+import 'package:adaptive_language_platform/language/experience.dart';
+import 'package:adaptive_language_platform/language/lesson_generator.dart';
+import 'package:adaptive_language_platform/language/reader_intelligence.dart';
+import 'package:adaptive_language_platform/language/reading_analytics.dart';
+import 'package:adaptive_language_platform/language/reasoning_engine.dart';
+import 'package:adaptive_language_platform/language/recommendation_engine.dart';
+import 'package:adaptive_language_platform/language/teacher_brain.dart';
+import 'package:adaptive_language_platform/language/teaching_planner.dart';
+import 'package:adaptive_language_platform/language/tutor.dart';
+import 'package:adaptive_language_platform/language/vocabulary_growth.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 ReadingRecord _rec(String day, double known, {List<String> unknown = const []}) =>

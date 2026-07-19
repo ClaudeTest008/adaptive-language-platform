@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:adaptive_exam_platform/infrastructure/demo_tutor_model.dart';
-import 'package:adaptive_exam_platform/ai/chat_model.dart';
-import 'package:adaptive_exam_platform/language/curriculum.dart';
-import 'package:adaptive_exam_platform/language/entities.dart';
-import 'package:adaptive_exam_platform/language/pipeline.dart';
-import 'package:adaptive_exam_platform/language/reasoning_engine.dart';
-import 'package:adaptive_exam_platform/language/relationships.dart';
+import 'package:adaptive_language_platform/infrastructure/demo_tutor_model.dart';
+import 'package:adaptive_language_platform/ai/chat_model.dart';
+import 'package:adaptive_language_platform/language/curriculum.dart';
+import 'package:adaptive_language_platform/language/entities.dart';
+import 'package:adaptive_language_platform/language/pipeline.dart';
+import 'package:adaptive_language_platform/language/reasoning_engine.dart';
+import 'package:adaptive_language_platform/language/relationships.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

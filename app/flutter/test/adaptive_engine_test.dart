@@ -1,11 +1,11 @@
 import 'dart:math';
 
-import 'package:adaptive_exam_platform/adaptive/engine.dart';
-import 'package:adaptive_exam_platform/adaptive/graph.dart';
-import 'package:adaptive_exam_platform/adaptive/model.dart';
-import 'package:adaptive_exam_platform/adaptive/scheduler.dart';
-import 'package:adaptive_exam_platform/adaptive/selector.dart';
-import 'package:adaptive_exam_platform/domain/models.dart';
+import 'package:adaptive_language_platform/adaptive/engine.dart';
+import 'package:adaptive_language_platform/adaptive/graph.dart';
+import 'package:adaptive_language_platform/adaptive/model.dart';
+import 'package:adaptive_language_platform/adaptive/scheduler.dart';
+import 'package:adaptive_language_platform/adaptive/selector.dart';
+import 'package:adaptive_language_platform/domain/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 final _now = DateTime(2026, 7, 9, 12);

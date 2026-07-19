@@ -1,5 +1,5 @@
-name: adaptive_exam_platform
-description: Adaptive exam preparation platform (V1 - driver's license).
+name: adaptive_language_platform
+description: Adaptive Language Platform — an AI language teacher that learns how you learn.
 publish_to: "none"
 version: 0.2.0+2
 

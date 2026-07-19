@@ -1,12 +1,12 @@
-import 'package:adaptive_exam_platform/ai/chat_model.dart';
-import 'package:adaptive_exam_platform/ai/orchestrator.dart';
-import 'package:adaptive_exam_platform/application/document_ingestion.dart';
-import 'package:adaptive_exam_platform/application/import_pipeline.dart';
-import 'package:adaptive_exam_platform/application/large_import.dart';
-import 'package:adaptive_exam_platform/application/quality_engine.dart';
-import 'package:adaptive_exam_platform/domain/models.dart';
-import 'package:adaptive_exam_platform/infrastructure/demo_data.dart';
-import 'package:adaptive_exam_platform/infrastructure/demo_repositories.dart';
+import 'package:adaptive_language_platform/ai/chat_model.dart';
+import 'package:adaptive_language_platform/ai/orchestrator.dart';
+import 'package:adaptive_language_platform/application/document_ingestion.dart';
+import 'package:adaptive_language_platform/application/import_pipeline.dart';
+import 'package:adaptive_language_platform/application/large_import.dart';
+import 'package:adaptive_language_platform/application/quality_engine.dart';
+import 'package:adaptive_language_platform/domain/models.dart';
+import 'package:adaptive_language_platform/infrastructure/demo_data.dart';
+import 'package:adaptive_language_platform/infrastructure/demo_repositories.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _header =

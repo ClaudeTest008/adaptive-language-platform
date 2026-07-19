@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:adaptive_exam_platform/infrastructure/prefs_experience_repository.dart';
-import 'package:adaptive_exam_platform/language/curriculum.dart';
-import 'package:adaptive_exam_platform/language/entities.dart';
-import 'package:adaptive_exam_platform/language/experience.dart';
-import 'package:adaptive_exam_platform/language/story.dart';
-import 'package:adaptive_exam_platform/language/notebook_repository.dart';
-import 'package:adaptive_exam_platform/language/teacher_memory.dart';
-import 'package:adaptive_exam_platform/presentation/language_providers.dart';
+import 'package:adaptive_language_platform/infrastructure/prefs_experience_repository.dart';
+import 'package:adaptive_language_platform/language/curriculum.dart';
+import 'package:adaptive_language_platform/language/entities.dart';
+import 'package:adaptive_language_platform/language/experience.dart';
+import 'package:adaptive_language_platform/language/story.dart';
+import 'package:adaptive_language_platform/language/notebook_repository.dart';
+import 'package:adaptive_language_platform/language/teacher_memory.dart';
+import 'package:adaptive_language_platform/presentation/language_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';

@@ -1,8 +1,8 @@
 import 'dart:math';
 
-import 'package:adaptive_exam_platform/application/exam_logic.dart';
-import 'package:adaptive_exam_platform/domain/models.dart';
-import 'package:adaptive_exam_platform/infrastructure/demo_data.dart';
+import 'package:adaptive_language_platform/application/exam_logic.dart';
+import 'package:adaptive_language_platform/domain/models.dart';
+import 'package:adaptive_language_platform/infrastructure/demo_data.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

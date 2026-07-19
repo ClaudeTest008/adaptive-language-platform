@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:adaptive_exam_platform/infrastructure/piper_audio_cache.dart';
-import 'package:adaptive_exam_platform/language/audio_cache.dart';
+import 'package:adaptive_language_platform/infrastructure/piper_audio_cache.dart';
+import 'package:adaptive_language_platform/language/audio_cache.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

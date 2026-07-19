@@ -1,11 +1,11 @@
-import 'package:adaptive_exam_platform/language/connections.dart';
-import 'package:adaptive_exam_platform/language/entities.dart';
-import 'package:adaptive_exam_platform/language/notebook.dart';
-import 'package:adaptive_exam_platform/language/reasoning_engine.dart';
-import 'package:adaptive_exam_platform/language/relationships.dart';
-import 'package:adaptive_exam_platform/language/teacher_brain.dart';
-import 'package:adaptive_exam_platform/language/teaching_planner.dart';
-import 'package:adaptive_exam_platform/language/tutor.dart';
+import 'package:adaptive_language_platform/language/connections.dart';
+import 'package:adaptive_language_platform/language/entities.dart';
+import 'package:adaptive_language_platform/language/notebook.dart';
+import 'package:adaptive_language_platform/language/reasoning_engine.dart';
+import 'package:adaptive_language_platform/language/relationships.dart';
+import 'package:adaptive_language_platform/language/teacher_brain.dart';
+import 'package:adaptive_language_platform/language/teaching_planner.dart';
+import 'package:adaptive_language_platform/language/tutor.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // A tiny hand-built graph: the learner knows "tener hambre" well; three sibling

@@ -1,7 +1,7 @@
-import 'package:adaptive_exam_platform/ai/chat_model.dart';
-import 'package:adaptive_exam_platform/ai/orchestrator.dart';
-import 'package:adaptive_exam_platform/domain/models.dart';
-import 'package:adaptive_exam_platform/infrastructure/demo_data.dart';
+import 'package:adaptive_language_platform/ai/chat_model.dart';
+import 'package:adaptive_language_platform/ai/orchestrator.dart';
+import 'package:adaptive_language_platform/domain/models.dart';
+import 'package:adaptive_language_platform/infrastructure/demo_data.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

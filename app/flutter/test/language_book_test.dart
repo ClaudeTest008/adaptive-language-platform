@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-import 'package:adaptive_exam_platform/infrastructure/document_parser.dart';
-import 'package:adaptive_exam_platform/language/audio_cache.dart';
-import 'package:adaptive_exam_platform/language/book_analytics.dart';
-import 'package:adaptive_exam_platform/language/book_ingestion.dart';
-import 'package:adaptive_exam_platform/language/experience.dart';
+import 'package:adaptive_language_platform/infrastructure/document_parser.dart';
+import 'package:adaptive_language_platform/language/audio_cache.dart';
+import 'package:adaptive_language_platform/language/book_analytics.dart';
+import 'package:adaptive_language_platform/language/book_ingestion.dart';
+import 'package:adaptive_language_platform/language/experience.dart';
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
 

@@ -1,20 +1,20 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:adaptive_exam_platform/infrastructure/gguf_teacher_voice.dart';
-import 'package:adaptive_exam_platform/infrastructure/prefs_experience_repository.dart';
-import 'package:adaptive_exam_platform/language/curriculum.dart';
-import 'package:adaptive_exam_platform/language/message_intent.dart';
-import 'package:adaptive_exam_platform/language/notebook_repository.dart';
-import 'package:adaptive_exam_platform/language/local_llm/llm_memory.dart';
-import 'package:adaptive_exam_platform/language/local_llm/llm_prompt_builder.dart';
-import 'package:adaptive_exam_platform/language/pipeline.dart';
-import 'package:adaptive_exam_platform/language/roleplay_engine.dart';
-import 'package:adaptive_exam_platform/language/teacher_intelligence.dart';
-import 'package:adaptive_exam_platform/language/speech.dart';
-import 'package:adaptive_exam_platform/language/teacher_memory.dart';
-import 'package:adaptive_exam_platform/language/tutor.dart';
-import 'package:adaptive_exam_platform/presentation/language_providers.dart';
+import 'package:adaptive_language_platform/infrastructure/gguf_teacher_voice.dart';
+import 'package:adaptive_language_platform/infrastructure/prefs_experience_repository.dart';
+import 'package:adaptive_language_platform/language/curriculum.dart';
+import 'package:adaptive_language_platform/language/message_intent.dart';
+import 'package:adaptive_language_platform/language/notebook_repository.dart';
+import 'package:adaptive_language_platform/language/local_llm/llm_memory.dart';
+import 'package:adaptive_language_platform/language/local_llm/llm_prompt_builder.dart';
+import 'package:adaptive_language_platform/language/pipeline.dart';
+import 'package:adaptive_language_platform/language/roleplay_engine.dart';
+import 'package:adaptive_language_platform/language/teacher_intelligence.dart';
+import 'package:adaptive_language_platform/language/speech.dart';
+import 'package:adaptive_language_platform/language/teacher_memory.dart';
+import 'package:adaptive_language_platform/language/tutor.dart';
+import 'package:adaptive_language_platform/presentation/language_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 

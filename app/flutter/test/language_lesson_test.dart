@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:adaptive_exam_platform/language/curriculum.dart';
-import 'package:adaptive_exam_platform/language/lesson.dart';
-import 'package:adaptive_exam_platform/language/misconceptions.dart';
-import 'package:adaptive_exam_platform/language/relationships.dart';
-import 'package:adaptive_exam_platform/language/signals.dart';
-import 'package:adaptive_exam_platform/language/story.dart';
+import 'package:adaptive_language_platform/language/curriculum.dart';
+import 'package:adaptive_language_platform/language/lesson.dart';
+import 'package:adaptive_language_platform/language/misconceptions.dart';
+import 'package:adaptive_language_platform/language/relationships.dart';
+import 'package:adaptive_language_platform/language/signals.dart';
+import 'package:adaptive_language_platform/language/story.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const tenerId = 'es:a1:grammar:verbs:states:tener-states';

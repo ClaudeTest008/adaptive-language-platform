@@ -1,14 +1,14 @@
-import 'package:adaptive_exam_platform/language/conversation_continuity.dart';
-import 'package:adaptive_exam_platform/language/curriculum_intelligence.dart';
-import 'package:adaptive_exam_platform/language/entities.dart';
-import 'package:adaptive_exam_platform/language/error_taxonomy.dart';
-import 'package:adaptive_exam_platform/language/local_llm/llm_memory.dart';
-import 'package:adaptive_exam_platform/language/misconceptions.dart';
-import 'package:adaptive_exam_platform/language/pipeline.dart';
-import 'package:adaptive_exam_platform/language/reasoning_engine.dart';
-import 'package:adaptive_exam_platform/language/relationships.dart';
-import 'package:adaptive_exam_platform/language/teacher_brain.dart';
-import 'package:adaptive_exam_platform/language/teacher_packet.dart';
+import 'package:adaptive_language_platform/language/conversation_continuity.dart';
+import 'package:adaptive_language_platform/language/curriculum_intelligence.dart';
+import 'package:adaptive_language_platform/language/entities.dart';
+import 'package:adaptive_language_platform/language/error_taxonomy.dart';
+import 'package:adaptive_language_platform/language/local_llm/llm_memory.dart';
+import 'package:adaptive_language_platform/language/misconceptions.dart';
+import 'package:adaptive_language_platform/language/pipeline.dart';
+import 'package:adaptive_language_platform/language/reasoning_engine.dart';
+import 'package:adaptive_language_platform/language/relationships.dart';
+import 'package:adaptive_language_platform/language/teacher_brain.dart';
+import 'package:adaptive_language_platform/language/teacher_packet.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // A tiny real curriculum: hambre (known) → sueño/miedo (related, unmet);

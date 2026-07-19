@@ -1,12 +1,12 @@
-import 'package:adaptive_exam_platform/language/entities.dart';
-import 'package:adaptive_exam_platform/language/reasoning_engine.dart';
-import 'package:adaptive_exam_platform/language/relationships.dart';
-import 'package:adaptive_exam_platform/language/speaking_session.dart';
-import 'package:adaptive_exam_platform/language/teacher_brain.dart';
-import 'package:adaptive_exam_platform/language/whisper/whisper_model_manager.dart';
-import 'package:adaptive_exam_platform/language/whisper/whisper_pipeline.dart';
-import 'package:adaptive_exam_platform/language/whisper/whisper_repository.dart';
-import 'package:adaptive_exam_platform/language/whisper/whisper_service.dart';
+import 'package:adaptive_language_platform/language/entities.dart';
+import 'package:adaptive_language_platform/language/reasoning_engine.dart';
+import 'package:adaptive_language_platform/language/relationships.dart';
+import 'package:adaptive_language_platform/language/speaking_session.dart';
+import 'package:adaptive_language_platform/language/teacher_brain.dart';
+import 'package:adaptive_language_platform/language/whisper/whisper_model_manager.dart';
+import 'package:adaptive_language_platform/language/whisper/whisper_pipeline.dart';
+import 'package:adaptive_language_platform/language/whisper/whisper_repository.dart';
+import 'package:adaptive_language_platform/language/whisper/whisper_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A downloader whose behaviour the tests control.

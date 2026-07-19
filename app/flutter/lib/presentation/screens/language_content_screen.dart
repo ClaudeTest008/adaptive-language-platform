@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../language/ingestion.dart';
 import '../language_providers.dart';
+import '../ui.dart';
 
 /// Content Studio (ADR-0025): paste target-language text, preview the
 /// extracted review candidates (vocabulary, phrases, sentences, idioms,
@@ -39,78 +40,115 @@ class _LanguageContentScreenState
     final studio = ref.watch(contentStudioProvider);
     final result = studio.result;
 
+    final tones = AppTones.of(context);
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: const Text('Content Studio'),
         actions: [
           if (result != null)
-            IconButton(
-              icon: const Icon(Icons.clear_all),
-              tooltip: 'Clear',
-              onPressed: () {
-                _input.clear();
-                ref.read(contentStudioProvider.notifier).clear();
-              },
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpace.md),
+              child: CircleIconButton(
+                icon: Icons.clear_all,
+                size: 42,
+                tooltip: 'Clear',
+                onTap: () {
+                  _input.clear();
+                  ref.read(contentStudioProvider.notifier).clear();
+                },
+              ),
             ),
         ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text(
-                'Paste a passage in the target language. We extract '
-                'vocabulary, phrases, sentences, idioms and cultural notes '
-                'for you to review.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _input,
-                minLines: 4,
-                maxLines: 8,
-                decoration: const InputDecoration(
-                  hintText: 'Paste text here…',
+      body: AtmosphericBackground(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: ListView(
+              padding: const EdgeInsets.all(AppSpace.lg),
+              children: [
+                Text(
+                  'Paste a passage in the target language. We extract '
+                  'vocabulary, phrases, sentences, idioms and cultural notes '
+                  'for you to review.',
+                  style: TextStyle(
+                    color: tones.inkSoft,
+                    fontSize: 14.5,
+                    height: 1.45,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      icon: const Icon(Icons.auto_awesome),
-                      label: const Text('Extract'),
-                      onPressed: () => ref
-                          .read(contentStudioProvider.notifier)
-                          .ingest(_input.text),
+                const SizedBox(height: AppSpace.md),
+                TextField(
+                  controller: _input,
+                  minLines: 4,
+                  maxLines: 8,
+                  style: TextStyle(color: tones.ink, fontSize: 15),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: tones.card,
+                    hintText: 'Paste text here…',
+                    hintStyle: TextStyle(color: tones.inkSoft),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.input),
+                      borderSide: BorderSide.none,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  OutlinedButton(
-                    onPressed: () {
-                      _input.text = _sample;
-                      ref
-                          .read(contentStudioProvider.notifier)
-                          .ingest(_sample);
-                    },
-                    child: const Text('Use sample'),
-                  ),
+                ),
+                const SizedBox(height: AppSpace.md),
+                Row(
+                  children: [
+                    Expanded(
+                      child: PrimaryButton(
+                        label: 'Extract',
+                        icon: Icons.auto_awesome,
+                        onPressed: () => ref
+                            .read(contentStudioProvider.notifier)
+                            .ingest(_input.text),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpace.md),
+                    SizedBox(
+                      height: 58,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: tones.ink,
+                          side: BorderSide(color: tones.hairline),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.pill),
+                          ),
+                        ),
+                        onPressed: () {
+                          _input.text = _sample;
+                          ref
+                              .read(contentStudioProvider.notifier)
+                              .ingest(_sample);
+                        },
+                        child: const Text(
+                          'Use sample',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (result != null) ...[
+                  const SizedBox(height: AppSpace.lg),
+                  _Summary(result: result),
+                  const SizedBox(height: AppSpace.sm),
+                  for (final kind in ContentKind.values)
+                    _KindSection(
+                      kind: kind,
+                      items: result.ofKind(kind),
+                      review: studio.review,
+                    ),
                 ],
-              ),
-              if (result != null) ...[
-                const SizedBox(height: 16),
-                _Summary(result: result),
-                const SizedBox(height: 8),
-                for (final kind in ContentKind.values)
-                  _KindSection(
-                    kind: kind,
-                    items: result.ofKind(kind),
-                    review: studio.review,
-                  ),
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -125,37 +163,33 @@ class _Summary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Card(
-      color: scheme.secondaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${result.candidates.length} candidates · '
-              '${result.difficulty.name.toUpperCase()} · '
-              '${result.candidates.where((c) => c.mapped).length} mapped to curriculum',
-              style: Theme.of(context).textTheme.titleSmall
-                  ?.copyWith(color: scheme.onSecondaryContainer),
+    final tones = AppTones.of(context);
+    return SoftCard(
+      tint: AppTint.sage,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${result.candidates.length} candidates · '
+            '${result.difficulty.name.toUpperCase()} · '
+            '${result.candidates.where((c) => c.mapped).length} mapped to curriculum',
+            style: TextStyle(
+              color: tones.onTint(AppTint.sage),
+              fontSize: 15,
+              height: 1.35,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
             ),
-            if (result.topics.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final t in result.topics)
-                    Chip(
-                      visualDensity: VisualDensity.compact,
-                      label: Text(t),
-                    ),
-                ],
-              ),
-            ],
+          ),
+          if (result.topics.isNotEmpty) ...[
+            const SizedBox(height: AppSpace.md),
+            Wrap(
+              spacing: AppSpace.sm - 2,
+              runSpacing: AppSpace.sm - 2,
+              children: [for (final t in result.topics) SoftChip(label: t)],
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -183,47 +217,76 @@ class _KindSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (items.isEmpty) return const SizedBox.shrink();
+    final tones = AppTones.of(context);
     final scheme = Theme.of(context).colorScheme;
     final (title, icon) = _titles[kind]!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpace.md),
         Row(
           children: [
-            Icon(icon, size: 18, color: scheme.primary),
-            const SizedBox(width: 8),
-            Text('$title (${items.length})',
-                style: Theme.of(context).textTheme.titleMedium),
+            Icon(icon, size: 18, color: tones.solid(AppTint.lilac)),
+            const SizedBox(width: AppSpace.sm),
+            Expanded(
+              child: Text(
+                '$title (${items.length})',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: tones.ink,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
+                ),
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppSpace.sm),
         for (final c in items)
-          Card(
-            margin: const EdgeInsets.symmetric(vertical: 3),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpace.xs - 1),
+            child: SoftCard(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.lg,
+                AppSpace.sm,
+                AppSpace.sm,
+                AppSpace.sm,
+              ),
               child: Row(
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(c.text),
+                        Text(
+                          c.text,
+                          style: TextStyle(
+                            color: tones.ink,
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         if (c.translation != null)
                           Text(
                             c.translation!,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: scheme.onSurfaceVariant),
+                            style: TextStyle(
+                              color: tones.inkSoft,
+                              fontSize: 13,
+                            ),
                           ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: AppSpace.xs),
                         _StatusChip(candidate: c, review: review),
                       ],
                     ),
                   ),
                   if (review.isPending(c.id)) ...[
                     IconButton(
-                      icon: Icon(Icons.check_circle, color: scheme.primary),
+                      icon: Icon(
+                        Icons.check_circle,
+                        color: tones.solid(AppTint.mint),
+                      ),
                       tooltip: 'Approve',
                       onPressed: () => ref
                           .read(contentStudioProvider.notifier)
@@ -254,17 +317,28 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tones = AppTones.of(context);
     final scheme = Theme.of(context).colorScheme;
     final (label, color) = review.approved.contains(candidate.id)
-        ? ('Approved', scheme.primary)
+        ? ('Approved', tones.solid(AppTint.mint))
         : review.rejected.contains(candidate.id)
         ? ('Rejected', scheme.error)
         : candidate.mapped
-        ? ('Maps to ${candidate.conceptId!.split(':').last}', scheme.tertiary)
-        : ('New — ${candidate.note ?? "review"}', scheme.onSurfaceVariant);
+        ? (
+            'Maps to ${candidate.conceptId!.split(':').last}',
+            tones.solid(AppTint.lilac),
+          )
+        : ('New — ${candidate.note ?? "review"}', tones.inkSoft);
     return Text(
       label,
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: color,
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.1,
+      ),
     );
   }
 }

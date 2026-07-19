@@ -18,8 +18,7 @@ class VoiceSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
+    final tones = AppTones.of(context);
     final engine = ref.watch(speechEngineProvider);
     final speed = ref.watch(speechSpeedProvider);
 
@@ -36,8 +35,8 @@ class VoiceSettingsScreen extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.all(AppSpace.xl),
               children: [
-                Text('Voice engine', style: text.titleMedium),
-                const SizedBox(height: AppSpace.sm),
+                const SectionHeader(title: 'Voice engine'),
+                const SizedBox(height: AppSpace.md),
                 _EngineOption(
                   value: SpeechEngine.piper,
                   selected: engine == SpeechEngine.piper,
@@ -61,24 +60,29 @@ class VoiceSettingsScreen extends ConsumerWidget {
                       SpeechEngine.androidNeural,
                 ),
                 const SizedBox(height: AppSpace.xl),
-                Text('Speech speed', style: text.titleMedium),
-                const SizedBox(height: AppSpace.sm),
+                const SectionHeader(title: 'Speech speed'),
+                const SizedBox(height: AppSpace.md),
                 Wrap(
                   spacing: AppSpace.sm,
+                  runSpacing: AppSpace.sm,
                   children: [
                     for (final s in _speeds)
-                      ChoiceChip(
-                        label: Text('$s×'),
-                        selected: (speed - s).abs() < 0.01,
-                        onSelected: (_) =>
+                      SoftChip(
+                        label: '$s×',
+                        icon: (speed - s).abs() < 0.01
+                            ? Icons.check_rounded
+                            : null,
+                        tint: AppTint.mint,
+                        muted: (speed - s).abs() >= 0.01,
+                        onTap: () =>
                             ref.read(speechSpeedProvider.notifier).state = s,
                       ),
                   ],
                 ),
                 const SizedBox(height: AppSpace.xl),
-                FilledButton.tonalIcon(
-                  icon: const Icon(Icons.volume_up_rounded),
-                  label: const Text('Test voice'),
+                PrimaryButton(
+                  label: 'Test voice',
+                  icon: Icons.volume_up_rounded,
                   onPressed: () => ref.read(speechServiceProvider).speak(
                         'Hola, soy tu profesor de español. ¡Vamos a aprender '
                         'juntos!',
@@ -86,32 +90,31 @@ class VoiceSettingsScreen extends ConsumerWidget {
                         speed: speed,
                       ),
                 ),
-                const SizedBox(height: AppSpace.lg),
+                const SizedBox(height: AppSpace.xl),
                 // Phase 23: offline speech understanding (Whisper).
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.hearing),
-                  title: const Text('Offline speech (Whisper)'),
-                  subtitle: const Text(
-                    'Understand your speech on-device',
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
+                _SettingsLink(
+                  icon: Icons.hearing,
+                  title: 'Offline speech (Whisper)',
+                  subtitle: 'Understand your speech on-device',
                   onTap: () => context.push('/whisper-settings'),
                 ),
+                const SizedBox(height: AppSpace.sm),
                 // Phase 25: optional on-device LLM (natural wording).
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.smart_toy_outlined),
-                  title: const Text('On-device teacher voice (LLM)'),
-                  subtitle: const Text('Optional — more natural wording'),
-                  trailing: const Icon(Icons.chevron_right),
+                _SettingsLink(
+                  icon: Icons.smart_toy_outlined,
+                  title: 'On-device teacher voice (LLM)',
+                  subtitle: 'Optional — more natural wording',
                   onTap: () => context.push('/llm-settings'),
                 ),
                 const SizedBox(height: AppSpace.lg),
                 Text(
                   'The speed applies everywhere the tutor or a story speaks. '
                   'The reader also has its own player speed.',
-                  style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                  style: TextStyle(
+                    color: tones.inkSoft,
+                    fontSize: 13,
+                    height: 1.45,
+                  ),
                 ),
               ],
             ),
@@ -131,7 +134,7 @@ class _PiperStatusCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
+    final tones = AppTones.of(context);
     return AnimatedBuilder(
       animation: Listenable.merge(
         [piper.status, piper.progress, piper.statusDetail],
@@ -152,27 +155,35 @@ class _PiperStatusCard extends ConsumerWidget {
           PiperStatus.ready => (Icons.check_circle_rounded, 'Piper voice ready'),
           PiperStatus.error => (Icons.error_rounded, piper.statusDetail.value),
         };
-        return Container(
-          padding: const EdgeInsets.all(AppSpace.md),
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(AppRadius.input),
-          ),
+        return SoftCard(
+          elevated: false,
+          radius: AppRadius.tile,
+          padding: const EdgeInsets.all(AppSpace.md + 2),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(icon, size: 18, color: scheme.primary),
-                  const SizedBox(width: AppSpace.sm),
+                  _IconChip(
+                    icon: icon,
+                    color: s == PiperStatus.error
+                        ? Theme.of(context).colorScheme.error
+                        : tones.solid(AppTint.mint),
+                  ),
+                  const SizedBox(width: AppSpace.md),
                   Expanded(
                     child: Text(
                       label,
-                      style: Theme.of(context).textTheme.bodySmall,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: tones.inkSoft, fontSize: 13.5),
                     ),
                   ),
                   if (s == PiperStatus.idle || s == PiperStatus.error)
                     TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: tones.ink,
+                      ),
                       onPressed: () => piper
                           .ensureVoice(ref.read(languageBcp47Provider)),
                       child: const Text('Download'),
@@ -216,48 +227,122 @@ class _EngineOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Material(
-      color: selected ? scheme.primaryContainer : scheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(AppRadius.card),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpace.lg),
-          child: Row(
-            children: [
-              Icon(
-                selected
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_unchecked,
-                color: selected ? scheme.primary : scheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: AppSpace.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+    final tones = AppTones.of(context);
+    final fg = selected ? tones.onTint(AppTint.mint) : tones.ink;
+    return SoftCard(
+      tint: selected ? AppTint.mint : null,
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(
+            selected
+                ? Icons.radio_button_checked
+                : Icons.radio_button_unchecked,
+            color: selected ? tones.solid(AppTint.mint) : tones.inkSoft,
           ),
-        ),
+          const SizedBox(width: AppSpace.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: fg,
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: AppSpace.xs - 1),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: selected ? fg.withValues(alpha: 0.8) : tones.inkSoft,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Small circular icon chip used by every status/link row in settings.
+class _IconChip extends StatelessWidget {
+  const _IconChip({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(icon, size: 19, color: color),
+    );
+  }
+}
+
+/// Navigation row into a sub-settings screen.
+class _SettingsLink extends StatelessWidget {
+  const _SettingsLink({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tones = AppTones.of(context);
+    return SoftCard(
+      onTap: onTap,
+      child: Row(
+        children: [
+          _IconChip(icon: icon, color: tones.solid(AppTint.lilac)),
+          const SizedBox(width: AppSpace.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: tones.ink,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: tones.inkSoft, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpace.sm),
+          Icon(Icons.chevron_right, color: tones.inkSoft),
+        ],
       ),
     );
   }

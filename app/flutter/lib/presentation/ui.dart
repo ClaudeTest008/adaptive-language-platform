@@ -770,38 +770,6 @@ class GradientHero extends StatelessWidget {
   }
 }
 
-/// Frosted translucent pill for use on heroes.
-class GlassPill extends StatelessWidget {
-  const GlassPill({super.key, required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final tones = AppTones.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpace.md,
-        vertical: AppSpace.xs + 2,
-      ),
-      decoration: BoxDecoration(
-        color: tones.dark
-            ? Colors.white.withValues(alpha: 0.08)
-            : Colors.white.withValues(alpha: 0.65),
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: tones.ink,
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
 /// Frosted glass surface — translucent fill over a backdrop blur.
 class GlassCard extends StatelessWidget {
   const GlassCard({

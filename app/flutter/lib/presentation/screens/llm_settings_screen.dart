@@ -56,92 +56,219 @@ class _LlmSettingsScreenState extends ConsumerState<LlmSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
+    final tones = AppTones.of(context);
     final scheme = Theme.of(context).colorScheme;
     final spec = ref.watch(selectedLlmSpecProvider);
+    final ready = _state.status == LlmModelStatus.ready;
     return Scaffold(
-      appBar: AppBar(title: const Text('On-device teacher voice (LLM)')),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(AppSpace.lg),
-              children: [
-                Text('Local language model', style: text.titleMedium),
-                const SizedBox(height: AppSpace.sm),
-                Text(
-                  'The teacher already decides every lesson on-device. This '
-                  'optional model only makes the wording feel more natural — '
-                  'it never decides what to teach. Fully offline.',
-                  style: text.bodyMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: AppSpace.lg),
-                // Model-evaluation framework: pick the candidate to run. The
-                // benchmark compares candidates on identical prompts.
-                DropdownButtonFormField<LlmModelSpec>(
-                  initialValue: spec,
-                  decoration: const InputDecoration(labelText: 'Model'),
-                  items: [
-                    for (final s in llmModelSpecs)
-                      DropdownMenuItem(value: s, child: Text(s.displayName)),
-                  ],
-                  onChanged: (s) async {
-                    if (s == null) return;
-                    await ref
-                        .read(selectedLlmSpecProvider.notifier)
-                        .select(s);
-                    // New spec → engine must reload its file on next use.
-                    await ref.read(ggufTeacherVoiceProvider).unload();
-                    await _refresh();
-                  },
-                ),
-                const SizedBox(height: AppSpace.lg),
-                Card(
-                  child: Column(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: const Text('On-device teacher voice (LLM)'),
+      ),
+      body: AtmosphericBackground(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: ListView(
+                    padding: const EdgeInsets.all(AppSpace.xl),
                     children: [
-                      _row('Status', _statusLabel(_state.status)),
-                      _row('Type', spec.type),
-                      _row('Version', spec.version),
-                      _row('Size', _size(spec)),
-                      _row('Context length', '${spec.contextLength} tokens'),
+                      const SectionHeader(title: 'Local language model'),
+                      const SizedBox(height: AppSpace.md),
+                      Text(
+                        'The teacher already decides every lesson on-device. This '
+                        'optional model only makes the wording feel more natural — '
+                        'it never decides what to teach. Fully offline.',
+                        style: TextStyle(
+                          color: tones.inkSoft,
+                          fontSize: 14.5,
+                          height: 1.45,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpace.lg),
+                      // Model-evaluation framework: pick the candidate to run.
+                      // The benchmark compares candidates on identical prompts.
+                      DropdownButtonFormField<LlmModelSpec>(
+                        initialValue: spec,
+                        decoration: const InputDecoration(labelText: 'Model'),
+                        items: [
+                          for (final s in llmModelSpecs)
+                            DropdownMenuItem(
+                              value: s,
+                              child: Text(s.displayName),
+                            ),
+                        ],
+                        onChanged: (s) async {
+                          if (s == null) return;
+                          await ref
+                              .read(selectedLlmSpecProvider.notifier)
+                              .select(s);
+                          // New spec → engine reloads its file on next use.
+                          await ref.read(ggufTeacherVoiceProvider).unload();
+                          await _refresh();
+                        },
+                      ),
+                      const SizedBox(height: AppSpace.lg),
+                      SoftCard(
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: (ready
+                                        ? tones.solid(AppTint.mint)
+                                        : tones.inkSoft)
+                                    .withValues(alpha: 0.14),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                ready
+                                    ? Icons.check_circle
+                                    : Icons.smart_toy_outlined,
+                                size: 19,
+                                color: ready
+                                    ? tones.solid(AppTint.mint)
+                                    : tones.inkSoft,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpace.md),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _statusLabel(_state.status),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: tones.ink,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: -0.2,
+                                    ),
+                                  ),
+                                  Text(
+                                    spec.displayName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: tones.inkSoft,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpace.md),
+                      SoftCard(
+                        child: Column(
+                          children: [
+                            _row('Type', spec.type),
+                            _row('Version', spec.version),
+                            _row('Size', _size(spec)),
+                            _row(
+                              'Context length',
+                              '${spec.contextLength} tokens',
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpace.lg),
+                      switch (_state.status) {
+                        LlmModelStatus.downloading => ClipRRect(
+                          borderRadius:
+                              BorderRadius.circular(AppRadius.pill),
+                          child: LinearProgressIndicator(
+                            minHeight: 8,
+                            value:
+                                _state.progress == 0 ? null : _state.progress,
+                          ),
+                        ),
+                        LlmModelStatus.ready => SizedBox(
+                          height: 52,
+                          child: OutlinedButton.icon(
+                            onPressed: _delete,
+                            icon: const Icon(Icons.delete_outline, size: 18),
+                            label: const Text(
+                              'Delete model',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: tones.ink,
+                              side: BorderSide(color: tones.hairline),
+                              minimumSize: const Size(double.infinity, 52),
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.pill),
+                              ),
+                            ),
+                          ),
+                        ),
+                        _ => PrimaryButton(
+                          label: _state.status ==
+                                  LlmModelStatus.versionMismatch
+                              ? 'Switch model · ${_size(spec)}'
+                              : 'Download model · ${_size(spec)}',
+                          icon: Icons.download,
+                          onPressed: _download,
+                        ),
+                      },
+                      if (_state.error != null) ...[
+                        const SizedBox(height: AppSpace.md),
+                        Text(
+                          _state.error!,
+                          style: TextStyle(color: scheme.error, fontSize: 13),
+                        ),
+                      ],
                     ],
                   ),
                 ),
-                const SizedBox(height: AppSpace.lg),
-                switch (_state.status) {
-                  LlmModelStatus.downloading => LinearProgressIndicator(
-                    value: _state.progress == 0 ? null : _state.progress,
-                  ),
-                  LlmModelStatus.ready => OutlinedButton.icon(
-                    onPressed: _delete,
-                    icon: const Icon(Icons.delete_outline),
-                    label: const Text('Delete model'),
-                  ),
-                  _ => FilledButton.icon(
-                    onPressed: _download,
-                    icon: const Icon(Icons.download),
-                    label: Text(
-                      _state.status == LlmModelStatus.versionMismatch
-                          ? 'Switch model · ${_size(spec)}'
-                          : 'Download model · ${_size(spec)}',
-                    ),
-                  ),
-                },
-                if (_state.error != null) ...[
-                  const SizedBox(height: AppSpace.md),
-                  Text(_state.error!,
-                      style: text.bodySmall?.copyWith(color: scheme.error)),
-                ],
-              ],
-            ),
+              ),
+      ),
     );
   }
 
-  Widget _row(String k, String v) => ListTile(
-    dense: true,
-    title: Text(k),
-    trailing: Text(v),
+  Widget _row(String k, String v) => Builder(
+    builder: (context) {
+      final tones = AppTones.of(context);
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpace.xs + 1),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                k,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: tones.inkSoft, fontSize: 13.5),
+              ),
+            ),
+            const SizedBox(width: AppSpace.sm),
+            Flexible(
+              child: Text(
+                v,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
+                style: TextStyle(
+                  color: tones.ink,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
   );
 
   String _statusLabel(LlmModelStatus s) => switch (s) {

@@ -6,6 +6,7 @@ import '../../language/entities.dart';
 import '../../language/exercises.dart';
 import '../../language/misconceptions.dart';
 import '../language_providers.dart';
+import '../ui.dart';
 
 /// Text-first exercise session (ADR-0017). Every submission is a real
 /// answer event: core engine mastery, misconception detection and signal
@@ -83,8 +84,12 @@ class _LanguagePracticeScreenState
         );
       });
     }
+    final tones = AppTones.of(context);
+    final last = session.index + 1 >= session.items.length;
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
         title: Text('Practice ${session.index + 1}/${session.items.length}'),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(4),
@@ -101,66 +106,114 @@ class _LanguagePracticeScreenState
           ),
         ),
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _TypeChip(type: item.type),
-              const SizedBox(height: 8),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Text(
-                    item.prompt,
-                    style: Theme.of(context).textTheme.titleLarge,
+      body: AtmosphericBackground(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: ListView(
+              padding: const EdgeInsets.all(AppSpace.lg),
+              children: [
+                _TypeChip(type: item.type),
+                const SizedBox(height: AppSpace.md),
+                FadeInUp(
+                  key: ValueKey(session.index),
+                  child: SoftCard(
+                    padding: const EdgeInsets.all(AppSpace.xl),
+                    child: Text(
+                      item.prompt,
+                      style: TextStyle(
+                        color: tones.ink,
+                        fontSize: 21,
+                        height: 1.35,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              ..._inputFor(item, session),
-              if (session.answered) ...[
-                const SizedBox(height: 16),
-                _FeedbackBanner(session: session),
-                for (final m in session.feedback)
-                  _TeacherNote(misconception: m),
-                const SizedBox(height: 12),
-                FilledButton.icon(
-                  onPressed: _next,
-                  icon: Icon(
-                    session.index + 1 < session.items.length
-                        ? Icons.arrow_forward
-                        : Icons.flag,
+                const SizedBox(height: AppSpace.md),
+                ..._inputFor(item, session),
+                if (session.answered) ...[
+                  const SizedBox(height: AppSpace.lg),
+                  _FeedbackBanner(session: session),
+                  for (final m in session.feedback)
+                    _TeacherNote(misconception: m),
+                  const SizedBox(height: AppSpace.lg),
+                  PrimaryButton(
+                    label: last ? 'Finish' : 'Next',
+                    icon: last ? Icons.flag_rounded : Icons.arrow_forward,
+                    onPressed: _next,
                   ),
-                  label: Text(
-                    session.index + 1 < session.items.length
-                        ? 'Next'
-                        : 'Finish',
-                  ),
-                ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  List<Widget> _inputFor(ExerciseItem item, LanguagePracticeState session) {
+  /// One answer option. Selected/correct/wrong states stay unmistakable:
+  /// mint fill + check for the answer, error fill + cross for a wrong pick.
+  Widget _option(ExerciseItem item, LanguagePracticeState session, String o) {
+    final tones = AppTones.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final isAnswer = session.answered && checkAnswer(item, o);
+    final isWrongPick = session.answered && !isAnswer && o == session.given;
+    final green = tones.solid(AppTint.mint);
+    final fg = isAnswer
+        ? green
+        : isWrongPick
+            ? scheme.error
+            : tones.ink;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
+      child: SoftCard(
+        tint: isAnswer ? AppTint.mint : null,
+        elevated: !session.answered,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.lg,
+          vertical: AppSpace.md + 2,
+        ),
+        onTap: session.answered ? null : () => _submit(o),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                o,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: fg,
+                  fontSize: 15.5,
+                  fontWeight: isAnswer || isWrongPick
+                      ? FontWeight.w700
+                      : FontWeight.w500,
+                ),
+              ),
+            ),
+            if (isAnswer || isWrongPick) ...[
+              const SizedBox(width: AppSpace.sm),
+              Icon(
+                isAnswer ? Icons.check_circle : Icons.cancel,
+                color: fg,
+                size: 20,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _inputFor(ExerciseItem item, LanguagePracticeState session) {
+    final tones = AppTones.of(context);
     switch (item.type) {
       case ExerciseType.listening:
         return [
           Center(
-            child: FilledButton.tonalIcon(
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 14,
-                ),
-              ),
-              icon: const Icon(Icons.volume_up),
+            child: TextButton.icon(
+              icon: const Icon(Icons.volume_up_rounded, size: 19),
               label: const Text('Play again'),
               onPressed: () => ref.read(speechServiceProvider).speak(
                 item.audio ?? item.answer,
@@ -168,56 +221,14 @@ class _LanguagePracticeScreenState
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          for (final option in item.options)
-            Card(
-              margin: const EdgeInsets.symmetric(vertical: 4),
-              color: !session.answered
-                  ? null
-                  : checkAnswer(item, option)
-                  ? Colors.green.withValues(alpha: 0.15)
-                  : option == session.given
-                  ? scheme.errorContainer
-                  : null,
-              child: ListTile(
-                title: Text(option),
-                trailing: !session.answered
-                    ? null
-                    : checkAnswer(item, option)
-                    ? const Icon(Icons.check_circle, color: Colors.green)
-                    : option == session.given
-                    ? Icon(Icons.cancel, color: scheme.error)
-                    : null,
-                onTap: session.answered ? null : () => _submit(option),
-              ),
-            ),
+          const SizedBox(height: AppSpace.md),
+          for (final option in item.options) _option(item, session, option),
         ];
 
       case ExerciseType.multipleChoice:
       case ExerciseType.readingComprehension:
         return [
-          for (final option in item.options)
-            Card(
-              margin: const EdgeInsets.symmetric(vertical: 4),
-              color: !session.answered
-                  ? null
-                  : checkAnswer(item, option)
-                  ? Colors.green.withValues(alpha: 0.15)
-                  : option == session.given
-                  ? scheme.errorContainer
-                  : null,
-              child: ListTile(
-                title: Text(option),
-                trailing: !session.answered
-                    ? null
-                    : checkAnswer(item, option)
-                    ? const Icon(Icons.check_circle, color: Colors.green)
-                    : option == session.given
-                    ? Icon(Icons.cancel, color: scheme.error)
-                    : null,
-                onTap: session.answered ? null : () => _submit(option),
-              ),
-            ),
+          for (final option in item.options) _option(item, session, option),
         ];
 
       case ExerciseType.fillInBlank:
@@ -236,11 +247,11 @@ class _LanguagePracticeScreenState
             ),
             onSubmitted: session.answered ? null : _submit,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpace.md),
           if (!session.answered)
-            FilledButton.tonal(
+            PrimaryButton(
+              label: 'Check',
               onPressed: () => _submit(_textController.text),
-              child: const Text('Check'),
             ),
         ];
 
@@ -248,19 +259,19 @@ class _LanguagePracticeScreenState
         return [
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpace.md),
             decoration: BoxDecoration(
-              border: Border.all(color: scheme.outlineVariant),
-              borderRadius: BorderRadius.circular(12),
+              color: tones.cardMuted.withValues(alpha: tones.dark ? 1 : 0.6),
+              borderRadius: BorderRadius.circular(AppRadius.tile),
             ),
             child: Wrap(
-              spacing: 6,
-              runSpacing: 6,
+              spacing: AppSpace.sm - 2,
+              runSpacing: AppSpace.sm - 2,
               children: [
                 if (_built.isEmpty)
                   Text(
                     'Tap the words below in order…',
-                    style: TextStyle(color: scheme.onSurfaceVariant),
+                    style: TextStyle(color: tones.inkSoft),
                   ),
                 for (final (i, w) in _built.indexed)
                   InputChip(
@@ -272,26 +283,26 @@ class _LanguagePracticeScreenState
               ],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpace.md),
           Wrap(
-            spacing: 6,
-            runSpacing: 6,
+            spacing: AppSpace.sm - 2,
+            runSpacing: AppSpace.sm - 2,
             children: [
               for (final w in _wordBankLeft(item))
-                ActionChip(
-                  label: Text(w),
-                  onPressed: session.answered
+                SoftChip(
+                  label: w,
+                  onTap: session.answered
                       ? null
                       : () => setState(() => _built.add(w)),
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpace.md),
           if (!session.answered)
-            FilledButton.tonal(
+            PrimaryButton(
+              label: 'Check',
               onPressed:
                   _built.isEmpty ? null : () => _submit(_built.join(' ')),
-              child: const Text('Check'),
             ),
         ];
 
@@ -332,7 +343,7 @@ class _TypeChip extends StatelessWidget {
         _labels[type] ?? (type.name, Icons.fitness_center);
     return Align(
       alignment: Alignment.centerLeft,
-      child: Chip(avatar: Icon(icon, size: 16), label: Text(label)),
+      child: SoftChip(label: label, icon: icon, tint: AppTint.lilac),
     );
   }
 }
@@ -344,21 +355,45 @@ class _FeedbackBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tones = AppTones.of(context);
     final scheme = Theme.of(context).colorScheme;
     final correct = session.wasCorrect == true;
-    return Card(
-      color: correct
-          ? Colors.green.withValues(alpha: 0.15)
-          : scheme.errorContainer,
-      child: ListTile(
-        leading: Icon(
-          correct ? Icons.check_circle : Icons.cancel,
-          color: correct ? Colors.green : scheme.onErrorContainer,
-        ),
-        title: Text(correct ? '¡Correcto!' : 'Not quite'),
-        subtitle: correct
-            ? null
-            : Text("Answer: '${session.current.answer}'"),
+    final tint = correct ? AppTint.mint : AppTint.sun;
+    final accent = correct ? tones.solid(AppTint.mint) : scheme.error;
+    return SoftCard(
+      tint: tint,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(correct ? Icons.check_circle : Icons.cancel, color: accent),
+          const SizedBox(width: AppSpace.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  correct ? '¡Correcto!' : 'Not quite',
+                  style: TextStyle(
+                    color: tones.onTint(tint),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                if (!correct) ...[
+                  const SizedBox(height: AppSpace.xs),
+                  Text(
+                    "Answer: '${session.current.answer}'",
+                    style: TextStyle(
+                      color: tones.onTint(tint).withValues(alpha: 0.85),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -372,31 +407,38 @@ class _TeacherNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Card(
-      margin: const EdgeInsets.only(top: 8),
-      color: scheme.secondaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    final tones = AppTones.of(context);
+    final fg = tones.onTint(AppTint.lilac);
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpace.sm),
+      child: SoftCard(
+        tint: AppTint.lilac,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.school, color: scheme.onSecondaryContainer),
-            const SizedBox(width: 12),
+            Icon(Icons.school, color: tones.solid(AppTint.lilac)),
+            const SizedBox(width: AppSpace.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Teacher note',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: scheme.onSecondaryContainer,
+                    style: TextStyle(
+                      color: fg,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpace.xs),
                   Text(
                     misconception.explanation,
-                    style: TextStyle(color: scheme.onSecondaryContainer),
+                    style: TextStyle(
+                      color: fg.withValues(alpha: 0.88),
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
                   ),
                 ],
               ),
@@ -415,67 +457,95 @@ class _Summary extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
+    final tones = AppTones.of(context);
     final score = session.correctCount / session.items.length;
+    final accent =
+        score >= 0.7 ? tones.solid(AppTint.mint) : tones.solid(AppTint.sun);
     return Scaffold(
-      appBar: AppBar(title: const Text('Session complete')),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0, end: score),
-                  duration: const Duration(milliseconds: 900),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, v, _) => Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      SizedBox(
-                        width: 120,
-                        height: 120,
-                        child: CircularProgressIndicator(
-                          value: v,
-                          strokeWidth: 10,
-                          color: score >= 0.7 ? Colors.green : scheme.tertiary,
-                          backgroundColor: scheme.surfaceContainerHighest,
-                        ),
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: const Text('Session complete'),
+      ),
+      body: AtmosphericBackground(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpace.xl),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  FadeInUp(
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: score),
+                      duration: const Duration(milliseconds: 900),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, v, _) => Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SizedBox(
+                            width: 128,
+                            height: 128,
+                            child: CircularProgressIndicator(
+                              value: v,
+                              strokeWidth: 10,
+                              strokeCap: StrokeCap.round,
+                              color: accent,
+                              backgroundColor: tones.cardMuted,
+                            ),
+                          ),
+                          Text(
+                            '${(v * 100).round()}%',
+                            style: TextStyle(
+                              color: tones.ink,
+                              fontSize: 30,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.8,
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        '${(v * 100).round()}%',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '${session.correctCount}/${session.items.length} correct',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 24),
-                FilledButton.icon(
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Practice again'),
-                  onPressed: () {
-                    ref.read(languagePracticeProvider.notifier)
-                      ..reset()
-                      ..start();
-                  },
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.dashboard),
-                  label: const Text('Back to Language Lab'),
-                  onPressed: () {
-                    ref.read(languagePracticeProvider.notifier).reset();
-                    context.go('/language');
-                  },
-                ),
-              ],
+                  const SizedBox(height: AppSpace.lg),
+                  Text(
+                    '${session.correctCount}/${session.items.length} correct',
+                    style: TextStyle(
+                      color: tones.inkSoft,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.xl),
+                  PrimaryButton(
+                    label: 'Practice again',
+                    icon: Icons.refresh_rounded,
+                    onPressed: () {
+                      ref.read(languagePracticeProvider.notifier)
+                        ..reset()
+                        ..start();
+                    },
+                  ),
+                  const SizedBox(height: AppSpace.md),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.dashboard),
+                    label: const Text('Back to Language Lab'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: tones.ink,
+                      side: BorderSide(color: tones.hairline),
+                      minimumSize: const Size(double.infinity, 52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                      ),
+                    ),
+                    onPressed: () {
+                      ref.read(languagePracticeProvider.notifier).reset();
+                      context.go('/language');
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),

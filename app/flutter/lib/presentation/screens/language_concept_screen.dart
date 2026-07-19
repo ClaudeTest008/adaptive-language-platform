@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../language/entities.dart';
 import '../../language/relationships.dart';
 import '../language_providers.dart';
+import '../ui.dart';
 
 /// Concept detail: knowledge-graph relationships, misconceptions and
 /// live adaptive signals for one language concept. The simulate buttons
@@ -19,19 +20,31 @@ class LanguageConceptScreen extends ConsumerWidget {
     final curriculumAsync = ref.watch(curriculumProvider);
     final learner = ref.watch(languageLearnerProvider);
     final scheme = Theme.of(context).colorScheme;
+    final tones = AppTones.of(context);
     final curriculum = curriculumAsync.value;
     final node = curriculum?.graph[conceptId];
 
     if (curriculum == null || node == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Concept')),
-        body: Center(
-          child: Text(
-            curriculumAsync.hasError
-                ? 'Curriculum failed to load:\n${curriculumAsync.error}'
-                : curriculum == null
-                ? 'Loading…'
-                : 'Unknown concept',
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          title: const Text('Concept'),
+        ),
+        body: AtmosphericBackground(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpace.xl),
+              child: Text(
+                curriculumAsync.hasError
+                    ? 'Curriculum failed to load:\n${curriculumAsync.error}'
+                    : curriculum == null
+                    ? 'Loading…'
+                    : 'Unknown concept',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: tones.inkSoft, fontSize: 15),
+              ),
+            ),
           ),
         ),
       );
@@ -47,70 +60,78 @@ class LanguageConceptScreen extends ConsumerWidget {
     ];
 
     return Scaffold(
-      appBar: AppBar(title: Text(node.name)),
-      body: Center(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: Text(node.name),
+      ),
+      body: AtmosphericBackground(
+        child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
+          // Not a lazy list: the page is bounded and every section stays in
+          // the tree, so nothing pops in and out while scrolling.
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpace.lg),
+            child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: AppSpace.sm,
+                runSpacing: AppSpace.sm,
                 children: [
-                  Chip(
-                    avatar: const Icon(Icons.layers, size: 16),
-                    label: Text(node.tier.name),
-                  ),
+                  SoftChip(icon: Icons.layers, label: node.tier.name),
                   if (node.skill != null)
-                    Chip(
-                      avatar: const Icon(Icons.category, size: 16),
-                      label: Text(node.skill!.name),
+                    SoftChip(
+                      icon: Icons.category,
+                      label: node.skill!.name,
+                      tint: AppTint.sage,
                     ),
                   if (node.cefr != null)
-                    Chip(
-                      avatar: const Icon(Icons.signal_cellular_alt, size: 16),
-                      label: Text(node.cefr!.name.toUpperCase()),
+                    SoftChip(
+                      icon: Icons.signal_cellular_alt,
+                      label: node.cefr!.name.toUpperCase(),
+                      tint: AppTint.lilac,
                     ),
                 ],
               ),
               if (node is GrammarConceptNode) ...[
-                const SizedBox(height: 12),
-                Card(
-                  color: scheme.secondaryContainer,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          node.pattern,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(color: scheme.onSecondaryContainer),
+                const SizedBox(height: AppSpace.md),
+                SoftCard(
+                  tint: AppTint.sun,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        node.pattern,
+                        style: TextStyle(
+                          color: tones.onTint(AppTint.sun),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
                         ),
-                        if (node.explanation != null) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            node.explanation!,
-                            style: TextStyle(
-                              color: scheme.onSecondaryContainer,
-                            ),
+                      ),
+                      if (node.explanation != null) ...[
+                        const SizedBox(height: AppSpace.sm - 2),
+                        Text(
+                          node.explanation!,
+                          style: TextStyle(
+                            color: tones
+                                .onTint(AppTint.sun)
+                                .withValues(alpha: 0.85),
+                            fontSize: 14,
+                            height: 1.4,
                           ),
-                        ],
+                        ),
                       ],
-                    ),
+                    ],
                   ),
                 ),
               ],
-              const SizedBox(height: 16),
-              Text(
-                'Adaptive signals',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
+              const SizedBox(height: AppSpace.xl),
+              const SectionHeader(title: 'Adaptive signals'),
+              const SizedBox(height: AppSpace.md),
+              SoftCard(
                   child: Column(
                     children: [
                       _SignalRow(
@@ -127,7 +148,7 @@ class LanguageConceptScreen extends ConsumerWidget {
                         value: signals.nativeInterference,
                         inverted: true,
                       ),
-                      const Divider(height: 20),
+                      Divider(height: AppSpace.xl, color: tones.hairline),
                       _FactRow(
                         icon: Icons.repeat,
                         label: 'Attempts',
@@ -153,60 +174,70 @@ class LanguageConceptScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                ),
               ),
               if (misconceptions.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Text(
-                  'Misconceptions',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpace.xl),
+                const SectionHeader(title: 'Misconceptions'),
+                const SizedBox(height: AppSpace.md),
                 for (final m in misconceptions)
-                  Card(
-                    color: scheme.errorContainer,
-                    child: ListTile(
-                      leading: Icon(
-                        Icons.sync_problem,
-                        color: scheme.onErrorContainer,
-                      ),
-                      title: Text(
-                        m.explanation,
-                        style: TextStyle(color: scheme.onErrorContainer),
-                      ),
-                      subtitle: Text(
-                        'seen ${m.occurrences}× · source: ${m.interferenceSource}',
-                        style: TextStyle(color: scheme.onErrorContainer),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpace.sm),
+                    child: SoftCard(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.sync_problem, color: scheme.error),
+                          const SizedBox(width: AppSpace.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  m.explanation,
+                                  style: TextStyle(
+                                    color: tones.ink,
+                                    fontSize: 15,
+                                    height: 1.35,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpace.xs),
+                                Text(
+                                  'seen ${m.occurrences}× · source: '
+                                  '${m.interferenceSource}',
+                                  style: TextStyle(
+                                    color: tones.inkSoft,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
               ],
               if (relations.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Text(
-                  'Knowledge graph',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                Card(
+                const SizedBox(height: AppSpace.xl),
+                const SectionHeader(title: 'Knowledge graph'),
+                const SizedBox(height: AppSpace.md),
+                SoftCard(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppSpace.sm,
+                    horizontal: AppSpace.sm,
+                  ),
                   child: Column(
                     children: [
                       for (final r in relations)
-                        ListTile(
-                          dense: true,
-                          leading: Icon(
-                            _relationIcons[r.type],
-                            color: r.type ==
-                                        LanguageRelationType.interferesWith ||
-                                    r.type == LanguageRelationType.falseFriend
-                                ? scheme.error
-                                : scheme.primary,
-                          ),
-                          title: Text(
-                            '${r.type.name} → '
-                            '${curriculum.graph[r.from == conceptId ? r.to : r.from]?.name ?? (r.from == conceptId ? r.to : r.from)}',
-                          ),
-                          subtitle: r.note == null ? null : Text(r.note!),
+                        _RelationRow(
+                          icon: _relationIcons[r.type],
+                          warn: r.type ==
+                                  LanguageRelationType.interferesWith ||
+                              r.type == LanguageRelationType.falseFriend,
+                          title: '${r.type.name} → '
+                              '${curriculum.graph[r.from == conceptId ? r.to : r.from]?.name ?? (r.from == conceptId ? r.to : r.from)}',
+                          note: r.note,
                           onTap: () {
                             final other = r.from == conceptId ? r.to : r.from;
                             if (curriculum.graph[other] != null) {
@@ -221,38 +252,35 @@ class LanguageConceptScreen extends ConsumerWidget {
                 ),
               ],
               if (children.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Text(
-                  'Pattern family',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpace.xl),
+                const SectionHeader(title: 'Pattern family'),
+                const SizedBox(height: AppSpace.md),
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: AppSpace.sm,
+                  runSpacing: AppSpace.sm,
                   children: [
                     for (final c in children)
-                      ActionChip(
-                        label: Text(c.name),
-                        onPressed: () => context.push(
+                      SoftChip(
+                        label: c.name,
+                        onTap: () => context.push(
                           '/language/concept/${Uri.encodeComponent(c.conceptId)}',
                         ),
                       ),
                   ],
                 ),
               ],
-              const SizedBox(height: 24),
-              Text(
-                'Simulate an answer (drives the real engine)',
-                style: Theme.of(context).textTheme.titleSmall,
+              const SizedBox(height: AppSpace.xl),
+              const SectionHeader(
+                title: 'Simulate an answer (drives the real engine)',
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpace.md),
               Row(
                 children: [
                   Expanded(
-                    child: FilledButton.tonalIcon(
-                      icon: const Icon(Icons.check),
-                      label: const Text('Correct'),
+                    child: _SimulateButton(
+                      icon: Icons.check,
+                      label: 'Correct',
+                      color: tones.solid(AppTint.mint),
                       onPressed: () => ref
                           .read(languageLearnerProvider.notifier)
                           .recordAnswer(
@@ -262,15 +290,12 @@ class LanguageConceptScreen extends ConsumerWidget {
                           ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpace.md),
                   Expanded(
-                    child: FilledButton.tonalIcon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: scheme.errorContainer,
-                        foregroundColor: scheme.onErrorContainer,
-                      ),
-                      icon: const Icon(Icons.close),
-                      label: const Text('Wrong'),
+                    child: _SimulateButton(
+                      icon: Icons.close,
+                      label: 'Wrong',
+                      color: scheme.error,
                       onPressed: () => ref
                           .read(languageLearnerProvider.notifier)
                           .recordAnswer(
@@ -282,8 +307,11 @@ class LanguageConceptScreen extends ConsumerWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: AppSpace.xl),
             ],
           ),
+          ),
+        ),
         ),
       ),
     );
@@ -314,45 +342,165 @@ class _SignalRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tones = AppTones.of(context);
     final scheme = Theme.of(context).colorScheme;
     final good = inverted ? value < 0.4 : value >= 0.6;
-    final color = good ? scheme.primary : scheme.error;
+    final color = good ? tones.solid(AppTint.mint) : scheme.error;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
+      padding: const EdgeInsets.symmetric(vertical: AppSpace.sm - 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 170,
-            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
-          ),
-          Expanded(
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: value.clamp(0, 1)),
-              duration: const Duration(milliseconds: 700),
-              curve: Curves.easeOutCubic,
-              builder: (context, v, _) => ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: LinearProgressIndicator(
-                  value: v,
-                  minHeight: 8,
-                  color: color,
-                  backgroundColor: scheme.surfaceContainerHighest,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: tones.inkSoft,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
+              ),
+              const SizedBox(width: AppSpace.sm),
+              Text(
+                '${(value * 100).round()}%',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpace.xs + 2),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: value.clamp(0, 1)),
+            duration: const Duration(milliseconds: 700),
+            curve: Curves.easeOutCubic,
+            builder: (context, v, _) => ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              child: LinearProgressIndicator(
+                value: v,
+                minHeight: 8,
+                color: color,
+                backgroundColor: tones.cardMuted,
               ),
             ),
           ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 40,
-            child: Text(
-              '${(value * 100).round()}%',
-              textAlign: TextAlign.end,
-              style: Theme.of(
-                context,
-              ).textTheme.labelLarge?.copyWith(color: color),
-            ),
-          ),
         ],
+      ),
+    );
+  }
+}
+
+/// One knowledge-graph edge — tappable row inside the graph card.
+class _RelationRow extends StatelessWidget {
+  const _RelationRow({
+    required this.icon,
+    required this.warn,
+    required this.title,
+    required this.note,
+    required this.onTap,
+  });
+
+  final IconData? icon;
+  final bool warn;
+  final String title;
+  final String? note;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tones = AppTones.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.tile),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.sm,
+          vertical: AppSpace.md - 2,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: warn ? scheme.error : tones.solid(AppTint.lilac),
+            ),
+            const SizedBox(width: AppSpace.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: tones.ink,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (note != null)
+                    Text(
+                      note!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: tones.inkSoft, fontSize: 12.5),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpace.sm),
+            Icon(Icons.chevron_right, size: 18, color: tones.inkSoft),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Tinted outline action used by the simulate row.
+class _SimulateButton extends StatelessWidget {
+  const _SimulateButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 52,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 18),
+        label: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: color,
+          backgroundColor: color.withValues(alpha: 0.10),
+          side: BorderSide(color: color.withValues(alpha: 0.35)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+          ),
+        ),
       ),
     );
   }
@@ -371,17 +519,35 @@ class _FactRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final tones = AppTones.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: scheme.onSurfaceVariant),
-          const SizedBox(width: 8),
+          Icon(icon, size: 16, color: tones.inkSoft),
+          const SizedBox(width: AppSpace.sm),
           Expanded(
-            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: tones.inkSoft, fontSize: 13.5),
+            ),
           ),
-          Text(value, style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(width: AppSpace.sm),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                color: tones.ink,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
         ],
       ),
     );

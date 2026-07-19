@@ -596,12 +596,17 @@ class _SessionState extends ConsumerState<_Session> {
           child: ListView(
             padding: const EdgeInsets.all(AppSpace.lg),
             children: [
-              for (final (isTutor, text) in session.transcript)
+              for (final (index, (isTutor, text))
+                  in session.transcript.indexed)
                 Builder(builder: (context) {
                   final target = ref.watch(selectedLanguageProvider);
                   final native = target == 'es' ? 'en' : 'es';
                   final mentor = ref.watch(teacherSupportModeProvider) ==
                       TeacherSupportMode.mentor;
+                  final translate = ref.watch(tutorTranslateProvider);
+                  final lastTutorIdx =
+                      session.transcript.lastIndexWhere((t) => t.$1);
+                  final isLastTutor = isTutor && index == lastTutorIdx;
                   final parts = isTutor
                       ? splitTeacherReply(text, target, native)
                       : null;
@@ -612,9 +617,12 @@ class _SessionState extends ConsumerState<_Session> {
                       : parts.target.isEmpty
                       ? text // fully-native line (e.g. notebook greeting)
                       : parts.target;
+                  // The Translate reveal owns the most-recent reply's native
+                  // text — suppress the auto-support there to avoid duplicating.
+                  final revealTranslation = isLastTutor && translate;
                   final supportText =
-                      (isTutor && mentor && parts != null &&
-                          parts.target.isNotEmpty)
+                      (isTutor && mentor && !revealTranslation &&
+                          parts != null && parts.target.isNotEmpty)
                       ? parts.support
                       : '';
                   return FadeInUp(
@@ -647,6 +655,11 @@ class _SessionState extends ConsumerState<_Session> {
                                     fontStyle: FontStyle.italic,
                                   ),
                             ),
+                          ),
+                        if (revealTranslation)
+                          _TranslationReveal(
+                            native: parts?.support ?? '',
+                            nativeName: native == 'en' ? 'English' : 'Spanish',
                           ),
                       ],
                     ),
@@ -728,6 +741,16 @@ class _SessionState extends ConsumerState<_Session> {
                           ? null
                           : () => widget.onSend(widget.input.text),
                     ),
+                    const SizedBox(width: 8),
+                    // Translate: toggles the native-language reveal of the
+                    // tutor's most-recent reply. Circular, matching the mic and
+                    // send buttons; no new AI call.
+                    _TranslateButton(
+                      active: ref.watch(tutorTranslateProvider),
+                      onTap: () => ref
+                          .read(tutorTranslateProvider.notifier)
+                          .update((v) => !v),
+                    ),
                   ],
                 ),
               ],
@@ -735,6 +758,79 @@ class _SessionState extends ConsumerState<_Session> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Circular Translate action, styled to match the mic/send buttons. Filled
+/// when active (translation shown), tonal when off. Tooltip 'Translate'.
+class _TranslateButton extends StatelessWidget {
+  const _TranslateButton({required this.active, required this.onTap});
+
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = Icon(active ? Icons.translate : Icons.translate_outlined);
+    return active
+        ? IconButton.filled(
+            icon: icon,
+            tooltip: 'Hide translation',
+            onPressed: onTap,
+          )
+        : IconButton.filledTonal(
+            icon: icon,
+            tooltip: 'Translate',
+            onPressed: onTap,
+          );
+  }
+}
+
+/// The native-language reveal shown beneath the tutor's most-recent reply when
+/// Translate is on. Collapsible via the Translate button; no new AI response —
+/// it displays the native half the teacher already produced. When the reply is
+/// target-language-only (no native half exists to show offline), it says so
+/// honestly rather than inventing a translation.
+class _TranslationReveal extends StatelessWidget {
+  const _TranslationReveal({required this.native, required this.nativeName});
+
+  final String native;
+  final String nativeName;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final has = native.trim().isNotEmpty;
+    return Padding(
+      padding: const EdgeInsets.only(left: 44, right: 24, top: 2, bottom: 10),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpace.sm),
+        decoration: BoxDecoration(
+          color: scheme.secondaryContainer.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(AppRadius.input),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.translate, size: 16, color: scheme.onSecondaryContainer),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                has
+                    ? native
+                    : 'No $nativeName translation for this reply — it was '
+                        'spoken in the target language only.',
+                style: text.bodySmall?.copyWith(
+                  color: scheme.onSecondaryContainer,
+                  fontStyle: has ? FontStyle.normal : FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

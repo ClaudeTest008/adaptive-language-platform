@@ -1960,6 +1960,15 @@ final teacherSupportModeProvider = StateProvider<TeacherSupportMode>(
   (ref) => TeacherSupportMode.mentor,
 );
 
+/// Whether the learner has the Translate reveal on for the tutor's most-recent
+/// reply. Session-scoped (resets on app restart / language switch). No new AI
+/// call — the reveal shows the native-language half the teacher already wrote
+/// (`splitTeacherReply.support`).
+final tutorTranslateProvider = StateProvider<bool>((ref) {
+  ref.watch(selectedLanguageProvider); // a language switch resets the toggle
+  return false;
+});
+
 /// The Adaptive Lesson Generator's plan (Phase 19) — the orchestrator's
 /// "what next", derived from the Teacher Brain. Null until the brain is ready.
 /// Reading/speaking/tutor surfaces read their recommendations from here.

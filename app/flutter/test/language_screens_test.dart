@@ -602,6 +602,20 @@ void main() {
     expect(find.textContaining('misconceptions in context'), findsOneWidget);
     // Demo tutor teaches the tener concept with repair, from graph data.
     expect(find.textContaining('tener'), findsWidgets);
+
+    // Translate button: circular action in the bottom row, toggles the
+    // native-language reveal of the most-recent reply (no new AI response).
+    final translate = find.byTooltip('Translate');
+    expect(translate, findsOneWidget);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(LanguageTutorScreen)),
+    );
+    expect(container.read(tutorTranslateProvider), isFalse);
+    await tester.tap(translate);
+    await _settle(tester);
+    expect(container.read(tutorTranslateProvider), isTrue);
+    // Tooltip flips to the hide affordance (reveal is now shown/collapsible).
+    expect(find.byTooltip('Hide translation'), findsOneWidget);
   });
 
   // Stories + Speaking screens load real assets (rootBundle) and are

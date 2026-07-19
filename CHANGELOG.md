@@ -7,6 +7,25 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
+### Added
+
+- **Translate button on the AI Tutor screen.** A circular Translate action
+  (`Icons.translate`, tooltip "Translate") in the bottom row, styled like the
+  mic/send buttons (filled-tonal off, filled when active). Tapping it toggles a
+  native-language reveal directly beneath the tutor's most-recent reply,
+  collapsible via the same button, and the on/off state is remembered for the
+  session (`tutorTranslateProvider`). No new AI response: the reveal shows the
+  native-language half the teacher already produced (`splitTeacherReply.support`)
+  and, when a reply is target-language-only (no offline translation exists),
+  says so honestly rather than inventing one. NOTE: the current tutor screen
+  had NO globe button to replace — the bottom bar was mic/textfield/send, and
+  the AppBar has only the voice-settings and new-session icons; the Translate
+  button was added there. Other UI/layout/navigation/tutor behaviour unchanged.
+  Device-verified (CPH2037): button renders bottom-right, toggles the reveal,
+  no layout overflow (0 overflow errors in logcat). 462 tests (tutor widget
+  test extended: button present, toggle flips the provider). analyze clean;
+  apk debug green.
+
 ### Changed
 
 - **Qwen3-1.7B Q4_K_S is now the default tutor model** (`llmDefaultSpec`),

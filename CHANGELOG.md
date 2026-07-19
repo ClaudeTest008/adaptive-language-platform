@@ -9,6 +9,31 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- **Model benchmark executed on-device: Qwen3-1.7B Q4_K_S vs Qwen2.5-1.5B
+  Q4_K_M (recommendation: Qwen3; default unchanged).** Same day, same
+  CPH2037, identical prompts/params/learner via the evaluation framework.
+  Install path device-verified end-to-end: picker → "Switch model · 1011 MB"
+  → byte-exact 1,060,190,784 download → SHA pass → per-model files coexist →
+  engine loads the Q4_K_S (6158 ms). Measurements (TTFT/total): opener
+  Q2.5 12.2/24.0 s vs Q3 15.9/23.3 s; converse turn 17.8/20.3 vs 18.2/25.3;
+  ser-vs-estar 21.9/38.7 vs 25.4/39.3; example 33.3/47.5 vs 35.5/46.3;
+  load 8.4 s vs 6.2 s; PSS 2.37 GB vs 2.96 GB; 0 ANRs both. Latency ≈
+  parity; quality clearly favors Qwen3: coherent contextual follow-ups
+  ("¿Y cuál es el motivo por el que estás en Londres?") vs baseline
+  incoherence ("¿Te gusta esa manzana en tus locaciones?"); correct
+  ser/estar core ("'Ser' significa … identidad o permanen…") vs a generic
+  opener; spontaneous natural use of remembered facts in the greeting
+  ("John está en Londres con su esposa…") which the baseline never produced;
+  interactive Socratic example offer; zero think-block leakage
+  (/no_think + stripThink verified). HONEST LIMITS: 4 GGUF turns per model —
+  the mandated 40- and 100-turn scripts and the roleplay battery did NOT run
+  (~30-45 s/turn on the owner's phone); deterministic paths (fact recall,
+  roleplay scenes) are model-independent and already covered by tests.
+  Recommendation: Qwen3-1.7B Q4_K_S — better on every measured quality
+  dimension at equal speed (+0.6 GB PSS on an 8 GB device). The in-code
+  DEFAULT stays Qwen2.5 until the extended script confirms; switching is one
+  tap in LLM settings. No code changes this session (docs-only record).
+
 - **Model-evaluation framework (no model change; no winner declared).**
   Groundwork for comparing small on-device tutor LLMs on identical prompts:
   `LlmModelSpec` (id/name/version/type/url/sha256/exact bytes/context/

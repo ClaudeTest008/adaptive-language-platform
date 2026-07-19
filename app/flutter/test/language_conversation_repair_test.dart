@@ -365,6 +365,58 @@ void main() {
       expect(stripThink('Sin bloques.'), 'Sin bloques.');
     });
 
+    test('corrections keep a cadence instead of firing every turn', () async {
+      final c = await _boot();
+      final brain = c.read(teacherBrainProvider).value!;
+      const eng = TeacherIntelligenceEngine();
+
+      TeacherResponsePlan planWith({
+        required int since,
+        String? lastConcept,
+      }) =>
+          eng.plan(
+            brain,
+            turn: 4,
+            learnerIntent: LearnerIntent.statement,
+            producedTarget: true,
+            turnsSinceCorrection: since,
+            lastCorrectedConceptId: lastConcept,
+          );
+
+      // A Spanish attempt with no recent correction → the teacher may correct.
+      final fresh = planWith(since: ConversationContext.neverCorrected);
+      expect(fresh.correction, isNotNull);
+      final correctedId = fresh.correction!.conceptId;
+
+      // Immediately afterwards it must NOT correct again — back-to-back
+      // corrections are what made the tutor feel like a grammar checker.
+      expect(planWith(since: 0, lastConcept: correctedId).correction, isNull);
+      expect(planWith(since: 1, lastConcept: correctedId).correction, isNull);
+
+      // The same point stays off-limits a little longer than the base gap.
+      expect(planWith(since: 2, lastConcept: correctedId).correction, isNull);
+      expect(planWith(since: 3, lastConcept: correctedId).correction, isNull);
+      expect(planWith(since: 4, lastConcept: correctedId).correction, isNotNull);
+
+      // A different point only waits out the base gap.
+      expect(planWith(since: 2, lastConcept: 'other:concept').correction,
+          isNotNull);
+      c.dispose();
+    });
+
+    test('the correction clock only advances on learner turns', () {
+      const start = ConversationContext();
+      final afterTeacher = start
+          .withCorrection('es:a1:grammar:tener')
+          .withTurn(const ConversationTurn(fromLearner: false, text: 'Bien.'));
+      expect(afterTeacher.turnsSinceCorrection, 0);
+      expect(afterTeacher.lastCorrectedConceptId, 'es:a1:grammar:tener');
+
+      final afterLearner = afterTeacher
+          .withTurn(const ConversationTurn(fromLearner: true, text: 'Sí.'));
+      expect(afterLearner.turnsSinceCorrection, 1);
+    });
+
     test('the whole conversation is deterministic', () async {
       Future<List<String>> script() async {
         final c = await _boot();

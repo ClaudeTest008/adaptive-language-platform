@@ -13,6 +13,12 @@ import 'llm_memory.dart';
 /// No UI code knows the prompt format. Nothing is fabricated: every field is
 /// sourced from the brain/plan, omitted when absent.
 
+/// How many prior exchanges are replayed to the model each turn. The
+/// conversation context keeps more than this for the app's own use; only this
+/// many are re-sent, because with no KV-prefix reuse in the binding every
+/// retained turn is re-tokenised on every reply.
+const promptHistoryTurns = 6;
+
 /// A structured prompt: a system brief (who the teacher is + this turn's
 /// intent), the user turn, and hard constraints the generator must obey.
 /// One prior exchange, delivered to the model as a proper chat message.
@@ -168,11 +174,21 @@ LlmPrompt buildTeacherPrompt({
   b.writeln('Keep it to a few sentences — a micro-lesson, never a wall of '
       'text.');
 
+  // Prefill is the dominant latency cost on device and the binding offers no
+  // KV-prefix reuse, so the WHOLE prompt is reprocessed every turn: history
+  // length is paid again on each reply. The last few exchanges carry the
+  // thread; durable memory (facts, misconceptions, focus) already reaches the
+  // model through the packet, so a deep raw transcript buys latency, not
+  // recall.
+  final recent = context.turns.length > promptHistoryTurns
+      ? context.turns.sublist(context.turns.length - promptHistoryTurns)
+      : context.turns;
+
   return LlmPrompt(
     system: b.toString().trim(),
     user: userMessage,
     history: [
-      for (final t in context.turns)
+      for (final t in recent)
         LlmChatTurn(fromLearner: t.fromLearner, text: t.text),
     ],
     constraints: LlmConstraints(

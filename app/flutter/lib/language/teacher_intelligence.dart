@@ -1,5 +1,6 @@
 import 'connections.dart';
 import 'learning_profile.dart';
+import 'local_llm/llm_memory.dart';
 import 'message_intent.dart';
 import 'teacher_brain.dart';
 import 'teaching_style.dart';
@@ -497,15 +498,35 @@ class TeacherIntelligenceEngine {
   /// fix for the tutor "correcting instead of conversing": the planner was
   /// picking `correct` on every turn because the demo brain always has an
   /// active weak concept, and every message was flagged correctable.
+  /// How many learner turns must pass between corrections, and how long the
+  /// same point stays off-limits after being corrected. Real teachers let
+  /// most slips go and revisit a point later — correcting every utterance is
+  /// what made the tutor feel like a grammar checker instead of a partner.
+  static const correctionGapTurns = 2;
+  static const sameConceptGapTurns = 4;
+
   TeacherResponsePlan plan(
     TeacherBrain brain, {
     int turn = 0,
     LearnerIntent? learnerIntent,
     bool learnerHasProduced = false,
     bool producedTarget = false,
+    int turnsSinceCorrection = ConversationContext.neverCorrected,
+    String? lastCorrectedConceptId,
   }) {
     final state = conversationState(brain, turn: turn);
     final closing = state.stage == LessonStage.reflection;
+
+    // Correction cadence: even a real Spanish attempt is only corrected when
+    // enough has been said since the last correction, and the same concept is
+    // not re-corrected back-to-back.
+    final pending = correction(brain);
+    final sameConceptTooSoon = pending != null &&
+        pending.conceptId == lastCorrectedConceptId &&
+        turnsSinceCorrection < sameConceptGapTurns;
+    final correctionAllowed = producedTarget &&
+        turnsSinceCorrection >= correctionGapTurns &&
+        !sameConceptTooSoon;
 
     // 1 · Learner-driven moments beat brain-driven planning (greeting,
     //     confusion, example/grammar/roleplay requests…).
@@ -546,9 +567,10 @@ class TeacherIntelligenceEngine {
       chosen = moment(brain, decision);
     } else {
       // Teaching turn (Spanish production or the lesson's own beat). Correct
-      // only when the learner actually produced correctable Spanish.
+      // only when the learner produced correctable Spanish AND the cadence
+      // allows it — otherwise teach forward and let the slip pass.
       decision = decide(brain);
-      if (decision.intent == TeacherIntent.correct && !producedTarget) {
+      if (decision.intent == TeacherIntent.correct && !correctionAllowed) {
         final ops = opportunities(brain)
             .where((o) => o.intent != TeacherIntent.correct)
             .toList();
@@ -571,10 +593,9 @@ class TeacherIntelligenceEngine {
       state: state,
       moment: chosen,
       pacing: pacing(brain),
-      correction:
-          decision.intent == TeacherIntent.correct && producedTarget
-              ? correction(brain)
-              : null,
+      correction: decision.intent == TeacherIntent.correct && correctionAllowed
+          ? pending
+          : null,
       memory: memory(brain),
       reflection: closing ? reflection(brain) : null,
     );

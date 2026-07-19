@@ -24,6 +24,8 @@ class ConversationContext {
     this.pendingQuestion,
     this.activeExercise,
     this.usedPhrasings = const {},
+    this.turnsSinceCorrection = neverCorrected,
+    this.lastCorrectedConceptId,
   });
 
   /// Recent exchanges, oldest-first (bounded by [withTurn]).
@@ -37,7 +39,17 @@ class ConversationContext {
   /// so these become "do not repeat" constraints.
   final Set<String> usedPhrasings;
 
+  /// Learner turns since the teacher last corrected something, and what it
+  /// corrected. Correction CADENCE is conversation-scoped, not learner state:
+  /// a good teacher lets mistakes go by rather than interrupting every
+  /// sentence, and never hammers the same point twice in a row.
+  final int turnsSinceCorrection;
+  final String? lastCorrectedConceptId;
+
   static const _maxTurns = 12;
+
+  /// No correction has happened yet in this conversation.
+  static const neverCorrected = 99;
 
   ConversationContext withTurn(ConversationTurn turn) {
     final next = [...turns, turn];
@@ -45,8 +57,22 @@ class ConversationContext {
       turns: next.length > _maxTurns
           ? next.sublist(next.length - _maxTurns)
           : next,
+      // Only the learner's own turns advance the correction clock.
+      turnsSinceCorrection: turn.fromLearner
+          ? (turnsSinceCorrection >= neverCorrected
+              ? neverCorrected
+              : turnsSinceCorrection + 1)
+          : turnsSinceCorrection,
     );
   }
+
+  /// Records that the teacher just corrected [conceptId], restarting the
+  /// cadence clock.
+  ConversationContext withCorrection(String? conceptId) => copyWith(
+        turnsSinceCorrection: 0,
+        lastCorrectedConceptId: conceptId,
+        clearLastCorrected: conceptId == null,
+      );
 
   ConversationContext markUsed(String phrasing) =>
       copyWith(usedPhrasings: {...usedPhrasings, phrasing});
@@ -58,6 +84,9 @@ class ConversationContext {
     String? pendingQuestion,
     String? activeExercise,
     Set<String>? usedPhrasings,
+    int? turnsSinceCorrection,
+    String? lastCorrectedConceptId,
+    bool clearLastCorrected = false,
   }) => ConversationContext(
     turns: turns ?? this.turns,
     topic: topic ?? this.topic,
@@ -65,5 +94,9 @@ class ConversationContext {
     pendingQuestion: pendingQuestion ?? this.pendingQuestion,
     activeExercise: activeExercise ?? this.activeExercise,
     usedPhrasings: usedPhrasings ?? this.usedPhrasings,
+    turnsSinceCorrection: turnsSinceCorrection ?? this.turnsSinceCorrection,
+    lastCorrectedConceptId: clearLastCorrected
+        ? null
+        : (lastCorrectedConceptId ?? this.lastCorrectedConceptId),
   );
 }

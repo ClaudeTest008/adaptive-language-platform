@@ -75,6 +75,8 @@ class LlmPipeline {
       turn: context.turns.length,
       learnerIntent: intent,
       producedTarget: learnerProducedTarget,
+      turnsSinceCorrection: context.turnsSinceCorrection,
+      lastCorrectedConceptId: context.lastCorrectedConceptId,
     );
     final base = buildTeacherPrompt(
       brain: brain,
@@ -119,9 +121,14 @@ class LlmPipeline {
         ? (safeForSpeech.isEmpty ? worded : safeForSpeech)
         : worded;
 
-    final nextContext = context
+    var nextContext = context
         .withTurn(ConversationTurn(fromLearner: false, text: display))
         .markUsed(worded);
+    // Restart the correction clock only when a correction actually went out,
+    // so the next turns stay conversational.
+    if (plan.correction != null) {
+      nextContext = nextContext.withCorrection(plan.correction!.conceptId);
+    }
     return LlmResponse(text: display, prompt: prompt, context: nextContext);
   }
 }

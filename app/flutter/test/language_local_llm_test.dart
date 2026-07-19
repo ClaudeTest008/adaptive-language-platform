@@ -98,6 +98,30 @@ void main() {
       expect(prompt.user, 'Hola');
     });
 
+    test('replayed history is capped, so prefill cost stops growing', () {
+      final brain = _brain();
+      final plan = intelligence.plan(brain);
+      // A long conversation: the context keeps its own window, but only the
+      // last `promptHistoryTurns` exchanges are re-sent to the model.
+      var ctx = const ConversationContext();
+      for (var i = 0; i < 30; i++) {
+        ctx = ctx.withTurn(
+          ConversationTurn(fromLearner: i.isEven, text: 'turno número $i'),
+        );
+      }
+      final prompt = buildTeacherPrompt(
+        brain: brain,
+        plan: plan,
+        context: ctx,
+        userMessage: 'Sigo aquí.',
+        supportMode: TeacherSupportMode.mentor,
+      );
+      expect(prompt.history.length, promptHistoryTurns);
+      // The kept turns are the most recent ones, in order.
+      expect(prompt.history.last.text, 'turno número 29');
+      expect(ctx.turns.length, greaterThan(promptHistoryTurns));
+    });
+
     test('immersion vs mentor changes the support instruction only', () {
       final brain = _brain();
       final plan = intelligence.plan(brain);

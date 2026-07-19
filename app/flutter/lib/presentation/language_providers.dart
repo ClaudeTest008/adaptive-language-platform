@@ -1076,7 +1076,14 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
       day: _notebookDay(DateTime.now()),
     ));
     final stage = progress.currentStage;
+    final current = state;
+    // Scene transitions should feel like a teacher changing the subject, not
+    // a jump cut: when we are already mid-scene, close the old one first.
+    final switching = preserveSession &&
+        current?.roleplay != null &&
+        current!.roleplay!.scenario.kind != scenario.kind;
     final sceneLines = <(bool, String)>[
+      if (switching) (true, 'Muy bien, dejamos esa escena. Cambiamos de sitio.'),
       (
         true,
         '${scenario.title} — ${scenario.setting}. ${scenario.rationale}'
@@ -1084,7 +1091,6 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
       if (resumeIndex > 0) (true, 'Seguimos donde lo dejamos.'),
       if (stage != null) (true, stage.prompt.text),
     ];
-    final current = state;
     state = preserveSession && current != null
         ? current.copyWith(
             transcript: [...current.transcript, ...sceneLines],
@@ -1206,7 +1212,10 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
     if (rp != null && !rp.done) {
       nextRoleplay = advanceRoleplay(rp);
       stageLine = nextRoleplay.done
-          ? '¡Escena completada! Lo hiciste muy bien.'
+          // Closing a scene hands the conversation back instead of just
+          // stopping — the learner is never left staring at a dead end.
+          ? '¡Escena completada! Lo hiciste muy bien. '
+              'Seguimos hablando cuando quieras.'
           : nextRoleplay.currentStage?.prompt.text;
       await ref.read(teacherMemoryRepositoryProvider).saveRoleplay(
             RoleplayMemory(

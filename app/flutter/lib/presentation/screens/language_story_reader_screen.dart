@@ -105,6 +105,7 @@ class _LanguageStoryReaderScreenState
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
+      backgroundColor: AppTones.of(context).canvasTop,
       builder: (context) => Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -119,61 +120,80 @@ class _LanguageStoryReaderScreenState
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpace.xl,
-            0,
-            AppSpace.xl,
-            AppSpace.xl,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Key words', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: AppSpace.md),
-              for (final v in story.vocabulary)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpace.xs),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          v.word,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          v.meaning,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(
-                                color:
-                                    Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
-                      ),
-                    ],
+      backgroundColor: AppTones.of(context).canvasTop,
+      builder: (context) {
+        final tones = AppTones.of(context);
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpace.xl,
+              0,
+              AppSpace.xl,
+              AppSpace.xl,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Key words',
+                  style: TextStyle(
+                    color: tones.ink,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.4,
                   ),
                 ),
-            ],
+                const SizedBox(height: AppSpace.lg),
+                for (final v in story.vocabulary)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpace.sm),
+                    child: SoftCard(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.lg,
+                        vertical: AppSpace.md,
+                      ),
+                      radius: AppRadius.input,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              v.word,
+                              style: TextStyle(
+                                color: tones.ink,
+                                fontSize: 15.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpace.md),
+                          Expanded(
+                            child: Text(
+                              v.meaning,
+                              style: TextStyle(
+                                color: tones.inkSoft,
+                                fontSize: 14,
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final storiesAsync = ref.watch(storiesProvider);
-    final scheme = Theme.of(context).colorScheme;
+    final tones = AppTones.of(context);
 
     final story = storiesAsync.value
         ?.where((s) => s.id == widget.storyId)
@@ -204,32 +224,40 @@ class _LanguageStoryReaderScreenState
         backgroundColor: Colors.transparent,
         title: Text(story.title),
         actions: [
-          IconButton(
-            icon: Icon(
-              _bookmarked ? Icons.bookmark : Icons.bookmark_border,
-            ),
+          CircleIconButton(
+            icon: _bookmarked ? Icons.bookmark : Icons.bookmark_border,
             tooltip: 'Bookmark',
-            onPressed: () {
+            size: 42,
+            filled: _bookmarked,
+            onTap: () {
               toggleBookmark(widget.storyId);
               setState(() => _bookmarked = isBookmarked(widget.storyId));
             },
           ),
-          if (story.vocabulary.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.menu_book_outlined),
+          if (story.vocabulary.isNotEmpty) ...[
+            const SizedBox(width: AppSpace.sm - 2),
+            CircleIconButton(
+              icon: Icons.menu_book_outlined,
               tooltip: 'Key words',
-              onPressed: () => _showVocab(context, story),
+              size: 42,
+              onTap: () => _showVocab(context, story),
             ),
-          IconButton(
-            icon: const Icon(Icons.forum_outlined),
+          ],
+          const SizedBox(width: AppSpace.sm - 2),
+          CircleIconButton(
+            icon: Icons.forum_outlined,
             tooltip: 'Reading companion',
-            onPressed: () => _showCompanion(context, story),
+            size: 42,
+            onTap: () => _showCompanion(context, story),
           ),
-          IconButton(
-            icon: const Icon(Icons.headphones),
+          const SizedBox(width: AppSpace.sm - 2),
+          CircleIconButton(
+            icon: Icons.headphones,
             tooltip: 'Listen to the whole story',
-            onPressed: () => speech.speak(story.fullText, langCode: bcp47),
+            size: 42,
+            onTap: () => speech.speak(story.fullText, langCode: bcp47),
           ),
+          const SizedBox(width: AppSpace.md),
         ],
       ),
       body: AtmosphericBackground(
@@ -287,8 +315,8 @@ class _LanguageStoryReaderScreenState
                                       LinearProgressIndicator(
                                     value: v,
                                     minHeight: 5,
-                                    backgroundColor:
-                                        scheme.onSurface.withValues(alpha: 0.1),
+                                    color: tones.solid(AppTint.mint),
+                                    backgroundColor: tones.cardMuted,
                                   ),
                                 ),
                               ),
@@ -296,10 +324,11 @@ class _LanguageStoryReaderScreenState
                             const SizedBox(width: AppSpace.md),
                             Text(
                               '${_phrase + 1} / ${story.phrases.length}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelLarge
-                                  ?.copyWith(color: scheme.onSurfaceVariant),
+                              style: TextStyle(
+                                color: tones.inkSoft,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
@@ -314,8 +343,33 @@ class _LanguageStoryReaderScreenState
                         ),
                         child: SegmentedButton<_ReaderMode>(
                           showSelectedIcon: false,
-                          style: const ButtonStyle(
+                          style: ButtonStyle(
                             visualDensity: VisualDensity.compact,
+                            textStyle: const WidgetStatePropertyAll(
+                              TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            side: WidgetStatePropertyAll(
+                              BorderSide(color: tones.hairline),
+                            ),
+                            backgroundColor:
+                                WidgetStateProperty.resolveWith((states) =>
+                                    states.contains(WidgetState.selected)
+                                        ? tones.accent
+                                        : tones.cardMuted),
+                            foregroundColor:
+                                WidgetStateProperty.resolveWith((states) =>
+                                    states.contains(WidgetState.selected)
+                                        ? tones.onAccent
+                                        : tones.ink),
+                            shape: WidgetStatePropertyAll(
+                              RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.pill),
+                              ),
+                            ),
                           ),
                           segments: const [
                             ButtonSegment(
@@ -368,15 +422,16 @@ class _LanguageStoryReaderScreenState
                                     Text(
                                       'Capítulo ${story.chapterOf(i) + 1} · '
                                       '${story.chapterTitles[story.chapterOf(i)]}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelLarge
-                                          ?.copyWith(
-                                            color: scheme.primary,
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: tones.solid(AppTint.mint),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.2,
+                                      ),
                                     ),
-                                    const SizedBox(height: AppSpace.md),
+                                    const SizedBox(height: AppSpace.lg),
                                   ],
                                   if (_mode != _ReaderMode.english)
                                     // Phase 21: every word is long-pressable —
@@ -388,24 +443,18 @@ class _LanguageStoryReaderScreenState
                                     ),
                                   if (_mode == _ReaderMode.both) ...[
                                     const SizedBox(height: AppSpace.xl),
-                                    Divider(
-                                      color: scheme.outlineVariant
-                                          .withValues(alpha: 0.5),
-                                    ),
+                                    Divider(color: tones.hairline),
                                     const SizedBox(height: AppSpace.lg),
                                   ],
                                   if (_mode != _ReaderMode.spanish)
                                     Text(
-                                    p.translation,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyLarge
-                                        ?.copyWith(
-                                          color: scheme.onSurfaceVariant
-                                              .withValues(alpha: 0.85),
-                                          height: 1.5,
-                                        ),
-                                  ),
+                                      p.translation,
+                                      style: TextStyle(
+                                        color: tones.inkSoft,
+                                        fontSize: 16.5,
+                                        height: 1.6,
+                                      ),
+                                    ),
                                 ],
                               ),
                             );
@@ -424,20 +473,22 @@ class _LanguageStoryReaderScreenState
                           ),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpace.xs,
-                              vertical: AppSpace.xs,
+                              horizontal: AppSpace.sm,
+                              vertical: AppSpace.sm,
                             ),
                             decoration: BoxDecoration(
-                              color: scheme.surfaceContainerHigh,
+                              color: tones.card,
                               borderRadius:
                                   BorderRadius.circular(AppRadius.pill),
+                              border: Border.all(color: tones.hairline),
                             ),
                             child: Row(
                               children: [
-                                IconButton(
-                                  icon: const Icon(Icons.skip_previous_rounded),
+                                CircleIconButton(
+                                  icon: Icons.skip_previous_rounded,
                                   tooltip: 'Previous paragraph',
-                                  onPressed: _phrase == 0
+                                  size: 42,
+                                  onTap: _phrase == 0
                                       ? null
                                       : () => _pageController.previousPage(
                                             duration: const Duration(
@@ -445,14 +496,15 @@ class _LanguageStoryReaderScreenState
                                             curve: AppMotion.curve,
                                           ),
                                 ),
-                                IconButton.filled(
-                                  icon: Icon(
-                                    _playing
-                                        ? Icons.pause_rounded
-                                        : Icons.play_arrow_rounded,
-                                  ),
+                                const SizedBox(width: AppSpace.sm - 2),
+                                CircleIconButton(
+                                  icon: _playing
+                                      ? Icons.pause_rounded
+                                      : Icons.play_arrow_rounded,
                                   tooltip: _playing ? 'Pause' : 'Play',
-                                  onPressed: () {
+                                  size: 48,
+                                  filled: true,
+                                  onTap: () {
                                     if (_playing) {
                                       ref
                                           .read(speechServiceProvider)
@@ -466,15 +518,19 @@ class _LanguageStoryReaderScreenState
                                     }
                                   },
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.stop_rounded),
+                                const SizedBox(width: AppSpace.sm - 2),
+                                CircleIconButton(
+                                  icon: Icons.stop_rounded,
                                   tooltip: 'Stop',
-                                  onPressed: _stopAudio,
+                                  size: 42,
+                                  onTap: _stopAudio,
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.skip_next_rounded),
+                                const SizedBox(width: AppSpace.sm - 2),
+                                CircleIconButton(
+                                  icon: Icons.skip_next_rounded,
                                   tooltip: 'Next paragraph',
-                                  onPressed: isLast
+                                  size: 42,
+                                  onTap: isLast
                                       ? null
                                       : () => _pageController.nextPage(
                                             duration: const Duration(
@@ -485,7 +541,19 @@ class _LanguageStoryReaderScreenState
                                 const Spacer(),
                                 TextButton(
                                   onPressed: _cycleSpeed,
-                                  child: Text('${_speed}x'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: tones.inkSoft,
+                                    minimumSize: const Size(0, 36),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    '${_speed}x',
+                                    style: const TextStyle(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
                                 ),
                                 const SizedBox(width: AppSpace.xs),
                               ],
@@ -503,28 +571,41 @@ class _LanguageStoryReaderScreenState
                         child: Row(
                           children: [
                             Expanded(
-                              child: OutlinedButton(
-                                onPressed: _phrase == 0
-                                    ? null
-                                    : () => _pageController.previousPage(
-                                          duration: const Duration(
-                                            milliseconds: 320,
+                              child: SizedBox(
+                                height: 58,
+                                child: OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: tones.ink,
+                                    side: BorderSide(color: tones.hairline),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                          BorderRadius.circular(AppRadius.pill),
+                                    ),
+                                    textStyle: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  onPressed: _phrase == 0
+                                      ? null
+                                      : () => _pageController.previousPage(
+                                            duration: const Duration(
+                                              milliseconds: 320,
+                                            ),
+                                            curve: AppMotion.curve,
                                           ),
-                                          curve: AppMotion.curve,
-                                        ),
-                                child: const Text('Back'),
+                                  child: const Text('Back'),
+                                ),
                               ),
                             ),
                             const SizedBox(width: AppSpace.md),
                             Expanded(
                               flex: 2,
-                              child: FilledButton.icon(
-                                icon: Icon(
-                                  isLast
-                                      ? Icons.check_rounded
-                                      : Icons.arrow_forward_rounded,
-                                ),
-                                label: Text(isLast ? 'Finish' : 'Continue'),
+                              child: PrimaryButton(
+                                icon: isLast
+                                    ? Icons.check_rounded
+                                    : Icons.arrow_forward_rounded,
+                                label: isLast ? 'Finish' : 'Continue',
                                 onPressed: () {
                                   if (!isLast) {
                                     _pageController.nextPage(
@@ -585,7 +666,7 @@ class _QuizState extends State<_Quiz> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final tones = AppTones.of(context);
     final questions = widget.story.questions;
     final correct = [
       for (final e in _picked.entries)
@@ -596,58 +677,62 @@ class _QuizState extends State<_Quiz> {
       children: [
         Text(
           'Comprehension',
-          style: Theme.of(context)
-              .textTheme
-              .headlineSmall
-              ?.copyWith(fontWeight: FontWeight.w700),
+          style: TextStyle(
+            color: tones.ink,
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.6,
+          ),
         ),
-        const SizedBox(height: AppSpace.xs),
-        Text(
-          '$correct / ${questions.length} correct',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(color: scheme.primary),
+        const SizedBox(height: AppSpace.sm),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: SoftChip(label: '$correct / ${questions.length} correct'),
         ),
         const SizedBox(height: AppSpace.lg),
         for (final (qi, q) in questions.indexed)
           FadeInUp(
             delayMs: qi * 60,
-            child: GlassCard(
-              padding: const EdgeInsets.all(AppSpace.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    q.prompt,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: AppSpace.md),
-                  for (final (oi, opt) in q.options.indexed)
-                    _Option(
-                      label: opt,
-                      state: _picked[qi] == null
-                          ? _OptState.idle
-                          : oi == q.answerIndex
-                              ? _OptState.correct
-                              : (_picked[qi] == oi
-                                  ? _OptState.wrong
-                                  : _OptState.idle),
-                      onTap: _picked.containsKey(qi)
-                          ? null
-                          : () => setState(() => _picked[qi] = oi),
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: AppSpace.md),
+              child: SoftCard(
+                padding: const EdgeInsets.all(AppSpace.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      q.prompt,
+                      style: TextStyle(
+                        color: tones.ink,
+                        fontSize: 16,
+                        height: 1.35,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                ],
+                    const SizedBox(height: AppSpace.md),
+                    for (final (oi, opt) in q.options.indexed)
+                      _Option(
+                        label: opt,
+                        state: _picked[qi] == null
+                            ? _OptState.idle
+                            : oi == q.answerIndex
+                                ? _OptState.correct
+                                : (_picked[qi] == oi
+                                    ? _OptState.wrong
+                                    : _OptState.idle),
+                        onTap: _picked.containsKey(qi)
+                            ? null
+                            : () => setState(() => _picked[qi] = oi),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
-        const SizedBox(height: AppSpace.lg),
-        FilledButton.icon(
-          icon: const Icon(Icons.check),
-          label: const Text('Finish'),
+        const SizedBox(height: AppSpace.sm),
+        PrimaryButton(
+          icon: Icons.check,
+          label: 'Finish',
           onPressed: widget.onFinish,
         ),
         const SizedBox(height: AppSpace.xl),
@@ -667,19 +752,19 @@ class _Option extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final tones = AppTones.of(context);
     final (bg, fg, icon) = switch (state) {
       _OptState.correct => (
-          scheme.primaryContainer,
-          scheme.onPrimaryContainer,
+          tones.tint(AppTint.mint),
+          tones.onTint(AppTint.mint),
           Icons.check_circle,
         ),
       _OptState.wrong => (
-          scheme.errorContainer,
-          scheme.onErrorContainer,
+          Theme.of(context).colorScheme.errorContainer,
+          Theme.of(context).colorScheme.onErrorContainer,
           Icons.cancel,
         ),
-      _OptState.idle => (scheme.surfaceContainerHighest, scheme.onSurface, null),
+      _OptState.idle => (tones.cardMuted, tones.ink, null),
     };
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpace.sm),
@@ -722,11 +807,12 @@ class _TappableTargetText extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const style = TextStyle(
+    final style = TextStyle(
+      color: AppTones.of(context).ink,
       fontSize: 25,
-      height: 1.55,
+      height: 1.6,
       fontWeight: FontWeight.w600,
-      letterSpacing: -0.2,
+      letterSpacing: -0.3,
     );
     final words = text.split(' ');
     return Wrap(
@@ -754,61 +840,90 @@ void _showWordExplanation(BuildContext context, WidgetRef ref, String raw) {
   showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
+    backgroundColor: AppTones.of(context).canvasTop,
     builder: (ctx) {
-      final scheme = Theme.of(ctx).colorScheme;
-      final text = Theme.of(ctx).textTheme;
+      final tones = AppTones.of(ctx);
       return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.xl,
+            0,
+            AppSpace.xl,
+            AppSpace.xl,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(word, style: text.titleLarge),
-              const SizedBox(height: 12),
+              Text(
+                word,
+                style: TextStyle(
+                  color: tones.ink,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.4,
+                ),
+              ),
+              const SizedBox(height: AppSpace.md),
               if (e.teachLine != null) ...[
-                Text(e.teachLine!, style: text.bodyMedium),
-                const SizedBox(height: 8),
+                Text(
+                  e.teachLine!,
+                  style: TextStyle(
+                    color: tones.ink,
+                    fontSize: 15,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: AppSpace.sm),
               ],
               if (e.mentalModelInsight != null) ...[
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.lightbulb, size: 18, color: scheme.primary),
-                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.lightbulb,
+                      size: 18,
+                      color: tones.solid(AppTint.sun),
+                    ),
+                    const SizedBox(width: AppSpace.sm),
                     Expanded(
                       child: Text(
                         e.mentalModelInsight!,
-                        style: text.bodySmall
-                            ?.copyWith(color: scheme.onSurfaceVariant),
+                        style: TextStyle(
+                          color: tones.inkSoft,
+                          fontSize: 13.5,
+                          height: 1.4,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpace.sm),
               ],
               if (e.relatedNames.isNotEmpty) ...[
                 Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
+                  spacing: AppSpace.sm - 2,
+                  runSpacing: AppSpace.sm - 2,
                   children: [
-                    for (final r in e.relatedNames)
-                      Chip(label: Text(r), visualDensity: VisualDensity.compact),
+                    for (final r in e.relatedNames) SoftChip(label: r),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpace.sm),
               ],
               if (e.translation != null)
                 Text(
                   'Dictionary: ${e.translation}',
-                  style: text.bodySmall
-                      ?.copyWith(color: scheme.onSurfaceVariant),
+                  style: TextStyle(color: tones.inkSoft, fontSize: 13.5),
                 ),
               if (e.isEmpty)
                 Text(
                   "We haven't met this word in a lesson yet — it will join "
                   'your map as you learn.',
-                  style: text.bodyMedium,
+                  style: TextStyle(
+                    color: tones.ink,
+                    fontSize: 15,
+                    height: 1.45,
+                  ),
                 ),
             ],
           ),

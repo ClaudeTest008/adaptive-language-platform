@@ -20,7 +20,7 @@ class LanguageStoriesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final storiesAsync = ref.watch(storiesProvider);
-    final scheme = Theme.of(context).colorScheme;
+    final tones = AppTones.of(context);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -30,10 +30,14 @@ class LanguageStoriesScreen extends ConsumerWidget {
         actions: [
           // Phase 22: import your own text as a book (TXT paste today;
           // PDF/EPUB parsers arrive behind the same seam).
-          IconButton(
-            icon: const Icon(Icons.upload_file_outlined),
-            tooltip: 'Import text',
-            onPressed: () => _showImportDialog(context, ref),
+          Padding(
+            padding: const EdgeInsets.only(right: AppSpace.md),
+            child: CircleIconButton(
+              icon: Icons.upload_file_outlined,
+              tooltip: 'Import text',
+              size: 42,
+              onTap: () => _showImportDialog(context, ref),
+            ),
           ),
         ],
       ),
@@ -89,9 +93,11 @@ class LanguageStoriesScreen extends ConsumerWidget {
                       child: Text(
                         'Classic Spanish literature and graded readers, '
                         'matched to your level.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: scheme.onSurfaceVariant,
-                            ),
+                        style: TextStyle(
+                          color: tones.inkSoft,
+                          fontSize: 14.5,
+                          height: 1.4,
+                        ),
                       ),
                     ),
                     // Phase 35: the Reader Intelligence profile (Phase 33)
@@ -136,12 +142,12 @@ class _ReaderProfileCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
+    final tones = AppTones.of(context);
     final profile = ref.watch(readerProfileProvider).value;
     if (profile == null || profile.isEmpty) return const SizedBox.shrink();
 
     final confidence = profile.readingConfidence;
+    final fit = _fitLabel(profile.difficultyFit);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpace.lg,
@@ -149,35 +155,53 @@ class _ReaderProfileCard extends ConsumerWidget {
         AppSpace.lg,
         AppSpace.md,
       ),
-      child: GlassCard(
+      child: SoftCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.auto_stories_outlined,
-                    size: 18, color: scheme.primary),
-                const SizedBox(width: 8),
-                Expanded(child: Text('Your reading', style: text.titleSmall)),
-                Text(
-                  _fitLabel(profile.difficultyFit),
-                  style: text.labelSmall?.copyWith(color: scheme.primary),
+                Icon(
+                  Icons.auto_stories_outlined,
+                  size: 18,
+                  color: tones.solid(AppTint.mint),
                 ),
+                const SizedBox(width: AppSpace.sm),
+                Expanded(
+                  child: Text(
+                    'Your reading',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: tones.ink,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ),
+                if (fit.isNotEmpty) ...[
+                  const SizedBox(width: AppSpace.sm),
+                  Flexible(child: SoftChip(label: fit)),
+                ],
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpace.md),
             Text(
               '${profile.booksRead} '
               '${profile.booksRead == 1 ? 'book' : 'books'} finished'
               '${confidence == null ? '' : ' · comprehension ${(confidence * 100).round()}%'}',
-              style: text.bodyMedium,
+              style: TextStyle(color: tones.ink, fontSize: 14.5, height: 1.4),
             ),
             if (profile.insights.isNotEmpty) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpace.xs),
               Text(
                 profile.insights.first,
-                style:
-                    text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                style: TextStyle(
+                  color: tones.inkSoft,
+                  fontSize: 13,
+                  height: 1.4,
+                ),
               ),
             ],
           ],
@@ -216,20 +240,14 @@ class _Shelf extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpace.lg,
-            AppSpace.md,
             AppSpace.lg,
-            AppSpace.sm,
+            AppSpace.lg,
+            AppSpace.md,
           ),
-          child: Text(
-            title,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w700),
-          ),
+          child: SectionHeader(title: title),
         ),
         SizedBox(
-          height: 262,
+          height: 268,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSpace.lg),
@@ -237,7 +255,11 @@ class _Shelf extends StatelessWidget {
             separatorBuilder: (_, _) => const SizedBox(width: AppSpace.md),
             itemBuilder: (context, i) => FadeInUp(
               delayMs: i * 45,
-              child: _BookCover(story: books[i], showProgress: showProgress),
+              child: _BookCover(
+                story: books[i],
+                showProgress: showProgress,
+                tint: _coverTints[i % _coverTints.length],
+              ),
             ),
           ),
         ),
@@ -246,75 +268,80 @@ class _Shelf extends StatelessWidget {
   }
 }
 
-/// A single book: a gradient placeholder cover with the title and level,
+/// The cover placeholder palette — cycled by shelf position so a shelf reads
+/// as a row of distinct books.
+const _coverTints = [AppTint.sage, AppTint.sun, AppTint.mint, AppTint.lilac];
+
+/// A single book: a tinted placeholder cover with the title and level,
 /// then author, reading time / chapters and (optionally) a progress bar.
 class _BookCover extends StatelessWidget {
-  const _BookCover({required this.story, this.showProgress = false});
+  const _BookCover({
+    required this.story,
+    this.showProgress = false,
+    this.tint = AppTint.sage,
+  });
 
   final Story story;
   final bool showProgress;
+  final AppTint tint;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
+    final tones = AppTones.of(context);
     final last = readingLastPage[story.id];
     final progress =
         last == null ? 0.0 : ((last + 1) / story.phrases.length).clamp(0.0, 1.0);
+    final fill = tones.tint(tint);
+    final onFill = tones.onTint(tint);
+    final deep = Color.alphaBlend(
+      tones.solid(tint).withValues(alpha: tones.dark ? 0.32 : 0.42),
+      fill,
+    );
     return SizedBox(
       width: 152,
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.input),
+        borderRadius: BorderRadius.circular(AppRadius.tile),
         onTap: () => context.push('/story/${Uri.encodeComponent(story.id)}'),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cover art (placeholder gradient) with title + level badge.
+            // Cover art (tinted placeholder) with title + level badge.
             Container(
-              height: 168,
+              height: 172,
               width: 152,
               padding: const EdgeInsets.all(AppSpace.md),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppRadius.tile),
                 gradient: LinearGradient(
-                  colors: [scheme.primary, scheme.tertiary],
+                  colors: [fill, deep],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: scheme.shadow.withValues(alpha: 0.22),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
+                boxShadow: tones.dark
+                    ? null
+                    : const [
+                        BoxShadow(
+                          color: Color(0x14000000),
+                          blurRadius: 16,
+                          offset: Offset(0, 6),
+                        ),
+                      ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpace.sm,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: scheme.onPrimary.withValues(alpha: 0.22),
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                    ),
-                    child: Text(
-                      story.level.name.toUpperCase(),
-                      style: text.labelSmall?.copyWith(color: scheme.onPrimary),
-                    ),
-                  ),
+                  SoftChip(label: story.level.name.toUpperCase()),
                   const Spacer(),
                   Text(
                     story.title,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: text.titleSmall?.copyWith(
-                      color: scheme.onPrimary,
+                    style: TextStyle(
+                      color: onFill,
+                      fontSize: 15,
                       fontWeight: FontWeight.w700,
                       height: 1.2,
+                      letterSpacing: -0.2,
                     ),
                   ),
                 ],
@@ -325,8 +352,9 @@ class _BookCover extends StatelessWidget {
               story.author.isEmpty ? 'Graded reader' : story.author,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: text.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
+              style: TextStyle(
+                color: tones.inkSoft,
+                fontSize: 12.5,
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -337,16 +365,19 @@ class _BookCover extends StatelessWidget {
                       '${story.chapterTitles.length} chapters'
                   : '${story.readingMinutes} min · '
                       '${story.phrases.length} pages',
-              style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: tones.inkSoft, fontSize: 11.5),
             ),
             if (showProgress || progress > 0) ...[
-              const SizedBox(height: AppSpace.xs),
+              const SizedBox(height: AppSpace.sm),
               ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.pill),
                 child: LinearProgressIndicator(
                   value: progress,
-                  minHeight: 4,
-                  backgroundColor: scheme.surfaceContainerHighest,
+                  minHeight: 5,
+                  color: tones.solid(tint),
+                  backgroundColor: tones.cardMuted,
                 ),
               ),
             ],
@@ -365,24 +396,39 @@ void _showImportDialog(BuildContext context, WidgetRef ref) {
   showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Import a text'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: titleCtrl,
-            decoration: const InputDecoration(labelText: 'Title'),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: textCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Paste the text',
-              alignLabelWithHint: true,
+      backgroundColor: AppTones.of(ctx).card,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+      ),
+      title: Text(
+        'Import a text',
+        style: TextStyle(
+          color: AppTones.of(ctx).ink,
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.3,
+        ),
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleCtrl,
+              decoration: const InputDecoration(labelText: 'Title'),
             ),
-            maxLines: 6,
-          ),
-        ],
+            const SizedBox(height: AppSpace.md),
+            TextField(
+              controller: textCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Paste the text',
+                alignLabelWithHint: true,
+              ),
+              maxLines: 6,
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(

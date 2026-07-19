@@ -6,6 +6,16 @@ import '../../language/entities.dart';
 import '../language_providers.dart';
 import '../providers.dart';
 import '../ui.dart';
+import 'language_goals_screen.dart';
+
+/// Page-title style shared by the three onboarding pages: large, tight, bold.
+TextStyle _title(AppTones tones) => TextStyle(
+      color: tones.ink,
+      fontSize: 27,
+      height: 1.15,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.8,
+    );
 
 /// First-run onboarding (Phase 10): an immersive, atmospheric flow that
 /// picks the target language and sets the learner's goals before the
@@ -45,8 +55,9 @@ class _LanguageOnboardingScreenState
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final last = _page == _pages - 1;
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: AtmosphericBackground(
         child: SafeArea(
           child: Center(
@@ -55,7 +66,7 @@ class _LanguageOnboardingScreenState
               child: Column(
                 children: [
                   const SizedBox(height: AppSpace.lg),
-                  _ProgressDots(page: _page, count: _pages),
+                  _ProgressBars(page: _page, count: _pages),
                   Expanded(
                     child: PageView(
                       controller: _controller,
@@ -69,35 +80,10 @@ class _LanguageOnboardingScreenState
                   ),
                   Padding(
                     padding: const EdgeInsets.all(AppSpace.xl),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: FilledButton(
-                        onPressed: _next,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              _page < _pages - 1
-                                  ? 'Continue'
-                                  : 'Start learning',
-                              style:
-                                  Theme.of(context).textTheme.titleMedium?.copyWith(
-                                        color: scheme.onPrimary,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                            ),
-                            const SizedBox(width: AppSpace.sm),
-                            Icon(
-                              _page < _pages - 1
-                                  ? Icons.arrow_forward
-                                  : Icons.rocket_launch,
-                              color: scheme.onPrimary,
-                              size: 20,
-                            ),
-                          ],
-                        ),
-                      ),
+                    child: PrimaryButton(
+                      label: last ? 'Start learning' : 'Continue',
+                      icon: last ? Icons.rocket_launch : Icons.arrow_forward,
+                      onPressed: _next,
                     ),
                   ),
                 ],
@@ -110,16 +96,16 @@ class _LanguageOnboardingScreenState
   }
 }
 
-/// Thin segmented progress indicator at the top of the flow.
-class _ProgressDots extends StatelessWidget {
-  const _ProgressDots({required this.page, required this.count});
+/// Slim rounded progress bars at the top of the flow.
+class _ProgressBars extends StatelessWidget {
+  const _ProgressBars({required this.page, required this.count});
 
   final int page;
   final int count;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final tones = AppTones.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpace.xl),
       child: Row(
@@ -128,12 +114,10 @@ class _ProgressDots extends StatelessWidget {
             Expanded(
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                height: 4,
+                height: 5,
                 margin: const EdgeInsets.symmetric(horizontal: 3),
                 decoration: BoxDecoration(
-                  color: i <= page
-                      ? scheme.primary
-                      : scheme.onSurface.withValues(alpha: 0.15),
+                  color: i <= page ? tones.ink : tones.cardMuted,
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
               ),
@@ -149,8 +133,7 @@ class _WelcomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
+    final tones = AppTones.of(context);
     return Padding(
       padding: const EdgeInsets.all(AppSpace.xl),
       child: Column(
@@ -159,24 +142,17 @@ class _WelcomePage extends StatelessWidget {
         children: [
           FadeInUp(
             child: Container(
-              width: 96,
-              height: 96,
+              width: 104,
+              height: 104,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [scheme.primary, scheme.tertiary],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: scheme.primary.withValues(alpha: 0.4),
-                    blurRadius: 30,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
+                color: tones.tint(AppTint.sun),
               ),
-              child: Icon(Icons.language, size: 48, color: scheme.onPrimary),
+              child: Icon(
+                Icons.language,
+                size: 50,
+                color: tones.onTint(AppTint.sun),
+              ),
             ),
           ),
           const SizedBox(height: AppSpace.xl),
@@ -184,11 +160,7 @@ class _WelcomePage extends StatelessWidget {
             delayMs: 80,
             child: Text(
               'Your personal\nlanguage teacher',
-              style: text.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.5,
-                height: 1.15,
-              ),
+              style: _title(tones),
             ),
           ),
           const SizedBox(height: AppSpace.md),
@@ -198,7 +170,11 @@ class _WelcomePage extends StatelessWidget {
               'An adaptive AI tutor that learns how you learn — repairing '
               'misconceptions, pacing to your goals, and speaking with you '
               'in real conversations.',
-              style: text.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
+              style: TextStyle(
+                color: tones.inkSoft,
+                fontSize: 15.5,
+                height: 1.45,
+              ),
             ),
           ),
         ],
@@ -213,21 +189,14 @@ class _LanguagePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(selectedLanguageProvider);
-    final text = Theme.of(context).textTheme;
+    final tones = AppTones.of(context);
     return Padding(
       padding: const EdgeInsets.all(AppSpace.xl),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'What would you\nlike to learn?',
-            style: text.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.5,
-              height: 1.15,
-            ),
-          ),
+          Text('What would you\nlike to learn?', style: _title(tones)),
           const SizedBox(height: AppSpace.xl),
           for (final (i, l) in availableLanguages.indexed)
             FadeInUp(
@@ -265,24 +234,23 @@ class _LanguageTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return GlassCard(
+    final tones = AppTones.of(context);
+    return SoftCard(
       onTap: onTap,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpace.lg,
-        vertical: AppSpace.lg,
-      ),
+      radius: AppRadius.tile,
       child: Row(
         children: [
-          Text(flag, style: const TextStyle(fontSize: 34)),
+          Text(flag, style: const TextStyle(fontSize: 32)),
           const SizedBox(width: AppSpace.lg),
           Expanded(
             child: Text(
               name,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: tones.ink,
+                fontSize: 16.5,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.2,
+              ),
             ),
           ),
           AnimatedContainer(
@@ -291,14 +259,14 @@ class _LanguageTile extends StatelessWidget {
             height: 26,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: selected ? scheme.primary : Colors.transparent,
+              color: selected ? tones.accent : Colors.transparent,
               border: Border.all(
-                color: selected ? scheme.primary : scheme.outline,
+                color: selected ? tones.accent : tones.inkSoft,
                 width: 2,
               ),
             ),
             child: selected
-                ? Icon(Icons.check, size: 16, color: scheme.onPrimary)
+                ? Icon(Icons.check, size: 16, color: tones.onAccent)
                 : null,
           ),
         ],
@@ -321,60 +289,65 @@ class _GoalsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final goals = ref.watch(learnerGoalsProvider);
     final ctrl = ref.read(learnerGoalsProvider.notifier);
-    final text = Theme.of(context).textTheme;
-    final scheme = Theme.of(context).colorScheme;
+    final tones = AppTones.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpace.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Set your pace',
-            style: text.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.5,
-            ),
-          ),
+          Text('Set your pace', style: _title(tones)),
           const SizedBox(height: AppSpace.xl),
-          GlassCard(
+          SoftCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Daily goal', style: text.titleMedium),
+                Text(
+                  'Daily goal',
+                  style: TextStyle(
+                    color: tones.inkSoft,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: AppSpace.xs),
                 Text(
                   '${goals.minutesPerDay} minutes / day',
-                  style: text.headlineSmall?.copyWith(
-                    color: scheme.primary,
+                  style: TextStyle(
+                    color: tones.ink,
+                    fontSize: 22,
                     fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
                   ),
                 ),
-                Slider(
-                  value: goals.minutesPerDay.toDouble(),
-                  min: 5,
-                  max: 60,
-                  divisions: 11,
-                  label: '${goals.minutesPerDay} min',
-                  onChanged: (v) => ctrl.setMinutes(v.round()),
+                MinutesSlider(
+                  minutes: goals.minutesPerDay,
+                  onChanged: ctrl.setMinutes,
                 ),
               ],
             ),
           ),
           const SizedBox(height: AppSpace.lg),
-          GlassCard(
+          SoftCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Target level', style: text.titleMedium),
+                Text(
+                  'Target level',
+                  style: TextStyle(
+                    color: tones.inkSoft,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: AppSpace.md),
                 Wrap(
                   spacing: AppSpace.sm,
                   children: [
                     for (final level in _levels)
-                      ChoiceChip(
-                        label: Text(level.name.toUpperCase()),
+                      LevelChip(
+                        level: level,
                         selected: goals.targetLevel == level,
-                        onSelected: (_) => ctrl.setTargetLevel(level),
+                        onSelected: () => ctrl.setTargetLevel(level),
                       ),
                   ],
                 ),
@@ -384,10 +357,11 @@ class _GoalsPage extends ConsumerWidget {
           const SizedBox(height: AppSpace.md),
           Text(
             'You can change these any time from the Lab.',
-            style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            style: TextStyle(color: tones.inkSoft, fontSize: 13),
           ),
         ],
       ),
     );
   }
 }
+

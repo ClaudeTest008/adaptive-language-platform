@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers.dart';
+import '../ui.dart';
 import '../widgets.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -110,101 +111,175 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  /// Pill-shaped input in the design-system's recessed fill.
+  Widget _field({
+    required TextEditingController controller,
+    required String label,
+    required String? Function(String?) validator,
+    TextInputType? keyboardType,
+    bool obscure = false,
+    void Function(String)? onSubmitted,
+  }) {
+    return Builder(
+      builder: (context) {
+        final tones = AppTones.of(context);
+        return TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          obscureText: obscure,
+          validator: validator,
+          onFieldSubmitted: onSubmitted,
+          style: TextStyle(color: tones.ink, fontSize: 15.5),
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle: TextStyle(color: tones.inkSoft),
+            filled: true,
+            fillColor: tones.cardMuted,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.lg + 2,
+              vertical: AppSpace.lg,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.input),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.input),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.input),
+              borderSide: BorderSide(color: tones.ink, width: 1.5),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final tones = AppTones.of(context);
     return Scaffold(
-      body: CenteredBody(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              shrinkWrap: true,
-              children: [
-                const SizedBox(height: 48),
-                Icon(
-                  Icons.language,
-                  size: 64,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Adaptive Language Platform',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                Text(
-                  'Your personal AI language teacher — Demo Mode',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const SizedBox(height: 32),
-                if (_registering)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: TextFormField(
-                      controller: _name,
-                      decoration: const InputDecoration(
-                        labelText: 'Display name',
-                        border: OutlineInputBorder(),
+      backgroundColor: Colors.transparent,
+      body: AtmosphericBackground(
+        child: CenteredBody(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpace.xl),
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  const SizedBox(height: AppSpace.xxl),
+                  FadeInUp(
+                    child: Center(
+                      child: Container(
+                        width: 76,
+                        height: 76,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: tones.tint(AppTint.sun),
+                        ),
+                        child: Icon(
+                          Icons.language,
+                          size: 38,
+                          color: tones.onTint(AppTint.sun),
+                        ),
                       ),
-                      validator: (v) =>
-                          (v == null || v.trim().isEmpty) ? 'Required' : null,
                     ),
                   ),
-                TextFormField(
-                  controller: _email,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: AppSpace.lg),
+                  Text(
+                    'Adaptive Language Platform',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: tones.ink,
+                      fontSize: 27,
+                      height: 1.15,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.8,
+                    ),
                   ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (v) => (v == null || !v.contains('@'))
-                      ? 'Enter a valid email'
-                      : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _password,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: AppSpace.sm),
+                  Text(
+                    'Your personal AI language teacher — Demo Mode',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: tones.inkSoft, fontSize: 13.5),
                   ),
-                  obscureText: true,
-                  validator: (v) => (v == null || v.length < 8)
-                      ? 'At least 8 characters'
-                      : null,
-                  onFieldSubmitted: (_) => _submit(),
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _busy ? null : _submit,
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Text(_registering ? 'Create account' : 'Sign in'),
+                  const SizedBox(height: AppSpace.xl),
+                  SoftCard(
+                    padding: const EdgeInsets.all(AppSpace.lg + 2),
+                    child: Column(
+                      children: [
+                        if (_registering) ...[
+                          _field(
+                            controller: _name,
+                            label: 'Display name',
+                            validator: (v) => (v == null || v.trim().isEmpty)
+                                ? 'Required'
+                                : null,
+                          ),
+                          const SizedBox(height: AppSpace.md),
+                        ],
+                        _field(
+                          controller: _email,
+                          label: 'Email',
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (v) => (v == null || !v.contains('@'))
+                              ? 'Enter a valid email'
+                              : null,
+                        ),
+                        const SizedBox(height: AppSpace.md),
+                        _field(
+                          controller: _password,
+                          label: 'Password',
+                          obscure: true,
+                          validator: (v) => (v == null || v.length < 8)
+                              ? 'At least 8 characters'
+                              : null,
+                          onSubmitted: (_) => _submit(),
+                        ),
+                        const SizedBox(height: AppSpace.lg),
+                        PrimaryButton(
+                          label: _registering ? 'Create account' : 'Sign in',
+                          onPressed: _busy ? null : _submit,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                TextButton(
-                  onPressed: () => setState(() => _registering = !_registering),
-                  child: Text(
-                    _registering
-                        ? 'Already have an account? Sign in'
-                        : 'New here? Create an account',
-                  ),
-                ),
-                if (!_registering)
+                  const SizedBox(height: AppSpace.md),
                   TextButton(
-                    onPressed: _forgotPassword,
-                    child: const Text('Forgot password?'),
+                    onPressed: () =>
+                        setState(() => _registering = !_registering),
+                    style: TextButton.styleFrom(foregroundColor: tones.ink),
+                    child: Text(
+                      _registering
+                          ? 'Already have an account? Sign in'
+                          : 'New here? Create an account',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
                   ),
-                // Compile-time gate: this button does not exist in release.
-                if (kDebugMode)
-                  TextButton(
-                    key: const Key('devLogin'),
-                    onPressed: _busy ? null : _devLogin,
-                    child: const Text('Dev login (debug only)'),
-                  ),
-              ],
+                  if (!_registering)
+                    TextButton(
+                      onPressed: _forgotPassword,
+                      style: TextButton.styleFrom(
+                        foregroundColor: tones.inkSoft,
+                      ),
+                      child: const Text('Forgot password?'),
+                    ),
+                  // Compile-time gate: this button does not exist in release.
+                  if (kDebugMode)
+                    TextButton(
+                      key: const Key('devLogin'),
+                      onPressed: _busy ? null : _devLogin,
+                      style: TextButton.styleFrom(
+                        foregroundColor: tones.inkSoft,
+                      ),
+                      child: const Text('Dev login (debug only)'),
+                    ),
+                ],
+              ),
             ),
           ),
         ),

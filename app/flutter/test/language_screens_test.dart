@@ -97,6 +97,11 @@ void main() {
 
     // Progress summary: independent per-skill mastery, collapsed by default.
     await tester.scrollUntilVisible(find.text('Progress summary'), 150);
+    // scrollUntilVisible stops as soon as the header is attached, which can
+    // leave it just below the 600px test viewport — ensureVisible (then pump,
+    // so the new offset is laid out) before tapping.
+    await tester.ensureVisible(find.text('Progress summary'));
+    await tester.pump();
     await tester.tap(find.text('Progress summary'));
     await _settle(tester);
     await tester.scrollUntilVisible(find.text('Vocabulary'), 120);
@@ -256,6 +261,8 @@ void main() {
     await _settle(tester);
 
     await tester.scrollUntilVisible(find.text('Your learning journeys'), 150);
+    await tester.ensureVisible(find.text('Your learning journeys'));
+    await tester.pump();
     await tester.tap(find.text('Your learning journeys'));
     await _settle(tester);
     await tester.scrollUntilVisible(find.text('Present tense verbs'), 120);

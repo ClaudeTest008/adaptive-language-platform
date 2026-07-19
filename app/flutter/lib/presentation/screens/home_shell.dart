@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
+import '../ui.dart';
 import 'language_dashboard_screen.dart';
 import 'language_speaking_screen.dart';
 import 'language_stories_screen.dart';
@@ -27,13 +28,18 @@ class HomeShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final index = ref.watch(homeTabProvider);
+    final tones = AppTones.of(context);
     return Scaffold(
       body: IndexedStack(index: index, children: _tabs),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: (i) =>
-            ref.read(homeTabProvider.notifier).state = i,
-        destinations: const [
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: tones.hairline)),
+        ),
+        child: NavigationBar(
+          selectedIndex: index,
+          onDestinationSelected: (i) =>
+              ref.read(homeTabProvider.notifier).state = i,
+          destinations: const [
           NavigationDestination(
             icon: Icon(Icons.grid_view_outlined),
             selectedIcon: Icon(Icons.grid_view),
@@ -54,7 +60,8 @@ class HomeShell extends ConsumerWidget {
             selectedIcon: Icon(Icons.school),
             label: 'Tutor',
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

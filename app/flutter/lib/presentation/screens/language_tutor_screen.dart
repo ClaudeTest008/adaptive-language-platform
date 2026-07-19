@@ -7,9 +7,10 @@ import '../../language/tutor.dart';
 import '../language_providers.dart';
 import '../ui.dart';
 
-/// AI Tutor home (ADR-0018): mode selector → live session. The session
-/// opens with real learner context (misconceptions, weak concepts,
-/// skill mastery) — the tutor teaches THIS learner, not a generic one.
+/// AI Tutor (ADR-0018): the Teacher Brain picks today's lesson, then a live
+/// voice-first session. The session opens with real learner context
+/// (misconceptions, weak concepts, skill mastery) — this tutor teaches THIS
+/// learner, not a generic one.
 class LanguageTutorScreen extends ConsumerStatefulWidget {
   const LanguageTutorScreen({super.key});
 
@@ -33,42 +34,64 @@ class _LanguageTutorScreenState extends ConsumerState<LanguageTutorScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
         title: const Text('AI Tutor'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.tune_rounded),
-            tooltip: 'Voice settings',
-            onPressed: () => context.push('/voice-settings'),
-          ),
-          if (session != null)
-            IconButton(
-              icon: const Icon(Icons.restart_alt),
-              tooltip: 'New session',
-              onPressed: () => ref.read(tutorSessionProvider.notifier).reset(),
+          Padding(
+            padding: const EdgeInsets.only(right: AppSpace.md),
+            child: CircleIconButton(
+              icon: session == null
+                  ? Icons.grid_view_rounded
+                  : Icons.restart_alt_rounded,
+              size: 42,
+              tooltip: session == null ? 'Voice settings' : 'New session',
+              onTap: session == null
+                  ? () => context.push('/voice-settings')
+                  : () => ref.read(tutorSessionProvider.notifier).reset(),
             ),
+          ),
         ],
       ),
       body: AtmosphericBackground(
         child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
-          child: session == null ? const _ModeSelector() : _Session(
-            session: session,
-            input: _input,
-            onSend: (text) {
-              if (text.trim().isEmpty) return;
-              _input.clear();
-              // Dismiss the keyboard so the reply lands cleanly.
-              FocusManager.instance.primaryFocus?.unfocus();
-              ref.read(tutorSessionProvider.notifier).send(text);
-            },
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: session == null
+                ? const _ModeSelector()
+                : _Session(
+                    session: session,
+                    input: _input,
+                    onSend: (text) {
+                      if (text.trim().isEmpty) return;
+                      _input.clear();
+                      // Dismiss the keyboard so the reply lands cleanly.
+                      FocusManager.instance.primaryFocus?.unfocus();
+                      ref.read(tutorSessionProvider.notifier).send(text);
+                    },
+                  ),
           ),
         ),
       ),
-      ),
     );
   }
+}
+
+/// Memoised [splitTeacherReply]. A streaming reply rebuilds the transcript
+/// many times a second, and every rebuild used to re-split every message in
+/// the conversation; the split is pure, so the result is cached by input.
+/// Bounded so a long session cannot grow it without limit.
+final _splitCache = <String, TeacherReplyParts>{};
+const _splitCacheMax = 64;
+
+TeacherReplyParts _splitCached(String text, String target, String native) {
+  final key = '$target|$native|$text';
+  final hit = _splitCache[key];
+  if (hit != null) return hit;
+  final parts = splitTeacherReply(text, target, native);
+  if (_splitCache.length >= _splitCacheMax) {
+    _splitCache.remove(_splitCache.keys.first);
+  }
+  _splitCache[key] = parts;
+  return parts;
 }
 
 /// Renders `**bold**` and `*italic*` emphasis as styled spans so the chat
@@ -93,8 +116,15 @@ List<InlineSpan> _markdownSpans(String text) {
   return spans;
 }
 
+/// A chat message. Tutor turns get the teacher avatar and a speak affordance;
+/// learner turns are an accent-filled bubble on the right.
 class _Bubble extends StatelessWidget {
-  const _Bubble({required this.isTutor, required this.text, this.onSpeak});
+  const _Bubble({
+    required this.isTutor,
+    required this.text,
+    this.onSpeak,
+    this.streaming = false,
+  });
 
   final bool isTutor;
   final String text;
@@ -102,65 +132,116 @@ class _Bubble extends StatelessWidget {
   /// Tutor bubbles get a tap-to-hear speaker when speech is available.
   final VoidCallback? onSpeak;
 
+  /// The live bubble mid-generation — draws a soft caret after the text.
+  final bool streaming;
+
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final tones = AppTones.of(context);
+    final teacher = tones.solid(AppTint.mint);
     final bubble = Container(
       constraints: const BoxConstraints(maxWidth: 520),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
-        color: isTutor ? scheme.secondaryContainer : scheme.primary,
+        color: isTutor ? tones.card : tones.accent,
         borderRadius: BorderRadius.only(
-          topLeft: const Radius.circular(18),
-          topRight: const Radius.circular(18),
-          bottomLeft: Radius.circular(isTutor ? 4 : 18),
-          bottomRight: Radius.circular(isTutor ? 18 : 4),
+          topLeft: const Radius.circular(20),
+          topRight: const Radius.circular(20),
+          bottomLeft: Radius.circular(isTutor ? 6 : 20),
+          bottomRight: Radius.circular(isTutor ? 20 : 6),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: scheme.shadow.withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: tones.dark
+            ? null
+            : const [
+                BoxShadow(
+                  color: Color(0x0F000000),
+                  blurRadius: 14,
+                  offset: Offset(0, 4),
+                ),
+              ],
       ),
       child: Text.rich(
         TextSpan(
           style: TextStyle(
-            color: isTutor ? scheme.onSecondaryContainer : scheme.onPrimary,
-            height: 1.35,
+            color: isTutor ? tones.ink : tones.onAccent,
+            fontSize: 15.5,
+            height: 1.42,
           ),
-          children: _markdownSpans(text),
+          children: [
+            ..._markdownSpans(text),
+            if (streaming) const WidgetSpan(child: _StreamingCaret()),
+          ],
         ),
       ),
     );
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpace.sm),
+      padding: const EdgeInsets.symmetric(vertical: AppSpace.sm - 2),
       child: Row(
         mainAxisAlignment:
             isTutor ? MainAxisAlignment.start : MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (isTutor) ...[
-            CircleAvatar(
-              radius: 14,
-              backgroundColor: scheme.primaryContainer,
-              child: Icon(
-                Icons.school,
-                size: 16,
-                color: scheme.onPrimaryContainer,
-              ),
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(color: teacher, shape: BoxShape.circle),
+              child: const Icon(Icons.school, size: 16, color: Colors.white),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpace.sm + 2),
           ],
           Flexible(child: bubble),
           if (isTutor && onSpeak != null)
             IconButton(
-              icon: const Icon(Icons.volume_up, size: 18),
+              icon: const Icon(Icons.volume_up_rounded, size: 19),
+              color: tones.inkSoft,
+              visualDensity: VisualDensity.compact,
               tooltip: 'Hear this',
               onPressed: onSpeak,
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Soft blinking caret appended to the streaming reply, so a partial answer
+/// reads as "still arriving" rather than finished-but-truncated.
+class _StreamingCaret extends StatefulWidget {
+  const _StreamingCaret();
+
+  @override
+  State<_StreamingCaret> createState() => _StreamingCaretState();
+}
+
+class _StreamingCaretState extends State<_StreamingCaret>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tones = AppTones.of(context);
+    return FadeTransition(
+      opacity: _c.drive(Tween(begin: 0.25, end: 1)),
+      child: Padding(
+        padding: const EdgeInsets.only(left: 3, bottom: 1),
+        child: Container(
+          width: 8,
+          height: 15,
+          decoration: BoxDecoration(
+            color: tones.solid(AppTint.mint),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
       ),
     );
   }
@@ -189,32 +270,44 @@ class _TypingIndicatorState extends State<_TypingIndicator>
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final tones = AppTones.of(context);
     return Padding(
-      padding: const EdgeInsets.only(left: 36, top: 8, bottom: 8),
-      child: Row(
-        children: [
-          for (var i = 0; i < 3; i++)
-            AnimatedBuilder(
-              animation: _c,
-              builder: (context, _) {
-                final phase = (_c.value * 3 - i).clamp(0.0, 1.0);
-                final lift = phase < 0.5 ? phase : 1 - phase;
-                return Container(
-                  margin: EdgeInsets.only(
-                    right: 4,
-                    bottom: 2 + lift * 6,
-                  ),
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: scheme.primary.withValues(alpha: 0.4 + lift * 0.6),
-                    shape: BoxShape.circle,
-                  ),
-                );
-              },
-            ),
-        ],
+      padding: const EdgeInsets.only(left: 42, top: AppSpace.sm, bottom: 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: tones.card,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+            bottomRight: Radius.circular(20),
+            bottomLeft: Radius.circular(6),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < 3; i++)
+              AnimatedBuilder(
+                animation: _c,
+                builder: (context, _) {
+                  final phase = (_c.value * 3 - i).clamp(0.0, 1.0);
+                  final lift = phase < 0.5 ? phase : 1 - phase;
+                  return Container(
+                    margin: EdgeInsets.only(right: i == 2 ? 0 : 5, bottom: lift * 5),
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: tones
+                          .solid(AppTint.mint)
+                          .withValues(alpha: 0.35 + lift * 0.65),
+                      shape: BoxShape.circle,
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -273,25 +366,43 @@ class _ModeSelector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
+    final tones = AppTones.of(context);
     final learner = ref.watch(languageLearnerProvider);
     final curriculum = ref.watch(curriculumProvider).value;
     final topMisconception = learner.misconceptions.all.firstOrNull;
 
     return ListView(
-      padding: const EdgeInsets.all(AppSpace.lg),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.lg,
+        AppSpace.sm,
+        AppSpace.lg,
+        AppSpace.xl,
+      ),
       children: [
         FadeInUp(
           child: GradientHero(
-            colors: [scheme.primaryContainer, scheme.tertiaryContainer],
+            padding: const EdgeInsets.all(AppSpace.xl),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: tones.solid(AppTint.mint),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.school, color: Colors.white),
+                ),
+                const SizedBox(height: AppSpace.lg),
                 Text(
                   'Your personal teacher',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: scheme.onPrimaryContainer,
+                  style: TextStyle(
+                    color: tones.ink,
+                    fontSize: 27,
+                    height: 1.15,
                     fontWeight: FontWeight.w700,
+                    letterSpacing: -0.8,
                   ),
                 ),
                 const SizedBox(height: AppSpace.sm),
@@ -299,19 +410,19 @@ class _ModeSelector extends ConsumerWidget {
                   'Every session starts from your real progress: '
                   '${learner.misconceptions.all.length} tracked misconceptions, '
                   'your weak concepts and skill mastery.',
-                  style: TextStyle(color: scheme.onPrimaryContainer),
+                  style: TextStyle(
+                    color: tones.inkSoft,
+                    fontSize: 14.5,
+                    height: 1.45,
+                  ),
                 ),
                 if (topMisconception != null && curriculum != null) ...[
-                  const SizedBox(height: AppSpace.md),
-                  Chip(
-                    avatar: Icon(Icons.build_circle, size: 16,
-                        color: scheme.onErrorContainer),
-                    backgroundColor: scheme.errorContainer,
-                    label: Text(
-                      'First up: '
-                      '${curriculum.graph[topMisconception.conceptId]?.name ?? topMisconception.conceptId}',
-                      style: TextStyle(color: scheme.onErrorContainer),
-                    ),
+                  const SizedBox(height: AppSpace.lg),
+                  SoftChip(
+                    icon: Icons.build_circle,
+                    tint: AppTint.lilac,
+                    label: 'First up: '
+                        '${curriculum.graph[topMisconception.conceptId]?.name ?? topMisconception.conceptId}',
                   ),
                 ],
               ],
@@ -333,69 +444,72 @@ class _TodaysLessonCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
+    final tones = AppTones.of(context);
     final choice = ref.watch(teachingChoiceProvider);
     final info = choice == null
         ? null
         : _modes.firstWhere((m) => m.mode == choice.mode);
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpace.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: scheme.primaryContainer,
-                  child: Icon(
-                    info?.icon ?? Icons.school,
-                    color: scheme.onPrimaryContainer,
-                  ),
+    return SoftCard(
+      padding: const EdgeInsets.all(AppSpace.xl - 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: tones.tint(AppTint.mint),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(width: AppSpace.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Today's lesson", style: text.titleMedium),
-                      Text(
-                        'Your teacher chose this from your progress',
-                        style: text.bodySmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: Icon(
+                  info?.icon ?? Icons.school,
+                  size: 21,
+                  color: tones.solid(AppTint.mint),
                 ),
-              ],
-            ),
-            const SizedBox(height: AppSpace.md),
-            Text(
-              choice?.rationale ??
-                  'Getting your lesson ready from what you already know…',
-              style: text.bodyMedium,
-            ),
-            const SizedBox(height: AppSpace.lg),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: choice == null
-                    ? null
-                    : () => ref
-                          .read(tutorSessionProvider.notifier)
-                          .start(
-                            choice.mode,
-                            focusConceptId: choice.focusConceptId,
-                          ),
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text("Start today's lesson"),
               ),
-            ),
-          ],
-        ),
+              const SizedBox(width: AppSpace.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Today's lesson",
+                      style: TextStyle(
+                        color: tones.ink,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    Text(
+                      'Chosen from your progress',
+                      style: TextStyle(color: tones.inkSoft, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpace.lg),
+          Text(
+            choice?.rationale ??
+                'Getting your lesson ready from what you already know…',
+            style: TextStyle(color: tones.ink, fontSize: 15, height: 1.45),
+          ),
+          const SizedBox(height: AppSpace.xl),
+          PrimaryButton(
+            label: "Start today's lesson",
+            icon: Icons.arrow_forward,
+            onPressed: choice == null
+                ? null
+                : () => ref.read(tutorSessionProvider.notifier).start(
+                      choice.mode,
+                      focusConceptId: choice.focusConceptId,
+                    ),
+          ),
+        ],
       ),
     );
   }
@@ -428,6 +542,34 @@ class _SessionState extends ConsumerState<_Session> {
   bool _voiceOn = false;
   _ConvState _conv = _ConvState.idle;
   int _spokenCount = 0;
+
+  /// Typing is opt-in: the mockup's bottom bar is voice-first, and the
+  /// composer slides in when the learner chooses to type.
+  bool _typing = false;
+  final _scroll = ScrollController();
+  final _inputFocus = FocusNode();
+  int _lastLen = 0;
+  String _lastTail = '';
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    _inputFocus.dispose();
+    super.dispose();
+  }
+
+  /// Keeps the newest message in view as turns arrive and as a reply streams
+  /// in — previously the transcript never followed the conversation.
+  void _autoScroll() {
+    if (!_scroll.hasClients) return;
+    final target = _scroll.position.maxScrollExtent;
+    if ((_scroll.offset - target).abs() < 4) return;
+    _scroll.animateTo(
+      target,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   Future<void> _speak(String text) async {
     // Strict language pipeline (Phase 21): only target-language sentences may
@@ -493,25 +635,17 @@ class _SessionState extends ConsumerState<_Session> {
     }
   }
 
-  static ({String label, Color Function(ColorScheme) color})? _statusFor(
-    _ConvState s,
-  ) {
+  static ({String label, AppTint tint})? _statusFor(_ConvState s) {
     return switch (s) {
-      _ConvState.listening => (
-          label: 'Listening…',
-          color: (c) => c.error,
-        ),
-      _ConvState.processing => (
-          label: 'Processing…',
-          color: (c) => c.tertiary,
-        ),
+      _ConvState.listening => (label: 'Listening…', tint: AppTint.sun),
+      _ConvState.processing => (label: 'Thinking…', tint: AppTint.lilac),
       _ConvState.speaking => (
-          label: 'Speaking…  ·  tap the mic to interrupt',
-          color: (c) => c.primary,
+          label: 'Speaking  ·  tap the mic to interrupt',
+          tint: AppTint.mint,
         ),
       _ConvState.error => (
           label: "Didn't catch that — hold the mic and try again",
-          color: (c) => c.error,
+          tint: AppTint.sun,
         ),
       _ConvState.idle => null,
     };
@@ -520,8 +654,15 @@ class _SessionState extends ConsumerState<_Session> {
   @override
   Widget build(BuildContext context) {
     final session = widget.session;
+    final tones = AppTones.of(context);
     final speech = ref.watch(speechServiceProvider);
     final mode = _modes.firstWhere((m) => m.mode == session.mode);
+    final target = ref.watch(selectedLanguageProvider);
+    final native = target == 'es' ? 'en' : 'es';
+    final mentor =
+        ref.watch(teacherSupportModeProvider) == TeacherSupportMode.mentor;
+    final translate = ref.watch(tutorTranslateProvider);
+    final lastTutorIdx = session.transcript.lastIndexWhere((t) => t.$1);
 
     // Auto-speak each new tutor turn while voice replies are on.
     final tutorTurns = session.transcript.where((t) => t.$1).length;
@@ -531,98 +672,104 @@ class _SessionState extends ConsumerState<_Session> {
       WidgetsBinding.instance.addPostFrameCallback((_) => _speak(last.$2));
     }
 
+    // Follow the conversation: a new turn, or more streamed text on the last
+    // one, scrolls the newest content into view.
+    final tail = session.transcript.isEmpty ? '' : session.transcript.last.$2;
+    if (session.transcript.length != _lastLen || tail.length != _lastTail.length) {
+      _lastLen = session.transcript.length;
+      _lastTail = tail;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _autoScroll());
+    }
+
     return Column(
       children: [
+        // Session context chips — what the teacher is working on right now.
         Padding(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.lg,
+            0,
+            AppSpace.lg,
+            AppSpace.sm,
+          ),
           child: Wrap(
-            spacing: 6,
-            runSpacing: 6,
+            spacing: AppSpace.sm - 2,
+            runSpacing: AppSpace.sm - 2,
             alignment: WrapAlignment.center,
             children: [
-              Chip(
-                avatar: Icon(mode.icon, size: 16),
-                label: Text('${mode.title} mode'),
+              SoftChip(
+                icon: mode.icon,
+                tint: AppTint.mint,
+                label: '${mode.title} mode',
               ),
               if (session.context.focusConcept != null)
-                Chip(
-                  avatar: const Icon(Icons.center_focus_strong, size: 16),
-                  label: Text('Focus: ${session.context.focusConcept!.name}'),
+                SoftChip(
+                  icon: Icons.center_focus_strong,
+                  tint: AppTint.mint,
+                  label: 'Focus: ${session.context.focusConcept!.name}',
                 ),
-              Chip(
-                avatar: const Icon(Icons.psychology, size: 16),
-                label: Text(
-                  '${session.context.misconceptions.length} misconceptions in context',
-                ),
+              SoftChip(
+                icon: Icons.lightbulb_outline,
+                tint: AppTint.sun,
+                label:
+                    '${session.context.misconceptions.length} misconceptions in context',
               ),
               if (speech.available)
-                FilterChip(
-                  avatar: Icon(
-                    _voiceOn ? Icons.volume_up : Icons.volume_off,
-                    size: 16,
-                  ),
-                  label: const Text('Voice replies'),
-                  selected: _voiceOn,
-                  onSelected: (v) {
-                    setState(() {
-                      _voiceOn = v;
-                      _spokenCount = tutorTurns; // don't replay history
-                    });
-                  },
+                SoftChip(
+                  icon: _voiceOn
+                      ? Icons.volume_up_rounded
+                      : Icons.volume_off_rounded,
+                  muted: !_voiceOn,
+                  label: 'Voice replies',
+                  onTap: () => setState(() {
+                    _voiceOn = !_voiceOn;
+                    _spokenCount = tutorTurns; // don't replay history
+                  }),
                 ),
               // Immersion vs Mentor (Phase 21): mentor shows English support
               // under Spanish replies; immersion hides it. Audio is Spanish
               // either way.
-              Builder(builder: (context) {
-                final support = ref.watch(teacherSupportModeProvider);
-                final immersive = support == TeacherSupportMode.immersion;
-                return FilterChip(
-                  avatar: Icon(
-                    immersive ? Icons.public : Icons.school_outlined,
-                    size: 16,
-                  ),
-                  label: Text(immersive ? 'Immersion' : 'Mentor'),
-                  selected: immersive,
-                  onSelected: (v) =>
-                      ref.read(teacherSupportModeProvider.notifier).state = v
-                      ? TeacherSupportMode.immersion
-                      : TeacherSupportMode.mentor,
-                );
-              }),
+              SoftChip(
+                icon: mentor ? Icons.school_outlined : Icons.public,
+                label: mentor ? 'Mentor' : 'Immersion',
+                onTap: () =>
+                    ref.read(teacherSupportModeProvider.notifier).state = mentor
+                        ? TeacherSupportMode.immersion
+                        : TeacherSupportMode.mentor,
+              ),
             ],
           ),
         ),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.all(AppSpace.lg),
+            controller: _scroll,
+            padding: const EdgeInsets.fromLTRB(
+              AppSpace.lg,
+              AppSpace.sm,
+              AppSpace.lg,
+              AppSpace.sm,
+            ),
             children: [
               for (final (index, (isTutor, text))
                   in session.transcript.indexed)
                 Builder(builder: (context) {
-                  final target = ref.watch(selectedLanguageProvider);
-                  final native = target == 'es' ? 'en' : 'es';
-                  final mentor = ref.watch(teacherSupportModeProvider) ==
-                      TeacherSupportMode.mentor;
-                  final translate = ref.watch(tutorTranslateProvider);
-                  final lastTutorIdx =
-                      session.transcript.lastIndexWhere((t) => t.$1);
                   final isLastTutor = isTutor && index == lastTutorIdx;
-                  final parts = isTutor
-                      ? splitTeacherReply(text, target, native)
-                      : null;
+                  final parts =
+                      isTutor ? _splitCached(text, target, native) : null;
                   // Immersion: show only the target-language body. Mentor:
                   // target body + support underneath. Learner bubbles as-is.
                   final bubbleText = parts == null
                       ? text
                       : parts.target.isEmpty
-                      ? text // fully-native line (e.g. notebook greeting)
-                      : parts.target;
+                          ? text // fully-native line (e.g. notebook greeting)
+                          : parts.target;
                   // The Translate reveal owns the most-recent reply's native
                   // text — suppress the auto-support there to avoid duplicating.
                   final revealTranslation = isLastTutor && translate;
-                  final supportText =
-                      (isTutor && mentor && !revealTranslation &&
-                          parts != null && parts.target.isNotEmpty)
+                  final supportText = (isTutor &&
+                          mentor &&
+                          !revealTranslation &&
+                          parts != null &&
+                          parts.target.isNotEmpty)
                       ? parts.support
                       : '';
                   return FadeInUp(
@@ -632,6 +779,8 @@ class _SessionState extends ConsumerState<_Session> {
                         _Bubble(
                           isTutor: isTutor,
                           text: bubbleText,
+                          streaming:
+                              isLastTutor && session.busy && text.isNotEmpty,
                           onSpeak: isTutor && speech.available
                               ? () => _speak(text)
                               : null,
@@ -639,21 +788,18 @@ class _SessionState extends ConsumerState<_Session> {
                         if (supportText.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(
-                              left: 44,
-                              right: 24,
-                              bottom: 8,
+                              left: 42,
+                              right: 40,
+                              bottom: AppSpace.sm,
                             ),
                             child: Text(
                               supportText,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                    fontStyle: FontStyle.italic,
-                                  ),
+                              style: TextStyle(
+                                color: tones.inkSoft,
+                                fontSize: 13,
+                                height: 1.4,
+                                fontStyle: FontStyle.italic,
+                              ),
                             ),
                           ),
                         if (revealTranslation)
@@ -665,125 +811,220 @@ class _SessionState extends ConsumerState<_Session> {
                     ),
                   );
                 }),
-              if (session.busy) const _TypingIndicator(),
+              // Only show the thinking dots before the first streamed token;
+              // once text is arriving the caret carries the "still going" cue.
+              if (session.busy &&
+                  (lastTutorIdx < 0 ||
+                      session.transcript[lastTutorIdx].$2.isEmpty))
+                const _TypingIndicator(),
             ],
           ),
         ),
-        SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Conversation status pill — fades in on state change.
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 220),
-                  curve: AppMotion.curve,
-                  child: Builder(
-                    builder: (context) {
-                      final scheme = Theme.of(context).colorScheme;
-                      final status = _statusFor(_conv);
-                      if (status == null) return const SizedBox.shrink();
-                      final c = status.color(scheme);
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpace.sm),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpace.md,
-                            vertical: AppSpace.xs,
-                          ),
-                          decoration: BoxDecoration(
-                            color: c.withValues(alpha: 0.12),
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.pill),
-                          ),
-                          child: Text(
-                            status.label,
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelLarge
-                                ?.copyWith(color: c),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                Row(
-                  children: [
-                    if (speech.available) ...[
-                      _HoldMic(
-                        state: _conv,
-                        onHoldStart: _holdStart,
-                        onHoldEnd: _holdEnd,
-                        onTap: _tapMic,
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    Expanded(
-                      child: TextField(
-                        controller: widget.input,
-                        enabled: !session.busy,
-                        textInputAction: TextInputAction.send,
-                        // No floating selection toolbar over the chat.
-                        contextMenuBuilder: (_, _) =>
-                            const SizedBox.shrink(),
-                        decoration: const InputDecoration(
-                          hintText: 'Hold the mic to talk, or type…',
-                        ),
-                        onSubmitted: widget.onSend,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton.filled(
-                      icon: const Icon(Icons.send),
-                      onPressed: session.busy
-                          ? null
-                          : () => widget.onSend(widget.input.text),
-                    ),
-                    const SizedBox(width: 8),
-                    // Translate: toggles the native-language reveal of the
-                    // tutor's most-recent reply. Circular, matching the mic and
-                    // send buttons; no new AI call.
-                    _TranslateButton(
-                      active: ref.watch(tutorTranslateProvider),
-                      onTap: () => ref
-                          .read(tutorTranslateProvider.notifier)
-                          .update((v) => !v),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+        _Composer(
+          state: _conv,
+          status: _statusFor(_conv),
+          typing: _typing,
+          busy: session.busy,
+          micAvailable: speech.available,
+          input: widget.input,
+          inputFocus: _inputFocus,
+          translateOn: translate,
+          onHoldStart: _holdStart,
+          onHoldEnd: _holdEnd,
+          onTapMic: _tapMic,
+          onSend: widget.onSend,
+          onToggleTyping: () {
+            setState(() => _typing = !_typing);
+            if (_typing) {
+              WidgetsBinding.instance.addPostFrameCallback(
+                (_) => _inputFocus.requestFocus(),
+              );
+            } else {
+              FocusManager.instance.primaryFocus?.unfocus();
+            }
+          },
+          onToggleTranslate: () =>
+              ref.read(tutorTranslateProvider.notifier).update((v) => !v),
         ),
       ],
     );
   }
 }
 
-/// Circular Translate action, styled to match the mic/send buttons. Filled
-/// when active (translation shown), tonal when off. Tooltip 'Translate'.
-class _TranslateButton extends StatelessWidget {
-  const _TranslateButton({required this.active, required this.onTap});
+/// The voice-first bottom bar from the design: a large haloed mic in the
+/// centre, flanked by the keyboard and translate actions, with the live
+/// conversation status above it. Tapping the keyboard reveals the composer,
+/// so typing remains a first-class path.
+class _Composer extends StatelessWidget {
+  const _Composer({
+    required this.state,
+    required this.status,
+    required this.typing,
+    required this.busy,
+    required this.micAvailable,
+    required this.input,
+    required this.inputFocus,
+    required this.translateOn,
+    required this.onHoldStart,
+    required this.onHoldEnd,
+    required this.onTapMic,
+    required this.onSend,
+    required this.onToggleTyping,
+    required this.onToggleTranslate,
+  });
 
-  final bool active;
-  final VoidCallback onTap;
+  final _ConvState state;
+  final ({String label, AppTint tint})? status;
+  final bool typing;
+  final bool busy;
+  final bool micAvailable;
+  final TextEditingController input;
+  final FocusNode inputFocus;
+  final bool translateOn;
+  final VoidCallback onHoldStart;
+  final VoidCallback onHoldEnd;
+  final VoidCallback onTapMic;
+  final void Function(String) onSend;
+  final VoidCallback onToggleTyping;
+  final VoidCallback onToggleTranslate;
 
   @override
   Widget build(BuildContext context) {
-    final icon = Icon(active ? Icons.translate : Icons.translate_outlined);
-    return active
-        ? IconButton.filled(
-            icon: icon,
-            tooltip: 'Hide translation',
-            onPressed: onTap,
-          )
-        : IconButton.filledTonal(
-            icon: icon,
-            tooltip: 'Translate',
-            onPressed: onTap,
-          );
+    final tones = AppTones.of(context);
+    final (micIcon, micTint) = switch (state) {
+      _ConvState.listening => (Icons.graphic_eq_rounded, AppTint.sun),
+      _ConvState.processing => (Icons.more_horiz_rounded, AppTint.lilac),
+      _ConvState.speaking => (Icons.volume_up_rounded, AppTint.mint),
+      _ConvState.error => (Icons.mic_off_rounded, AppTint.sun),
+      _ConvState.idle => (Icons.mic_rounded, AppTint.mint),
+    };
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpace.lg,
+          AppSpace.xs,
+          AppSpace.lg,
+          AppSpace.md,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Live conversation status — grows/fades with the state change.
+            AnimatedSize(
+              duration: AppMotion.quick,
+              curve: AppMotion.curve,
+              child: status == null
+                  ? const SizedBox(width: double.infinity)
+                  : Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpace.md),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.lg,
+                          vertical: AppSpace.sm - 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: tones
+                              .solid(status!.tint)
+                              .withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                        ),
+                        child: Text(
+                          status!.label,
+                          style: TextStyle(
+                            color: tones.solid(status!.tint),
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
+            // The composer slides in above the controls when typing.
+            AnimatedSize(
+              duration: AppMotion.quick,
+              curve: AppMotion.curve,
+              child: typing
+                  ? Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpace.md),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: input,
+                              focusNode: inputFocus,
+                              enabled: !busy,
+                              textInputAction: TextInputAction.send,
+                              // No floating selection toolbar over the chat.
+                              contextMenuBuilder: (_, _) =>
+                                  const SizedBox.shrink(),
+                              decoration: const InputDecoration(
+                                hintText: 'Type a message…',
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: AppSpace.lg + 2,
+                                  vertical: AppSpace.md + 2,
+                                ),
+                              ),
+                              onSubmitted: onSend,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpace.sm),
+                          CircleIconButton(
+                            icon: Icons.arrow_upward_rounded,
+                            filled: true,
+                            size: 48,
+                            tooltip: 'Send',
+                            onTap: busy ? null : () => onSend(input.text),
+                          ),
+                        ],
+                      ),
+                    )
+                  : const SizedBox(width: double.infinity),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                CircleIconButton(
+                  icon: typing
+                      ? Icons.keyboard_hide_rounded
+                      : Icons.keyboard_alt_outlined,
+                  size: 52,
+                  tooltip: typing ? 'Hide keyboard' : 'Type instead',
+                  onTap: onToggleTyping,
+                ),
+                if (micAvailable)
+                  HaloMicButton(
+                    icon: micIcon,
+                    color: tones.solid(micTint),
+                    active: state != _ConvState.idle,
+                    tooltip: 'Hold to talk',
+                    onTap: onTapMic,
+                    onLongPressStart: onHoldStart,
+                    onLongPressEnd: onHoldEnd,
+                  )
+                else
+                  CircleIconButton(
+                    icon: Icons.arrow_upward_rounded,
+                    filled: true,
+                    size: 64,
+                    tooltip: 'Send',
+                    onTap: busy ? null : () => onSend(input.text),
+                  ),
+                // Translate: toggles the native-language reveal of the tutor's
+                // most-recent reply. No new AI call.
+                CircleIconButton(
+                  icon: translateOn ? Icons.translate : Icons.language_rounded,
+                  size: 52,
+                  filled: translateOn,
+                  tooltip: translateOn ? 'Hide translation' : 'Translate',
+                  onTap: onToggleTranslate,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -800,88 +1041,42 @@ class _TranslationReveal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
+    final tones = AppTones.of(context);
     final has = native.trim().isNotEmpty;
     return Padding(
-      padding: const EdgeInsets.only(left: 44, right: 24, top: 2, bottom: 10),
+      padding: const EdgeInsets.only(
+        left: 42,
+        right: 40,
+        top: AppSpace.xs,
+        bottom: AppSpace.md,
+      ),
       child: Container(
-        padding: const EdgeInsets.all(AppSpace.sm),
+        padding: const EdgeInsets.all(AppSpace.md),
         decoration: BoxDecoration(
-          color: scheme.secondaryContainer.withValues(alpha: 0.5),
+          color: tones.tint(AppTint.mint).withValues(alpha: tones.dark ? 1 : 0.7),
           borderRadius: BorderRadius.circular(AppRadius.input),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.translate, size: 16, color: scheme.onSecondaryContainer),
-            const SizedBox(width: 8),
+            Icon(Icons.translate, size: 16, color: tones.solid(AppTint.mint)),
+            const SizedBox(width: AppSpace.sm),
             Expanded(
               child: Text(
                 has
                     ? native
                     : 'No $nativeName translation for this reply — it was '
                         'spoken in the target language only.',
-                style: text.bodySmall?.copyWith(
-                  color: scheme.onSecondaryContainer,
+                style: TextStyle(
+                  color: tones.dark ? tones.ink : const Color(0xFF1B1E28),
+                  fontSize: 13.5,
+                  height: 1.4,
                   fontStyle: has ? FontStyle.normal : FontStyle.italic,
                 ),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Press-and-hold conversation mic: colour + icon reflect the live
-/// conversation state, and it pulses gently while listening.
-class _HoldMic extends StatelessWidget {
-  const _HoldMic({
-    required this.state,
-    required this.onHoldStart,
-    required this.onHoldEnd,
-    required this.onTap,
-  });
-
-  final _ConvState state;
-  final VoidCallback onHoldStart;
-  final VoidCallback onHoldEnd;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final (bg, icon) = switch (state) {
-      _ConvState.listening => (scheme.error, Icons.graphic_eq_rounded),
-      _ConvState.processing => (scheme.tertiary, Icons.more_horiz_rounded),
-      _ConvState.speaking => (scheme.primary, Icons.volume_up_rounded),
-      _ConvState.error => (scheme.error, Icons.mic_off_rounded),
-      _ConvState.idle => (scheme.primary, Icons.mic_rounded),
-    };
-    return GestureDetector(
-      onTap: onTap,
-      onLongPressStart: (_) => onHoldStart(),
-      onLongPressEnd: (_) => onHoldEnd(),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: bg,
-          shape: BoxShape.circle,
-          boxShadow: state == _ConvState.listening
-              ? [
-                  BoxShadow(
-                    color: bg.withValues(alpha: 0.5),
-                    blurRadius: 16,
-                    spreadRadius: 2,
-                  ),
-                ]
-              : null,
-        ),
-        child: Icon(icon, color: scheme.onPrimary, size: 22),
       ),
     );
   }

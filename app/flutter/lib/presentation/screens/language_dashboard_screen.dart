@@ -24,7 +24,7 @@ class LanguageDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final curriculumAsync = ref.watch(curriculumProvider);
     final learner = ref.watch(languageLearnerProvider);
-    final scheme = Theme.of(context).colorScheme;
+    final tones = AppTones.of(context);
 
     if (curriculumAsync.hasError) {
       return Scaffold(
@@ -40,31 +40,10 @@ class LanguageDashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: const Text('Language Lab'),
-        actions: [
-          const _LanguageMenu(),
-          IconButton(
-            icon: const Icon(Icons.track_changes_outlined),
-            tooltip: 'Your goals',
-            onPressed: () => context.push('/goals'),
-          ),
-          if (ref.watch(authStateProvider).value?.isAdmin ?? false)
-            IconButton(
-              icon: const Icon(Icons.library_add_outlined),
-              tooltip: 'Content Studio',
-              onPressed: () => context.push('/content'),
-            ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Settings',
-            onPressed: () => context.push('/settings'),
-          ),
-        ],
-      ),
       body: AtmosphericBackground(
-        child: Center(
+        child: SafeArea(
+          bottom: false,
+          child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: ListView(
@@ -83,9 +62,12 @@ class LanguageDashboardScreen extends ConsumerWidget {
                   accuracy: learner.model.overallAccuracy,
                 ),
               ),
-              const SizedBox(height: AppSpace.md),
-              const FadeInUp(delayMs: 80, child: _TutorHeroCard()),
               const SizedBox(height: AppSpace.lg),
+              const FadeInUp(delayMs: 60, child: _TutorHeroCard()),
+              const SizedBox(height: AppSpace.xl),
+              // Quick practice — the four ways in, one tap each.
+              const FadeInUp(delayMs: 80, child: _QuickActions()),
+              const SizedBox(height: AppSpace.xl),
               // 1 · Teacher's Notes — the notebook leads, so the home reads
               // as "my teacher knows me" before "I have another lesson".
               const FadeInUp(
@@ -205,15 +187,84 @@ class LanguageDashboardScreen extends ConsumerWidget {
                 'Demo learner · every number comes from the live adaptive '
                 'engine · tap anything to dig in',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
+                style: TextStyle(color: tones.inkSoft, fontSize: 12.5),
               ),
             ],
           ),
         ),
       ),
       ),
+      ),
+    );
+  }
+}
+
+/// The four ways into practice, as the design's 2×2 tinted grid.
+class _QuickActions extends ConsumerWidget {
+  const _QuickActions();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    void tab(int i) => ref.read(homeTabProvider.notifier).state = i;
+    final tiles = <Widget>[
+      ActionCard(
+        icon: Icons.mic_none_rounded,
+        label: 'Voice',
+        title: 'Practice speaking',
+        tint: AppTint.sage,
+        onTap: () => tab(2),
+      ),
+      ActionCard(
+        icon: Icons.auto_stories_outlined,
+        label: 'Reading',
+        title: 'Open your library',
+        tint: AppTint.sun,
+        onTap: () => tab(1),
+      ),
+      ActionCard(
+        icon: Icons.forum_outlined,
+        label: 'Tutor',
+        title: 'Talk with your teacher',
+        tint: AppTint.mint,
+        onTap: () => tab(3),
+      ),
+      ActionCard(
+        icon: Icons.fitness_center_rounded,
+        label: 'Drill',
+        title: 'Practice weak spots',
+        tint: AppTint.lilac,
+        onTap: () =>
+            context.push('/language/practice', extra: const <String>[]),
+      ),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SectionHeader(
+          title: 'Quick practice',
+          actionLabel: 'Your goals',
+          onAction: () => context.push('/goals'),
+        ),
+        const SizedBox(height: AppSpace.md),
+        LayoutBuilder(
+          builder: (context, c) {
+            const gap = AppSpace.md;
+            final w = (c.maxWidth - gap) / 2;
+            // Grow the tile with the user's text scale so a larger font never
+            // overflows the fixed-height grid.
+            final scale =
+                MediaQuery.textScalerOf(context).scale(16) / 16;
+            final h = 148 * scale.clamp(1.0, 1.6);
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: [
+                for (final t in tiles) SizedBox(width: w, height: h, child: t),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 }
@@ -260,7 +311,10 @@ class _LanguageMenu extends ConsumerWidget {
   }
 }
 
-class _HeaderCard extends StatelessWidget {
+/// Home greeting block (design spec): the learner's language and level, the
+/// day's headline question, and a one-tap way into the tutor — typed or
+/// spoken. No app bar; the greeting itself is the header.
+class _HeaderCard extends ConsumerWidget {
   const _HeaderCard({
     required this.languageName,
     required this.languageCode,
@@ -274,71 +328,133 @@ class _HeaderCard extends StatelessWidget {
   final double accuracy;
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tones = AppTones.of(context);
     final flag = availableLanguages
         .firstWhere(
           (l) => l.code == languageCode,
           orElse: () => availableLanguages.first,
         )
         .flag;
-    return GradientHero(
-      padding: const EdgeInsets.all(AppSpace.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(flag, style: const TextStyle(fontSize: 34)),
-              const SizedBox(width: AppSpace.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Welcome back',
-                      style: text.bodySmall?.copyWith(
-                        color: scheme.onPrimaryContainer
-                            .withValues(alpha: 0.8),
-                      ),
+    void openTutor() => ref.read(homeTabProvider.notifier).state = 3;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const _LanguageMenu(),
+            const Spacer(),
+            if (ref.watch(authStateProvider).value?.isAdmin ?? false) ...[
+              CircleIconButton(
+                icon: Icons.library_add_outlined,
+                size: 42,
+                tooltip: 'Content Studio',
+                onTap: () => context.push('/content'),
+              ),
+              const SizedBox(width: AppSpace.sm),
+            ],
+            CircleIconButton(
+              icon: Icons.settings_outlined,
+              size: 42,
+              tooltip: 'Settings',
+              onTap: () => context.push('/settings'),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpace.lg),
+        Row(
+          children: [
+            Text(flag, style: const TextStyle(fontSize: 26)),
+            const SizedBox(width: AppSpace.sm),
+            Text(
+              languageName,
+              style: TextStyle(
+                color: tones.ink,
+                fontSize: 27,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.7,
+              ),
+            ),
+          ],
+        ),
+        Text(
+          'What shall we work on?',
+          style: TextStyle(
+            color: tones.ink,
+            fontSize: 27,
+            height: 1.2,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.7,
+          ),
+        ),
+        const SizedBox(height: AppSpace.sm),
+        Wrap(
+          spacing: AppSpace.sm,
+          runSpacing: AppSpace.xs,
+          children: [
+            const SoftChip(label: 'A1 · CEFR'),
+            SoftChip(label: '$answered answers', muted: true),
+            SoftChip(
+              label: '${(accuracy * 100).round()}% correct',
+              muted: true,
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpace.lg),
+        // Ask-the-tutor bar: the design's search field + voice affordance,
+        // both routing into the live tutor session.
+        Row(
+          children: [
+            Expanded(
+              child: Material(
+                color: tones.card,
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: openTutor,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.lg + 2,
+                      vertical: AppSpace.lg,
                     ),
-                    Text(
-                      languageName,
-                      style: text.titleLarge?.copyWith(
-                        color: scheme.onPrimaryContainer,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.search_rounded,
+                          size: 21,
+                          color: tones.inkSoft,
+                        ),
+                        const SizedBox(width: AppSpace.md),
+                        Expanded(
+                          child: Text(
+                            'Ask your teacher anything…',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: tones.inkSoft,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: AppSpace.md),
-          Wrap(
-            spacing: AppSpace.sm,
-            runSpacing: AppSpace.xs,
-            children: [
-              const GlassPill(label: 'A1 · CEFR'),
-              GlassPill(label: '$answered answers'),
-              GlassPill(label: '${(accuracy * 100).round()}% correct'),
-            ],
-          ),
-          const SizedBox(height: AppSpace.md),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.tonalIcon(
-              onPressed: () => context.push(
-                '/language/practice',
-                extra: const <String>[],
-              ),
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: const Text('Continue learning'),
             ),
-          ),
-        ],
-      ),
+            const SizedBox(width: AppSpace.md),
+            CircleIconButton(
+              icon: Icons.graphic_eq_rounded,
+              size: 56,
+              filled: true,
+              tooltip: 'Talk to your teacher',
+              onTap: openTutor,
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -350,19 +466,28 @@ class _TutorHeroCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
+    final tones = AppTones.of(context);
     final learner = ref.watch(languageLearnerProvider);
     final curriculum = ref.watch(curriculumProvider).value;
     final top = learner.misconceptions.all.firstOrNull;
-    return GradientHero(
-      colors: [scheme.primary, scheme.tertiary],
+    return SoftCard(
+      tint: AppTint.ink,
+      padding: const EdgeInsets.all(AppSpace.lg + 4),
       onTap: () => ref.read(homeTabProvider.notifier).state = 3,
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 26,
-            backgroundColor: scheme.onPrimary.withValues(alpha: 0.2),
-            child: Icon(Icons.school, color: scheme.onPrimary, size: 28),
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: tones.onTint(AppTint.ink).withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.school,
+              color: tones.onTint(AppTint.ink),
+              size: 26,
+            ),
           ),
           const SizedBox(width: AppSpace.lg),
           Expanded(
@@ -371,9 +496,11 @@ class _TutorHeroCard extends ConsumerWidget {
               children: [
                 Text(
                   'Your AI teacher is ready',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: scheme.onPrimary,
+                  style: TextStyle(
+                    color: tones.onTint(AppTint.ink),
+                    fontSize: 16.5,
                     fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
                   ),
                 ),
                 const SizedBox(height: AppSpace.xs),
@@ -384,13 +511,20 @@ class _TutorHeroCard extends ConsumerWidget {
                       : 'Wants to clear up: '
                             '${curriculum.graph[top.conceptId]?.name ?? top.conceptId}',
                   style: TextStyle(
-                    color: scheme.onPrimary.withValues(alpha: 0.9),
+                    color: tones.onTint(AppTint.ink).withValues(alpha: 0.78),
+                    fontSize: 13.5,
+                    height: 1.35,
                   ),
                 ),
               ],
             ),
           ),
-          Icon(Icons.arrow_forward, color: scheme.onPrimary),
+          const SizedBox(width: AppSpace.sm),
+          Icon(
+            Icons.arrow_forward_rounded,
+            color: tones.onTint(AppTint.ink),
+            size: 20,
+          ),
         ],
       ),
     );
@@ -448,12 +582,10 @@ class _ExpandableSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
+    final tones = AppTones.of(context);
     return Material(
-      color: scheme.surfaceContainerLow,
-      elevation: 1,
-      shadowColor: scheme.shadow.withValues(alpha: 0.18),
+      color: tones.card,
+      elevation: 0,
       surfaceTintColor: Colors.transparent,
       borderRadius: BorderRadius.circular(AppRadius.card),
       clipBehavior: Clip.antiAlias,
@@ -461,18 +593,33 @@ class _ExpandableSection extends StatelessWidget {
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           initiallyExpanded: initiallyExpanded,
-          leading: CircleAvatar(
-            radius: 18,
-            backgroundColor: scheme.primaryContainer,
-            child: Icon(icon, size: 18, color: scheme.onPrimaryContainer),
+          shape: const Border(),
+          collapsedShape: const Border(),
+          tilePadding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.lg,
+            vertical: AppSpace.xs,
+          ),
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: tones.cardMuted,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 19, color: tones.ink),
           ),
           title: Text(
             title,
-            style: text.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: tones.ink,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.3,
+            ),
           ),
           subtitle: Text(
             subtitle,
-            style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            style: TextStyle(color: tones.inkSoft, fontSize: 13),
           ),
           childrenPadding: const EdgeInsets.fromLTRB(
             AppSpace.lg,

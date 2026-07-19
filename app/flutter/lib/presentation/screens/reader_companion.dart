@@ -29,33 +29,56 @@ class CompletionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
+    final tones = AppTones.of(context);
     return ListView(
       padding: const EdgeInsets.all(AppSpace.xl),
       children: [
-        const SizedBox(height: AppSpace.xl),
+        const SizedBox(height: AppSpace.lg),
         FadeInUp(
-          child: Center(
-            child: CircleAvatar(
-              radius: 34,
-              backgroundColor: scheme.primaryContainer,
-              child: Icon(Icons.check_rounded,
-                  size: 36, color: scheme.onPrimaryContainer),
+          child: SoftCard(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.xl,
+              vertical: AppSpace.xxl,
+            ),
+            child: Column(
+              children: [
+                Container(
+                  width: 68,
+                  height: 68,
+                  decoration: BoxDecoration(
+                    color: tones.tint(AppTint.mint),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.check_rounded,
+                    size: 34,
+                    color: tones.onTint(AppTint.mint),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.lg),
+                Text(
+                  'Chapter complete',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: tones.ink,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: AppSpace.sm),
+                Text(
+                  '“${story.title}” — keep the momentum going.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: tones.inkSoft,
+                    fontSize: 14.5,
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-        const SizedBox(height: AppSpace.lg),
-        Text(
-          'Chapter complete',
-          textAlign: TextAlign.center,
-          style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: AppSpace.xs),
-        Text(
-          '“${story.title}” — keep the momentum going.',
-          textAlign: TextAlign.center,
-          style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
         ),
         const SizedBox(height: AppSpace.xl),
         _Action(
@@ -86,6 +109,7 @@ class CompletionCard extends StatelessWidget {
             label: 'Take the quiz (optional)',
             onTap: onQuiz!,
           ),
+        const SizedBox(height: AppSpace.xl),
       ],
     );
   }
@@ -106,31 +130,42 @@ class _Action extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final tones = AppTones.of(context);
+    final fg = primary ? tones.onAccent : tones.ink;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpace.sm),
       child: Material(
-        color: primary ? scheme.primary : scheme.surfaceContainerHigh,
+        color: primary ? tones.accent : tones.card,
         borderRadius: BorderRadius.circular(AppRadius.card),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadius.card),
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpace.lg,
-              vertical: AppSpace.md + 2,
+              vertical: AppSpace.lg,
             ),
             child: Row(
               children: [
-                Icon(icon,
-                    color: primary ? scheme.onPrimary : scheme.onSurface),
+                Icon(icon, size: 20, color: fg),
                 const SizedBox(width: AppSpace.md),
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: primary ? scheme.onPrimary : scheme.onSurface,
-                        fontWeight: FontWeight.w600,
-                      ),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: fg,
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward,
+                  size: 18,
+                  color: primary ? fg : tones.inkSoft,
                 ),
               ],
             ),
@@ -163,6 +198,10 @@ class _ReadingCompanionSheetState
     extends ConsumerState<ReadingCompanionSheet> {
   final _input = TextEditingController();
   String? _answer;
+
+  /// The question behind the current answer — shown as the learner bubble so
+  /// the sheet reads as a conversation, like the tutor screen.
+  String? _asked;
   bool _busy = false;
 
   @override
@@ -176,6 +215,7 @@ class _ReadingCompanionSheetState
     setState(() {
       _busy = true;
       _answer = null;
+      _asked = question.trim();
     });
     final model = ref.read(tutorModelProvider);
     final reply = await model.complete([
@@ -196,8 +236,7 @@ class _ReadingCompanionSheetState
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
+    final tones = AppTones.of(context);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -212,43 +251,60 @@ class _ReadingCompanionSheetState
           children: [
             Row(
               children: [
-                Icon(Icons.forum_rounded, color: scheme.primary),
+                Icon(Icons.forum_rounded, color: tones.solid(AppTint.mint)),
                 const SizedBox(width: AppSpace.sm),
-                Text('Reading companion', style: text.titleLarge),
+                Expanded(
+                  child: Text(
+                    'Reading companion',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: tones.ink,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: AppSpace.sm),
+            const SizedBox(height: AppSpace.md),
             Wrap(
               spacing: AppSpace.sm,
+              runSpacing: AppSpace.sm,
               children: [
                 for (final q in const [
                   'Explain this page',
                   'Key grammar here',
                   'Give me an example',
                 ])
-                  ActionChip(label: Text(q), onPressed: () => _ask(q)),
+                  SoftChip(label: q, onTap: () => _ask(q)),
               ],
             ),
             const SizedBox(height: AppSpace.md),
-            if (_busy)
-              const Padding(
-                padding: EdgeInsets.all(AppSpace.md),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (_answer != null)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpace.lg),
-                decoration: BoxDecoration(
-                  color: scheme.secondaryContainer,
-                  borderRadius: BorderRadius.circular(AppRadius.card),
-                ),
-                child: Text(
-                  _answer!,
-                  style: text.bodyMedium
-                      ?.copyWith(color: scheme.onSecondaryContainer),
+            // The exchange scrolls inside its own box: a long answer must
+            // never push the input off the sheet.
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.4,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_asked != null)
+                      _Bubble(text: _asked!, fromLearner: true),
+                    if (_busy)
+                      const Padding(
+                        padding: EdgeInsets.all(AppSpace.md),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (_answer != null)
+                      _Bubble(text: _answer!, fromLearner: false),
+                  ],
                 ),
               ),
+            ),
             const SizedBox(height: AppSpace.md),
             Row(
               children: [
@@ -264,14 +320,74 @@ class _ReadingCompanionSheetState
                   ),
                 ),
                 const SizedBox(width: AppSpace.sm),
-                IconButton.filled(
-                  icon: const Icon(Icons.send_rounded),
-                  onPressed: _busy ? null : () => _ask(_input.text),
+                CircleIconButton(
+                  icon: Icons.send_rounded,
+                  filled: true,
+                  size: 46,
+                  onTap: _busy ? null : () => _ask(_input.text),
                 ),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Chat bubble in the tutor screen's shape: companion on the left in the
+/// card tone, learner on the right in the accent, tail corner tightened.
+class _Bubble extends StatelessWidget {
+  const _Bubble({required this.text, required this.fromLearner});
+
+  final String text;
+  final bool fromLearner;
+
+  @override
+  Widget build(BuildContext context) {
+    final tones = AppTones.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpace.sm - 2),
+      child: Row(
+        mainAxisAlignment:
+            fromLearner ? MainAxisAlignment.end : MainAxisAlignment.start,
+        children: [
+          Flexible(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 520),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 14,
+              ),
+              decoration: BoxDecoration(
+                color: fromLearner ? tones.accent : tones.card,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: Radius.circular(fromLearner ? 20 : 6),
+                  bottomRight: Radius.circular(fromLearner ? 6 : 20),
+                ),
+                boxShadow: tones.dark
+                    ? null
+                    : const [
+                        BoxShadow(
+                          color: Color(0x0F000000),
+                          blurRadius: 14,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+              ),
+              child: Text(
+                text,
+                style: TextStyle(
+                  color: fromLearner ? tones.onAccent : tones.ink,
+                  fontSize: 15.5,
+                  height: 1.42,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

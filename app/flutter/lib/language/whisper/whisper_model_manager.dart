@@ -8,11 +8,22 @@ import 'whisper_repository.dart';
 
 /// The Whisper model the app targets (a small multilingual model — chosen for
 /// on-device size/latency; the URL is the download source).
-const whisperModelVersion = 'whisper-base-q8-v1';
-const whisperModelSizeBytes = 74 * 1024 * 1024; // ~74 MB, matches Piper scale
+// Whisper tiny multilingual (Spanish supported) — chosen over base for
+// on-device decode latency. DEVICE-PROVEN: the tar.bz2 archive route never
+// finished extracting on hardware (pure-Dart BZip2 on a 111 MB archive ran
+// >25 min without completing), so the extracted int8 files are downloaded
+// DIRECTLY — no archive, no extraction. Sizes are the published exact bytes.
+const whisperModelVersion = 'whisper-tiny-multilingual-v2';
+const whisperModelSizeBytes = 103609903; // encoder+decoder+tokens exact
 const whisperModelUrl =
-    'https://github.com/k2-fsa/sherpa-onnx/releases/download/'
-    'asr-models/sherpa-onnx-whisper-base.tar.bz2';
+    'https://huggingface.co/csukuangfj/sherpa-onnx-whisper-tiny/resolve/main';
+
+/// The individual files fetched from [whisperModelUrl].
+const whisperModelFiles = [
+  'tiny-encoder.int8.onnx',
+  'tiny-decoder.int8.onnx',
+  'tiny-tokens.txt',
+];
 
 enum WhisperModelStatus { absent, downloading, ready, verifying, error }
 

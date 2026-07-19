@@ -22,6 +22,8 @@ dependencies:
   # Phase 36: real on-device GGUF inference (llama.cpp via llamadart).
   llamadart: ^0.8.16
   llamadart_llama_cpp_flutter: ^0.0.10
+  # Phase 37: raw PCM microphone capture for offline Whisper STT.
+  record: ^7.1.1
 
 dev_dependencies:
   flutter_test:

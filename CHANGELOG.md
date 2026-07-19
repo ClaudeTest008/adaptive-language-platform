@@ -9,6 +9,30 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- **Phase 37 — REAL offline Whisper STT (device-verified on CPH2037).** Raw PCM
+  mic capture (`record` 7.1.1, 16 kHz mono) → long-lived background isolate
+  owning the sherpa-onnx `OfflineRecognizer` (whisper tiny multilingual int8)
+  → transcript → existing speaking pipeline. New
+  `infrastructure/sherpa_whisper_service.dart` (`SherpaWhisperService`:
+  load-once isolate, generation-token cancellation, 25 s decode timeout,
+  2-failure demotion, platform-recognizer fallback on every failure path) and
+  pure `whisper/pcm.dart` (PCM16→Float32, RMS, deterministic SilenceDetector).
+  `SpeechService` unchanged; `whisperServiceProvider` rebound. DEVICE-PROVEN
+  downloader fix: the tar.bz2 route never finished extracting on hardware
+  (pure-Dart BZip2, 111 MB, >25 min) — the extracted int8 files now download
+  DIRECTLY (~99 MB, no extraction; exact sizes from the HF repo).
+  DEVICE-VERIFIED: in-app download → Installed v2; model load 1573 ms; four
+  live recognitions (12.3 s captures decoded in 1437/1535/3531/1458 ms —
+  RTF ≈0.12–0.29); transcripts rendered + scored word-by-word in the speaking
+  UI; airplane-mode recognition fully offline; cancellation and screen-off
+  mid-capture both graceful; 0 ANRs, 0 crashes; ~768 MB PSS stable.
+  HONEST LIMITS: accuracy on real human Spanish speech unmeasured (test audio
+  was an English-accented PC TTS through speakers — the engine produced real
+  Spanish decodes of it); the silence gate never fired early in a noisy room
+  (captures ran to the 12 s cap — threshold tuning pending); speaking-screen
+  result card overflows by 25 px (pre-existing layout, logged). 442 tests
+  (+10). analyze clean; apk debug green.
+
 - **Phase 36 — REAL on-device GGUF inference (device-verified on CPH2037).**
   Binding: `llamadart ^0.8.16` + `llamadart_llama_cpp_flutter` (verified
   publisher, llama.cpp FFI, arm64 libs auto-bundled — confirmed present in the

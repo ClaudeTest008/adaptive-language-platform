@@ -64,6 +64,7 @@ import '../language/whisper/whisper_model_manager.dart';
 import '../language/whisper/whisper_pipeline.dart';
 import '../language/whisper/whisper_repository.dart';
 import '../language/whisper/whisper_service.dart';
+import '../infrastructure/sherpa_whisper_service.dart';
 import '../infrastructure/whisper_downloader.dart';
 import '../language/signals.dart';
 import '../language/teacher_brain.dart';
@@ -1584,8 +1585,16 @@ final whisperModelManagerProvider = Provider<WhisperModelManager>(
 /// installed and verified on device, this is the platform-recognizer fallback
 /// (offline-capable) behind the same interface — the pipeline never changes.
 /// When the sherpa Whisper isolate lands, only this binding moves.
+/// Phase 37: real offline Whisper (sherpa-onnx OfflineRecognizer on a
+/// background isolate + raw PCM capture). The platform recognizer remains the
+/// automatic fallback — no model / mic denied / decode failure never breaks
+/// the speaking flow. Plugin objects are created lazily inside the service,
+/// so tests without a device never touch them.
 final whisperServiceProvider = Provider<WhisperService>(
-  (ref) => FallbackWhisperService(ref.watch(speechServiceProvider)),
+  (ref) => SherpaWhisperService(
+    fallback: FallbackWhisperService(ref.watch(speechServiceProvider)),
+    manager: ref.watch(whisperModelManagerProvider),
+  ),
 );
 
 /// The offline speech-in pipeline: mic → Whisper → SpeakingSession analytics.

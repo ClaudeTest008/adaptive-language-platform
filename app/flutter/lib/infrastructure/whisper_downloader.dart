@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:archive/archive.dart';
-import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -44,8 +42,10 @@ class PrefsWhisperModelRepository implements WhisperModelRepository {
   }
 }
 
-/// Streams the model archive to disk with progress, then extracts it. Resume
-/// support: a partial `.part` file is reused via an HTTP range request.
+/// Downloads the extracted model files DIRECTLY (Phase 37): the tar.bz2 route
+/// was proven unusable on hardware — pure-Dart BZip2 on the 111 MB whisper
+/// archive ran for 25+ minutes without finishing. Each file streams to disk
+/// with combined progress; a partial file resumes via an HTTP range request.
 class HttpModelDownloader implements ModelDownloader {
   @override
   Future<String> download(
@@ -55,35 +55,48 @@ class HttpModelDownloader implements ModelDownloader {
     final root = (await getApplicationSupportDirectory()).path;
     final dir = Directory('$root/whisper');
     if (!dir.existsSync()) dir.createSync(recursive: true);
-    final archivePath = '${dir.path}/model.tar.bz2';
-    final part = File('$archivePath.part');
-    final existing = part.existsSync() ? part.lengthSync() : 0;
+    // Clean any stale archive from the retired extraction route.
+    for (final stale in ['model.tar.bz2', 'model.tar.bz2.part']) {
+      final f = File('${dir.path}/$stale');
+      if (f.existsSync()) f.deleteSync();
+    }
+    final modelDir = Directory('${dir.path}/model');
+    if (!modelDir.existsSync()) modelDir.createSync(recursive: true);
 
     final client = HttpClient();
     try {
-      final req = await client.getUrl(Uri.parse(url));
-      if (existing > 0) req.headers.add('Range', 'bytes=$existing-');
-      final res = await req.close();
-      final total = (res.contentLength <= 0 ? 0 : res.contentLength) + existing;
-      final sink = part.openWrite(mode: FileMode.append);
-      var received = existing;
-      await for (final chunk in res) {
-        sink.add(chunk);
-        received += chunk.length;
-        if (total > 0) onProgress((received / total).clamp(0.0, 1.0));
+      var doneBytes = 0;
+      for (final name in whisperModelFiles) {
+        final target = File('${modelDir.path}/$name');
+        final part = File('${target.path}.part');
+        final existing = part.existsSync() ? part.lengthSync() : 0;
+        if (target.existsSync() && target.lengthSync() > 0) {
+          doneBytes += target.lengthSync();
+          continue; // already fetched (resume across attempts)
+        }
+        final req = await client.getUrl(Uri.parse('$url/$name'));
+        if (existing > 0) req.headers.add('Range', 'bytes=$existing-');
+        final res = await req.close();
+        if (res.statusCode >= 400) {
+          throw HttpException('HTTP ${res.statusCode} for $name');
+        }
+        final sink = part.openWrite(mode: FileMode.append);
+        var received = existing;
+        await for (final chunk in res) {
+          sink.add(chunk);
+          received += chunk.length;
+          onProgress(
+            ((doneBytes + received) / whisperModelSizeBytes).clamp(0.0, 1.0),
+          );
+        }
+        await sink.close();
+        part.renameSync(target.path);
+        doneBytes += target.lengthSync();
       }
-      await sink.close();
-      part.renameSync(archivePath);
     } finally {
       client.close();
     }
-
-    // Extract on a worker isolate so decoding never blocks the UI thread.
-    final outDir = await compute(_extractArchive, {
-      'archive': archivePath,
-      'out': dir.path,
-    });
-    return outDir;
+    return modelDir.path;
   }
 
   @override
@@ -106,18 +119,3 @@ class HttpModelDownloader implements ModelDownloader {
   }
 }
 
-/// Runs on a worker isolate (via `compute`). Decompresses the tar.bz2 and
-/// writes files under [out]/model, returning that directory.
-String _extractArchive(Map<String, String> args) {
-  final bytes = File(args['archive']!).readAsBytesSync();
-  final tar = BZip2Decoder().decodeBytes(bytes);
-  final archive = TarDecoder().decodeBytes(tar);
-  final modelDir = '${args['out']}/model';
-  for (final f in archive) {
-    if (!f.isFile) continue;
-    final out = File('$modelDir/${f.name.split('/').last}');
-    out.parent.createSync(recursive: true);
-    out.writeAsBytesSync(f.content as List<int>);
-  }
-  return modelDir;
-}

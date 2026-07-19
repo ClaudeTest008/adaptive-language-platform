@@ -9,6 +9,7 @@ import 'package:adaptive_exam_platform/language/teacher_memory.dart';
 import 'package:adaptive_exam_platform/language/speech.dart';
 import 'package:adaptive_exam_platform/presentation/language_providers.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_concept_screen.dart';
+import 'package:adaptive_exam_platform/presentation/screens/home_shell.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_dashboard_screen.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_content_screen.dart';
 import 'package:adaptive_exam_platform/presentation/screens/language_goals_screen.dart';
@@ -152,6 +153,59 @@ void main() {
     );
     expect(find.textContaining('Revisit ser vs estar'), findsOneWidget);
     expect(find.textContaining('Reinforce tener'), findsOneWidget);
+  });
+
+  testWidgets('tapping a recommendation routes to the matching activity', (
+    tester,
+  ) async {
+    // A reading recommendation should send the learner to the Library tab
+    // (index 1) — a pure, deterministic homeTab change, no session side effects.
+    final container = ProviderContainer(
+      overrides: [
+        curriculumProvider.overrideWith((ref) => Future.value(curriculum)),
+        speechServiceProvider.overrideWithValue(NoopSpeechService()),
+        teacherNotebookRepositoryProvider.overrideWithValue(
+          InMemoryTeacherNotebookRepository(),
+        ),
+        experienceRepositoryProvider.overrideWithValue(
+          InMemoryExperienceRepository(),
+        ),
+        teacherMemoryRepositoryProvider.overrideWithValue(
+          InMemoryTeacherMemoryRepository(),
+        ),
+        recommendationsProvider.overrideWith(
+          (ref) async => const [
+            Recommendation(
+              id: 'rd1',
+              kind: RecommendationKind.reading,
+              priority: 0,
+              reason: 'Read a short story to grow your vocabulary in context.',
+            ),
+          ],
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: LanguageDashboardScreen()),
+      ),
+    );
+    await _settle(tester);
+
+    expect(container.read(homeTabProvider), 0);
+    await tester.scrollUntilVisible(find.text('What to focus on next'), 150);
+    await tester.tap(find.text('What to focus on next'));
+    await _settle(tester);
+    await tester.scrollUntilVisible(
+      find.textContaining('Read a short story'),
+      120,
+    );
+    await tester.tap(find.textContaining('Read a short story'));
+    await tester.pump();
+    expect(container.read(homeTabProvider), 1);
   });
 
   testWidgets('language selector switches curriculum and reseeds learner', (

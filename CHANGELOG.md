@@ -9,6 +9,17 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Added
 
+- **Phase 35 (increment 2) — Recommendations become actionable.** The read-only
+  "What to focus on next" rows from increment 1 are now tappable: each routes to
+  the activity that already exists for its kind, reusing the same session/tab
+  primitives as `_launchBlock` (speaking→Speaking tab + session, conversation/
+  roleplay→Tutor conversation, reading/story→Library, everything else→the unified
+  tutor which reads the same brain). `_launchRecommendation` is exhaustive over
+  all 15 kinds (compile error on a new kind); no router push, so the home stays
+  testable. No engine/provider/state added; TeacherBrain unchanged. 421 tests
+  (+1 deterministic tap test: reading rec → Library tab index). `flutter analyze`
+  clean; `flutter build apk --debug` green. Not device-verified.
+
 - **Phase 35 (increment 1) — Surface the Teacher: recommendations on the home.**
   The unified recommendation list (`recommendationsProvider` — Phase 32
   recommendation engine already merged with Phase 33 reader recommendations and

@@ -826,26 +826,77 @@ class _TeacherRecommendationsCard extends ConsumerWidget {
         children: [
           for (var i = 0; i < top.length; i++) ...[
             if (i > 0) const Divider(height: AppSpace.md),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: scheme.secondaryContainer,
-                  child: Icon(
-                    _recIcon(top[i].kind),
-                    size: 18,
-                    color: scheme.onSecondaryContainer,
-                  ),
+            InkWell(
+              onTap: () => _launchRecommendation(context, ref, top[i]),
+              borderRadius: BorderRadius.circular(AppRadius.input),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: scheme.secondaryContainer,
+                      child: Icon(
+                        _recIcon(top[i].kind),
+                        size: 18,
+                        color: scheme.onSecondaryContainer,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                        child: Text(top[i].reason, style: text.bodyMedium)),
+                    const SizedBox(width: 8),
+                    Icon(Icons.chevron_right,
+                        size: 18, color: scheme.onSurfaceVariant),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(child: Text(top[i].reason, style: text.bodyMedium)),
-              ],
+              ),
             ),
           ],
         ],
       ),
     );
+  }
+}
+
+/// Acts on a tapped recommendation by routing to the activity that already
+/// exists for it — reusing the same session/tab primitives as `_launchBlock`,
+/// never a router push (so the home stays testable without GoRouter). The
+/// unified tutor (Phase 18) is the catch-all: it addresses weak concepts,
+/// misconceptions, and connections from the brain when tapped. Exhaustive over
+/// the enum: a new kind is a compile error, never a silent no-op.
+void _launchRecommendation(
+  BuildContext context,
+  WidgetRef ref,
+  Recommendation r,
+) {
+  switch (r.kind) {
+    case RecommendationKind.speaking:
+      ref.read(speakingProvider.notifier)
+        ..reset()
+        ..start(focusConceptIds: r.requiredConcepts);
+      ref.read(homeTabProvider.notifier).state = 2;
+    case RecommendationKind.conversation:
+    case RecommendationKind.roleplay:
+      ref.read(tutorSessionProvider.notifier).start(TutorMode.conversation);
+      ref.read(homeTabProvider.notifier).state = 3;
+    case RecommendationKind.reading:
+    case RecommendationKind.story:
+      ref.read(homeTabProvider.notifier).state = 1; // Library
+    case RecommendationKind.review:
+    case RecommendationKind.recoverWeakConcept:
+    case RecommendationKind.mentalModel:
+    case RecommendationKind.connection:
+    case RecommendationKind.continueJourney:
+    case RecommendationKind.milestone:
+    case RecommendationKind.challenge:
+    case RecommendationKind.curiosity:
+    case RecommendationKind.confidence:
+    case RecommendationKind.celebrate:
+      // Hand off to the unified teacher, which reads the same brain and
+      // decides the concrete strategy (Phase 18 teachingChoiceProvider).
+      ref.read(homeTabProvider.notifier).state = 3;
   }
 }
 

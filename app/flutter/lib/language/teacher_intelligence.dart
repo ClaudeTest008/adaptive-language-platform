@@ -348,14 +348,21 @@ class TeacherIntelligenceEngine {
 
   /// A natural reference to prior learning, from real connections/history.
   /// Null when there is nothing genuine to recall.
+  /// Spanish-first, like every other teacher-authored line: the target-language
+  /// half is what the learner reads and what the voice may speak, and the
+  /// English half is support that the speech gate keeps out of the audio. A
+  /// bare English opener here used to become the spoken body of the bubble.
   ConversationMemory? memory(TeacherBrain brain) {
     if (brain.connectionMoments.isNotEmpty) {
       final m = brain.connectionMoments.first;
-      return ConversationMemory('Remember — ${m.text}', conceptIds: m.conceptIds);
+      return ConversationMemory(
+        '¿Recuerdas? — ${m.text}',
+        conceptIds: m.conceptIds,
+      );
     }
     if (brain.lessonHistory.isNotEmpty) {
       final last = brain.lessonHistory.last;
-      return ConversationMemory('Last time: ${last.objective}.');
+      return ConversationMemory('La última vez: ${last.objective}.');
     }
     return null;
   }

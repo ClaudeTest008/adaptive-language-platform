@@ -64,11 +64,20 @@ TeachingChoice chooseTeachingStrategy(
   // 1 · An active misconception: teach it, connected to what they know.
   if (focusId != null) {
     final connection = _connectionFor(brain, focusId);
-    final rationale = connection == null
-        ? "Let's focus on ${brain.objectives.current} and tie it to what you "
-              'already know.'
-        : 'You keep working on ${brain.objectives.current} — '
-              "let's connect it to ${connection.relatedNames.join(', ')}.";
+    // A concept is never "connected to itself": the suggestion's related list
+    // can contain the focus concept (same domain), which produced rationales
+    // like "connect tener for physical states to tener for physical states".
+    final focusName = brain.objectives.current;
+    final related = connection == null
+        ? const <String>[]
+        : [
+            for (final n in connection.relatedNames)
+              if (n != focusName && n != connection.anchorName) n,
+          ];
+    final rationale = related.isEmpty
+        ? "Let's focus on $focusName and tie it to what you already know."
+        : 'You keep working on $focusName — '
+            "let's connect it to ${related.join(', ')}.";
     return TeachingChoice(
       mode: TutorMode.teacher,
       focusConceptId: focusId,

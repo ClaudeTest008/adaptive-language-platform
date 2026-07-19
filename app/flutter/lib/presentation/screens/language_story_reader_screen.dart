@@ -222,12 +222,18 @@ class _LanguageStoryReaderScreenState
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: Text(story.title),
+        // Four round actions left the title as "La lieb…". The book title is
+        // what tells you where you are, so it gets the room: the actions are
+        // smaller and tighter, and the title is left-aligned with the back
+        // button rather than fighting them for the centre.
+        centerTitle: false,
+        titleSpacing: 0,
+        title: Text(story.title, maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
           CircleIconButton(
             icon: _bookmarked ? Icons.bookmark : Icons.bookmark_border,
             tooltip: 'Bookmark',
-            size: 42,
+            size: 38,
             filled: _bookmarked,
             onTap: () {
               toggleBookmark(widget.storyId);
@@ -235,26 +241,26 @@ class _LanguageStoryReaderScreenState
             },
           ),
           if (story.vocabulary.isNotEmpty) ...[
-            const SizedBox(width: AppSpace.sm - 2),
+            const SizedBox(width: AppSpace.xs + 2),
             CircleIconButton(
               icon: Icons.menu_book_outlined,
               tooltip: 'Key words',
-              size: 42,
+              size: 38,
               onTap: () => _showVocab(context, story),
             ),
           ],
-          const SizedBox(width: AppSpace.sm - 2),
+          const SizedBox(width: AppSpace.xs + 2),
           CircleIconButton(
             icon: Icons.forum_outlined,
             tooltip: 'Reading companion',
-            size: 42,
+            size: 38,
             onTap: () => _showCompanion(context, story),
           ),
-          const SizedBox(width: AppSpace.sm - 2),
+          const SizedBox(width: AppSpace.xs + 2),
           CircleIconButton(
             icon: Icons.headphones,
             tooltip: 'Listen to the whole story',
-            size: 42,
+            size: 38,
             onTap: () => speech.speak(story.fullText, langCode: bcp47),
           ),
           const SizedBox(width: AppSpace.md),
@@ -807,10 +813,12 @@ class _TappableTargetText extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 25/1.6 pushed the translation off the fold on a three-sentence page;
+    // 22/1.5 is still a generous reading size but keeps both halves in view.
     final style = TextStyle(
       color: AppTones.of(context).ink,
-      fontSize: 25,
-      height: 1.6,
+      fontSize: 22,
+      height: 1.5,
       fontWeight: FontWeight.w600,
       letterSpacing: -0.3,
     );

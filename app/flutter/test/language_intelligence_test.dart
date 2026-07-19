@@ -188,7 +188,9 @@ void main() {
       // strong connections → a connection moment exists → memory reference.
       final m = engine.memory(withConn);
       expect(m, isNotNull);
-      expect(m!.reference.toLowerCase(), contains('remember'));
+      // Spanish-first, like every teacher-authored line: an English opener
+      // here became the spoken body of the bubble.
+      expect(m!.reference.toLowerCase(), contains('recuerdas'));
     });
 
     test('reflection uses measured trends, empty when unmeasured', () {

@@ -9,6 +9,34 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ### Changed
 
+- **Root-cause fix: the tutor converses instead of correcting.** The planner was
+  the problem: for a plain learner message `_momentForLearner` returned null →
+  `decide(brain)` → and because the demo brain always has an active weak concept
+  (`currentConceptId`), `opportunities()` always offered a `correct` intent at
+  priority 1, so EVERY statement ("My name is John", "My wife is Mexican") got
+  a grammar correction. The controller compounded it by flagging every message
+  `learnerHasProduced: true`. Redesign: `plan()` now distinguishes a TEACHING
+  turn from FREE CONVERSATION. A statement / open question / unclassified turn
+  that is NOT an actual Spanish attempt becomes a **converse** moment (new
+  `TeachingMoment.converse`): the prompt tells the model to react to what the
+  learner said and ask one natural Spanish follow-up, and NO correction is
+  attached. Correction fires only when the learner truly produces Spanish
+  (`looksLikeSpanish` in message_intent → `producedTarget`). The prompt builder
+  branches on `converse` (react-and-follow-up vs convey-a-beat) and drops the
+  stage/pacing enum noise. 459 tests (+2: converse-not-correct routing,
+  looksLikeSpanish). analyze clean; apk debug green. DEVICE (CPH2037): the
+  decisive turn confirmed — "My wife is Mexican." → "¡Hola! ¿Cómo te siente
+  estar en Londres, John?" (conversational Spanish, follow-up question,
+  remembered facts, **no correction**), vs the old "Afinemos un pequeño
+  detalle." Spanish greeting with follow-up ("¿En qué estado te encuentras
+  ahora?"); latency gen 24–31 s. NOT completed on device: the full 30-turn
+  free conversation (owner's phone, flaky adb text-entry, ~25 s/reply). Honest
+  self-assessment: markedly better (it converses, remembers, stays Spanish,
+  asks questions) but the 1.5B still makes occasional Spanish slips
+  ("te siente"→"te sientes") and can reference the wrong stored fact; ~25 s
+  latency remains model/CPU-bound. The remaining ceiling is the model tier, not
+  the pipeline.
+
 - **Tutor naturalness + latency pass (Qwen2.5-1.5B kept; no architecture
   change).** (Phase 2/6) The live prompt now sends a SLIM packet
   (`serializeTeacherPacketBrief`: only learner-shared facts, active scene, one

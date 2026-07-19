@@ -89,6 +89,7 @@ class TeachingMoment {
     this.conceptIds = const [],
     this.socraticPrompt,
     this.rationale = '',
+    this.converse = false,
   });
 
   final TeacherIntent intent;
@@ -100,6 +101,12 @@ class TeachingMoment {
 
   /// Why the teacher chose this — explainable.
   final String rationale;
+
+  /// True when this is a free-conversation turn: the teacher should REACT to
+  /// what the learner just said and ask a natural follow-up, NOT deliver a
+  /// prepared lesson beat or a correction. The prompt builder switches to a
+  /// conversational instruction, and no correction is attached.
+  final bool converse;
 }
 
 /// One correction the teacher will actually make. Real teachers correct ONE
@@ -483,44 +490,65 @@ class TeacherIntelligenceEngine {
   /// [learnerHasProduced] is true once the learner has actually written or
   /// said something correctable — corrections are gated on it, so the teacher
   /// never opens a conversation by correcting.
+  /// [producedTarget] is true only when the learner's message is an actual
+  /// attempt in the TARGET language (Spanish) — the only thing that can be
+  /// corrected. An English chat message ("my wife is Mexican") is conversation,
+  /// not production, so it must never trigger a grammar correction. This is the
+  /// fix for the tutor "correcting instead of conversing": the planner was
+  /// picking `correct` on every turn because the demo brain always has an
+  /// active weak concept, and every message was flagged correctable.
   TeacherResponsePlan plan(
     TeacherBrain brain, {
     int turn = 0,
     LearnerIntent? learnerIntent,
     bool learnerHasProduced = false,
+    bool producedTarget = false,
   }) {
     final state = conversationState(brain, turn: turn);
     final closing = state.stage == LessonStage.reflection;
 
-    // 1 · Learner-driven moments beat brain-driven planning.
-    final learnerMoment =
-        _momentForLearner(brain, learnerIntent, turn: turn);
-    // 2 · Natural arc: greet first; corrections only after real production
-    //     and never in the opening stages.
+    // 1 · Learner-driven moments beat brain-driven planning (greeting,
+    //     confusion, example/grammar/roleplay requests…).
+    final learnerMoment = _momentForLearner(brain, learnerIntent, turn: turn);
+
+    // 2 · Free conversation: a statement / open question / unclassified turn
+    //     that is NOT a Spanish attempt is CHAT — react and follow up, never
+    //     lecture or correct. This keeps the tutor conversational by default.
+    final isChat = learnerMoment == null &&
+        turn > 0 &&
+        !producedTarget &&
+        (learnerIntent == LearnerIntent.statement ||
+            learnerIntent == LearnerIntent.question ||
+            learnerIntent == LearnerIntent.unknown ||
+            learnerIntent == null);
+
+    TeachingMoment chosen;
     TeacherDecision decision;
     if (learnerMoment != null) {
+      chosen = learnerMoment;
       decision = TeacherDecision(
         intent: learnerMoment.intent,
         rationale: learnerMoment.rationale,
         conceptId:
             learnerMoment.conceptIds.isEmpty ? null : learnerMoment.conceptIds.first,
       );
+    } else if (isChat) {
+      chosen = _converseMoment(brain);
+      decision = TeacherDecision(
+        intent: chosen.intent,
+        rationale: chosen.rationale,
+      );
     } else if (turn <= 0) {
       decision = const TeacherDecision(
         intent: TeacherIntent.greet,
         rationale: 'Every lesson opens with a real greeting.',
       );
-    } else if (turn == 1 && learnerIntent != LearnerIntent.statement) {
-      decision = const TeacherDecision(
-        intent: TeacherIntent.warmUp,
-        rationale: 'Warm up before teaching.',
-      );
+      chosen = moment(brain, decision);
     } else {
+      // Teaching turn (Spanish production or the lesson's own beat). Correct
+      // only when the learner actually produced correctable Spanish.
       decision = decide(brain);
-      final tooEarlyToCorrect = turn < 3;
-      if (decision.intent == TeacherIntent.correct &&
-          (!learnerHasProduced || tooEarlyToCorrect)) {
-        // Nothing has been produced that could be corrected — teach instead.
+      if (decision.intent == TeacherIntent.correct && !producedTarget) {
         final ops = opportunities(brain)
             .where((o) => o.intent != TeacherIntent.correct)
             .toList();
@@ -536,20 +564,31 @@ class TeacherIntelligenceEngine {
                     ops.first.conceptIds.isEmpty ? null : ops.first.conceptIds.first,
               );
       }
+      chosen = moment(brain, decision);
     }
 
     return TeacherResponsePlan(
       state: state,
-      moment: learnerMoment ?? moment(brain, decision),
+      moment: chosen,
       pacing: pacing(brain),
-      correction: decision.intent == TeacherIntent.correct &&
-              learnerHasProduced
-          ? correction(brain)
-          : null,
+      correction:
+          decision.intent == TeacherIntent.correct && producedTarget
+              ? correction(brain)
+              : null,
       memory: memory(brain),
       reflection: closing ? reflection(brain) : null,
     );
   }
+
+  /// A free-conversation beat: react to the learner and keep the exchange
+  /// flowing. The concrete reaction is produced by the model from the learner's
+  /// actual message; this only sets the intent + a Spanish fallback line.
+  TeachingMoment _converseMoment(TeacherBrain brain) => const TeachingMoment(
+        intent: TeacherIntent.encourage,
+        message: '¡Qué interesante! Cuéntame un poco más.',
+        converse: true,
+        rationale: 'The learner is chatting — converse naturally, no correction.',
+      );
 
   /// Builds the moment when the learner's message itself demands a specific
   /// reaction. Null = nothing special, fall back to brain-driven planning.

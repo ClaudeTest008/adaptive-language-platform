@@ -955,7 +955,7 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
             learnerIntent: LearnerIntent.unknown, // teacher opens, learner silent
             learnerFacts: ref.read(learnerFactsProvider),
             packet: _buildPacket(brain, conversation),
-            learnerHasProduced: false, // nothing to correct at the opener
+            learnerProducedTarget: false, // nothing to correct at the opener
           );
       openerText = response.text;
       conversation = response.context;
@@ -1139,9 +1139,9 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
             learnerIntent: intent,
             learnerFacts: ref.read(learnerFactsProvider),
             packet: _buildPacket(brain, withLearner),
-            // The learner just produced this message — correctable. The
-            // planner still gates corrections to later stages of the arc.
-            learnerHasProduced: true,
+            // Only an actual Spanish attempt is correctable production; an
+            // English chat message is conversation, never a grammar target.
+            learnerProducedTarget: looksLikeSpanish(message),
           );
       replyText = response.text;
       nextConversation = response.context;

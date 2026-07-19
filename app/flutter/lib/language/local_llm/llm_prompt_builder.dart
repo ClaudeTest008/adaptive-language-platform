@@ -97,44 +97,55 @@ LlmPrompt buildTeacherPrompt({
           '${brain.identity.nativeLanguage} at all (immersion).'}');
   b.writeln();
 
-  // The teacher's decision — this is WHAT/WHY, the LLM only supplies HOW.
-  b.writeln('THIS TURN — intent: ${plan.moment.intent.name}, '
-      'stage: ${plan.state.stage.name}, pacing: ${plan.pacing.name}.');
-  b.writeln('Objective: ${plan.state.objective}.');
-  if (plan.moment.socraticPrompt != null) {
-    b.writeln('Teach by GUIDED DISCOVERY — ask, do not lecture: '
-        '"${plan.moment.socraticPrompt}"');
+  if (plan.moment.converse) {
+    // Free-conversation turn: react to the learner, do not lecture. This is
+    // the default for chat/statements and keeps the tutor human.
+    b.writeln('THIS TURN IS A CONVERSATION, not an exercise. React to exactly '
+        'what the learner just said, with real interest, and ask ONE natural '
+        'follow-up question — all in Spanish. Do NOT correct grammar and do '
+        'NOT start a lesson right now. Keep it to 1–2 short sentences.');
+    b.writeln('(Keep this focus in mind for later, but do not force it now: '
+        '${plan.state.objective}.)');
   } else {
-    b.writeln('Message to convey: ${plan.moment.message}');
-  }
-  if (plan.moment.conceptIds.isNotEmpty) {
-    final names = plan.moment.conceptIds
-        .map((id) => brain.connections.nodes[id]?.name ?? id)
-        .where((n) => !n.contains(':'))
-        .take(4)
-        .toList();
-    if (names.isNotEmpty) {
-      b.writeln('Connect it to what the learner already knows: '
-          '${names.join(', ')}.');
+    // Teaching turn — the brain decided WHAT/WHY; the model supplies HOW.
+    b.writeln('THIS TURN — intent: ${plan.moment.intent.name}. '
+        'Objective: ${plan.state.objective}.');
+    if (plan.moment.socraticPrompt != null) {
+      b.writeln('Teach by GUIDED DISCOVERY — ask, do not lecture: '
+          '"${plan.moment.socraticPrompt}"');
+    } else {
+      b.writeln('Message to convey (reword naturally, in Spanish): '
+          '${plan.moment.message}');
     }
-  }
-  if (plan.correction != null) {
-    b.writeln('Correct exactly ONE thing, praise first: '
-        '${plan.correction!.praise} → ${plan.correction!.correction} '
-        '(${plan.correction!.why})');
-  }
-  if (plan.memory != null) {
-    b.writeln('You may reference: ${plan.memory!.reference}');
-  }
-  if (plan.reflection != null) {
-    final r = plan.reflection!;
-    b.writeln('Close the lesson: '
-        '${[
-          if (r.improved != null) r.improved,
-          if (r.needsWork != null) r.needsWork,
-          if (r.next != null) 'Next: ${r.next}',
-          if (r.homework != null) r.homework,
-        ].whereType<String>().join(' ')}');
+    if (plan.moment.conceptIds.isNotEmpty) {
+      final names = plan.moment.conceptIds
+          .map((id) => brain.connections.nodes[id]?.name ?? id)
+          .where((n) => !n.contains(':'))
+          .take(4)
+          .toList();
+      if (names.isNotEmpty) {
+        b.writeln('Connect it to what the learner already knows: '
+            '${names.join(', ')}.');
+      }
+    }
+    if (plan.correction != null) {
+      b.writeln('Correct exactly ONE thing, praise first: '
+          '${plan.correction!.praise} → ${plan.correction!.correction} '
+          '(${plan.correction!.why})');
+    }
+    if (plan.memory != null) {
+      b.writeln('You may reference: ${plan.memory!.reference}');
+    }
+    if (plan.reflection != null) {
+      final r = plan.reflection!;
+      b.writeln('Close the lesson: '
+          '${[
+            if (r.improved != null) r.improved,
+            if (r.needsWork != null) r.needsWork,
+            if (r.next != null) 'Next: ${r.next}',
+            if (r.homework != null) r.homework,
+          ].whereType<String>().join(' ')}');
+    }
   }
 
   // Grounding facts — real, from the brain.

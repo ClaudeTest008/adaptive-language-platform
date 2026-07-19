@@ -197,6 +197,31 @@ String? answerFromFacts(String raw, Map<String, String> facts) {
   };
 }
 
+const _spanishMarkers = {
+  'hola', 'gracias', 'quiero', 'tengo', 'soy', 'estoy', 'me', 'llamo', 'vivo',
+  'como', 'por', 'favor', 'buenos', 'días', 'muy', 'bien', 'está', 'con', 'sí',
+  'vamos', 'qué', 'una', 'uno', 'tú', 'yo', 'es', 'son', 'pero', 'porque',
+  'cuenta', 'café', 'agua', 'comer', 'hablar', 'necesito', 'puedo', 'dónde',
+};
+
+/// True when [msg] reads as an actual attempt in Spanish — the only thing the
+/// teacher may correct. English chat about the learner's life is conversation,
+/// not production. Accents/¿¡ or ≥2 Spanish markers (or 1 in a very short
+/// utterance) count. Deterministic, no inference.
+bool looksLikeSpanish(String msg) {
+  if (RegExp(r'[áéíóúñ¿¡]', caseSensitive: false).hasMatch(msg)) return true;
+  final words = msg
+      .toLowerCase()
+      .split(RegExp(r'[^a-z]+'))
+      .where((w) => w.isNotEmpty)
+      .toList();
+  if (words.isEmpty) return false;
+  final hits = words.where(_spanishMarkers.contains).length;
+  // Guard against English homographs ("me", "como", "son") dominating: require
+  // that Spanish markers are a real share of the message.
+  return hits >= 2 || (hits >= 1 && words.length <= 3);
+}
+
 /// Serializes shared facts for the teacher prompt. Empty string when none.
 String factsBrief(Map<String, String> facts) {
   if (facts.isEmpty) return '';

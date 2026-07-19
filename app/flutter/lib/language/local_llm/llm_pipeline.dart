@@ -67,14 +67,14 @@ class LlmPipeline {
     LearnerIntent? learnerIntent,
     Map<String, String> learnerFacts = const {},
     TeacherPacket? packet,
-    bool learnerHasProduced = false,
+    bool learnerProducedTarget = false,
   }) async {
     final intent = learnerIntent ?? classifyLearnerMessage(userMessage);
     final plan = intelligence.plan(
       brain,
       turn: context.turns.length,
       learnerIntent: intent,
-      learnerHasProduced: learnerHasProduced,
+      producedTarget: learnerProducedTarget,
     );
     final base = buildTeacherPrompt(
       brain: brain,

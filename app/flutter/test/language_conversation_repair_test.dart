@@ -5,6 +5,8 @@ import 'package:adaptive_exam_platform/infrastructure/prefs_experience_repositor
 import 'package:adaptive_exam_platform/language/curriculum.dart';
 import 'package:adaptive_exam_platform/language/message_intent.dart';
 import 'package:adaptive_exam_platform/language/notebook_repository.dart';
+import 'package:adaptive_exam_platform/language/local_llm/llm_memory.dart';
+import 'package:adaptive_exam_platform/language/local_llm/llm_prompt_builder.dart';
 import 'package:adaptive_exam_platform/language/pipeline.dart';
 import 'package:adaptive_exam_platform/language/roleplay_engine.dart';
 import 'package:adaptive_exam_platform/language/teacher_intelligence.dart';
@@ -310,6 +312,47 @@ void main() {
       final s = c.read(tutorSessionProvider)!;
       expect(s.roleplay, isNotNull);
       expect(s.roleplay!.scenario.kind, RoleplayKind.restaurant);
+    });
+
+    test('English chat converses, never corrects; Spanish output is teachable',
+        () async {
+      final c = await _boot();
+      final brain = c.read(teacherBrainProvider).value!;
+      const eng = TeacherIntelligenceEngine();
+
+      // An English life-statement mid-lesson → converse, no correction.
+      final chat = eng.plan(brain,
+          turn: 4,
+          learnerIntent: LearnerIntent.statement,
+          producedTarget: false);
+      expect(chat.moment.converse, isTrue);
+      expect(chat.correction, isNull);
+
+      // An actual Spanish attempt → correction may fire.
+      final spanish = eng.plan(brain,
+          turn: 4,
+          learnerIntent: LearnerIntent.statement,
+          producedTarget: true);
+      expect(spanish.moment.converse, isFalse);
+
+      // The prompt for a converse turn instructs react-and-follow-up.
+      final prompt = buildTeacherPrompt(
+        brain: brain,
+        plan: chat,
+        context: const ConversationContext(),
+        userMessage: 'My wife is Mexican.',
+        supportMode: TeacherSupportMode.mentor,
+      );
+      expect(prompt.system, contains('CONVERSATION'));
+      expect(prompt.system, isNot(contains('Correct exactly ONE')));
+    });
+
+    test('looksLikeSpanish only fires on real Spanish', () {
+      expect(looksLikeSpanish('My wife is Mexican.'), isFalse);
+      expect(looksLikeSpanish('I live in London.'), isFalse);
+      expect(looksLikeSpanish('Tengo mucha hambre.'), isTrue);
+      expect(looksLikeSpanish('Quiero un café, por favor.'), isTrue);
+      expect(looksLikeSpanish('Hola'), isTrue);
     });
 
     test('the whole conversation is deterministic', () async {

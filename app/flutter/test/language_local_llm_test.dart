@@ -152,7 +152,10 @@ void main() {
       final seen = <String>[];
       var ctx = const ConversationContext();
       for (var i = 0; i < 3; i++) {
-        final plan = intelligence.plan(brain, turn: ctx.turns.length);
+        // producedTarget:true keeps this a TEACHING turn (variant rotation);
+        // chat turns intentionally use one steady conversational ack now.
+        final plan = intelligence.plan(brain,
+            turn: ctx.turns.length, producedTarget: true);
         final text = voice.word(plan, ctx, brain);
         ctx = ctx.withTurn(ConversationTurn(fromLearner: false, text: text))
             .markUsed(text);

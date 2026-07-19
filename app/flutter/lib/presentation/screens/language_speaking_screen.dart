@@ -130,7 +130,9 @@ class _Drill extends ConsumerWidget {
     final drill = session.current;
     final ctrl = ref.read(speakingProvider.notifier);
 
-    return Padding(
+    // Scrollable so a tall attempt (feedback + per-word chips) never overflows
+    // the fixed screen height — the reported "bottom overflowed" speaking bug.
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
@@ -138,7 +140,7 @@ class _Drill extends ConsumerWidget {
             value: (session.index + 1) / session.drills.length,
             minHeight: 6,
           ),
-          const Spacer(),
+          const SizedBox(height: 24),
           Text('Say this aloud',
               style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: 12),
@@ -175,7 +177,7 @@ class _Drill extends ConsumerWidget {
           const SizedBox(height: 24),
           if (session.attempted) _Feedback(session: session) else
             _MicButton(listening: session.listening, onTap: ctrl.attempt),
-          const Spacer(),
+          const SizedBox(height: 24),
           if (session.attempted)
             SizedBox(
               width: double.infinity,

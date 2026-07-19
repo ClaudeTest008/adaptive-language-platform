@@ -187,7 +187,9 @@ void main() {
 
     test('model-evaluation specs are real and distinct', () {
       expect(llmModelSpecs, hasLength(2));
-      expect(llmDefaultSpec.id, 'qwen2.5-1.5b');
+      // Default flipped to Qwen3 after the on-device benchmark.
+      expect(llmDefaultSpec.id, 'qwen3-1.7b');
+      expect(llmModelSpecs.first.id, 'qwen2.5-1.5b'); // baseline still offered
       final ids = llmModelSpecs.map((s) => s.id).toSet();
       final versions = llmModelSpecs.map((s) => s.version).toSet();
       final shas = llmModelSpecs.map((s) => s.sha256).toSet();
@@ -214,10 +216,12 @@ void main() {
       final state = await mgr.ensureDownloaded();
       expect(state.isReady, isTrue);
       expect(state.info!.version, llmSpecQwen3.version);
-      // Baseline manager over the same repo sees a version mismatch → switch.
+      // A manager for a DIFFERENT spec (baseline) over the same repo sees a
+      // version mismatch → offers to switch/re-download.
       final baseline = LlmModelManager(
         repository: repo,
         downloader: FakeLlmDownloader(),
+        spec: llmSpecQwen25,
       );
       final s2 = await baseline.status();
       expect(s2.status, LlmModelStatus.versionMismatch);

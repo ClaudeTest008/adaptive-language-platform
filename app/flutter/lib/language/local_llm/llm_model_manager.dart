@@ -71,9 +71,14 @@ const llmSpecQwen3 = LlmModelSpec(
 /// Candidate wording models (model-evaluation framework).
 const llmModelSpecs = <LlmModelSpec>[llmSpecQwen25, llmSpecQwen3];
 
-/// The default spec (baseline). Legacy constant aliases below keep existing
-/// call sites/tests working unchanged.
-const llmDefaultSpec = llmSpecQwen25;
+/// The default spec. Qwen3-1.7B Q4_K_S is now the default: the on-device
+/// benchmark (identical prompts, same device) showed it clearly stronger as a
+/// Spanish tutor — coherent contextual follow-ups, correct ser/estar teaching,
+/// spontaneous natural use of remembered facts — at latency parity with the
+/// old baseline (+~0.6 GB RAM on an 8 GB device). Qwen2.5 stays selectable in
+/// settings. Legacy `llmModel*` aliases below still point at Qwen2.5 for the
+/// downloader's on-disk skip logic; the manager's default now installs Qwen3.
+const llmDefaultSpec = llmSpecQwen3;
 const llmModelVersion = 'qwen2.5-1.5b-instruct-q4km-v1';
 const llmModelType = 'Medium';
 const llmModelSizeBytes = 1117320736; // 1.12 GB exact

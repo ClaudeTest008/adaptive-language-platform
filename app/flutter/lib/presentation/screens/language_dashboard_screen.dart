@@ -540,20 +540,26 @@ class _TeacherNotebookCard extends ConsumerWidget {
             children: [
               Icon(Icons.auto_graph, size: 18, color: scheme.primary),
               const SizedBox(width: 8),
-              Text(
-                'Working level: around ${brain.facts.cefr}',
-                style: text.labelLarge?.copyWith(
-                  color: scheme.primary,
-                  fontWeight: FontWeight.w700,
+              // Expanded (not Spacer) so a long working-level line yields to
+              // the streak pill and ellipsizes instead of overflowing.
+              Expanded(
+                child: Text(
+                  'Working level: around ${brain.facts.cefr}',
+                  overflow: TextOverflow.ellipsis,
+                  style: text.labelLarge?.copyWith(
+                    color: scheme.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              const Spacer(),
-              if (brain.identity.streakDays > 0)
+              if (brain.identity.streakDays > 0) ...[
+                const SizedBox(width: 8),
                 _Pill(
                   label: '${brain.identity.streakDays}-day streak',
                   color: scheme.secondaryContainer,
                   textColor: scheme.onSecondaryContainer,
                 ),
+              ],
             ],
           ),
           const SizedBox(height: 10),

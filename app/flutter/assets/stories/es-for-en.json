@@ -762,6 +762,132 @@
         { "prompt": "¿Qué decide el cliente al final?",
           "options": ["Pide el reembolso", "Se queda con otro jersey igual", "Se marcha sin nada"], "answer": 1 }
       ]
+    },
+    {
+      "id": "es-a2-domingo-lluvia",
+      "title": "Un domingo de lluvia",
+      "author": "Cuento original",
+      "level": "a2",
+      "topics": ["daily-life", "family", "weather"],
+      "vocabulary": [
+        { "word": "llover sin parar", "meaning": "to rain non-stop" },
+        { "word": "la tormenta", "meaning": "the storm" },
+        { "word": "el paraguas", "meaning": "the umbrella" },
+        { "word": "oler a", "meaning": "to smell of" },
+        { "word": "recién hecho", "meaning": "freshly made" },
+        { "word": "acostarse", "meaning": "to go to bed" }
+      ],
+      "phrases": [
+        { "text": "El domingo pasado llovía sin parar desde muy temprano. Ana miraba la lluvia desde la ventana mientras desayunaba un café con leche. En la calle, la gente corría de puerta en puerta con paraguas de todos los colores.",
+          "translation": "Last Sunday it was raining non-stop from very early on. Ana watched the rain from the window while she had a café con leche for breakfast. In the street, people ran from door to door with umbrellas of every colour.",
+          "conceptIds": ["es:a2:grammar:verbs:past-tenses:imperfect"] },
+        { "text": "Normalmente, los domingos Ana se levantaba tarde y paseaba por el barrio con su perro. Pero ese día el paseo era imposible: la tormenta no paraba y además hacía bastante frío para ser primavera.",
+          "translation": "Normally, on Sundays Ana got up late and walked around the neighbourhood with her dog. But that day the walk was impossible: the storm would not stop and, besides, it was quite cold for spring.",
+          "conceptIds": ["es:a2:grammar:verbs:past-tenses:imperfect", "es:a2:grammar:verbs:reflexives:reflexive-verbs"] },
+        { "text": "A las once sonó el teléfono. Era su hermano Luis. —¿Vienes a comer a casa? Estoy preparando una sopa enorme. Ana no lo pensó dos veces: cogió el paraguas grande y salió corriendo hacia la boca del metro.",
+          "translation": "At eleven the phone rang. It was her brother Luis. \"Are you coming over for lunch? I'm making an enormous soup.\" Ana didn't think twice: she grabbed the big umbrella and ran out towards the metro entrance.",
+          "conceptIds": ["es:a2:grammar:verbs:past-tenses:preterite-vs-imperfect", "es:a2:grammar:verbs:past-tenses:preterite-regular"] },
+        { "text": "Cuando llegó, la casa olía a sopa caliente y a pan recién hecho. Mientras fuera seguía lloviendo, los dos hermanos comieron juntos, hablaron de la familia y vieron una película antigua en el sofá.",
+          "translation": "When she arrived, the house smelled of hot soup and freshly baked bread. While outside it kept raining, the two siblings ate together, talked about the family and watched an old film on the sofa.",
+          "conceptIds": ["es:a2:grammar:verbs:past-tenses:preterite-vs-imperfect"] },
+        { "text": "Por la tarde dejó de llover y salió un poco de sol entre las nubes. Los dos pasearon despacio hasta la plaza del barrio y tomaron un chocolate caliente en la terraza de siempre.",
+          "translation": "In the afternoon it stopped raining and a little sun came out between the clouds. The two of them strolled slowly to the neighbourhood square and had a hot chocolate on their usual terrace.",
+          "conceptIds": ["es:a2:grammar:verbs:past-tenses:preterite-regular", "es:a2:vocabulary:daily-life:barrio"] },
+        { "text": "Al volver a casa, Ana estaba cansada pero muy contenta. Mientras se acostaba, pensó que los domingos de lluvia, con una buena sopa y buena compañía, también podían ser un plan perfecto.",
+          "translation": "On returning home, Ana was tired but very happy. As she went to bed, she thought that rainy Sundays, with a good soup and good company, could also be a perfect plan.",
+          "conceptIds": ["es:a2:grammar:verbs:past-tenses:preterite-vs-imperfect", "es:a2:grammar:verbs:reflexives:reflexive-verbs"] }
+      ],
+      "questions": [
+        { "prompt": "¿Qué hacía Ana normalmente los domingos?",
+          "options": ["Se levantaba tarde y paseaba con su perro", "Trabajaba en la oficina", "Comía siempre en casa de Luis"], "answer": 0 },
+        { "prompt": "¿Por qué no pudo pasear ese domingo por la mañana?",
+          "options": ["Estaba enferma", "Llovía sin parar y hacía frío", "Su perro no quería salir"], "answer": 1 },
+        { "prompt": "¿Qué hicieron los hermanos por la tarde?",
+          "options": ["Vieron la tormenta desde la ventana", "Fueron al cine del centro", "Pasearon hasta la plaza y tomaron un chocolate"], "answer": 2 }
+      ]
+    },
+    {
+      "id": "es-b1-decision-elena",
+      "title": "La decisión de Elena",
+      "author": "Relato original",
+      "level": "b1",
+      "topics": ["work", "family", "daily-life"],
+      "vocabulary": [
+        { "word": "la oferta", "meaning": "the offer" },
+        { "word": "mudarse", "meaning": "to move (house/city)" },
+        { "word": "el consejo", "meaning": "the piece of advice" },
+        { "word": "empezar de cero", "meaning": "to start from scratch" },
+        { "word": "echar de menos", "meaning": "to miss (someone/something)" },
+        { "word": "el contrato indefinido", "meaning": "the permanent contract" }
+      ],
+      "phrases": [
+        { "text": "Elena trabaja desde hace cinco años en la misma oficina de Zaragoza. El mes pasado recibió una oferta inesperada: un puesto mejor pagado en una empresa de Valencia, con contrato indefinido y un equipo internacional que trabaja en varios idiomas.",
+          "translation": "Elena has worked for five years in the same office in Zaragoza. Last month she received an unexpected offer: a better-paid position at a company in Valencia, with a permanent contract and an international team that works in several languages.",
+          "conceptIds": ["es:b1:vocabulary:work:contrato"] },
+        { "text": "Desde entonces no piensa en otra cosa. Le encanta la idea de vivir cerca del mar, pero no quiere dejar sola a su madre, y le da un poco de miedo empezar de cero en una ciudad donde todavía no conoce a nadie.",
+          "translation": "Since then she has thought of nothing else. She loves the idea of living near the sea, but she doesn't want to leave her mother on her own, and she is a little afraid of starting from scratch in a city where she doesn't know anyone yet.",
+          "conceptIds": ["es:a2:grammar:pronouns:object-pronouns:gustar-type"] },
+        { "text": "Su madre fue la primera en hablar claro. —Quiero que aceptes esa oferta —le dijo muy seria—. Es importante que pienses en tu futuro y no en mí. Yo estoy bien, y Valencia no está tan lejos como crees.",
+          "translation": "Her mother was the first to speak plainly. \"I want you to accept that offer,\" she said very seriously. \"It's important that you think about your future and not about me. I'm fine, and Valencia is not as far away as you think.\"",
+          "conceptIds": ["es:b1:grammar:verbs:subjunctive:subjunctive-influence"] },
+        { "text": "Su mejor amiga, Carmen, le dio otro consejo durante un café. —Te recomiendo que hables primero con tu jefe. Es posible que aquí también te ofrezcan algo mejor cuando sepan que estás pensando en marcharte.",
+          "translation": "Her best friend, Carmen, gave her different advice over a coffee. \"I recommend that you talk to your boss first. It's possible that here they'll also offer you something better when they find out you're thinking of leaving.\"",
+          "conceptIds": ["es:b1:grammar:verbs:subjunctive:subjunctive-influence", "es:b1:grammar:verbs:subjunctive:subjunctive-future-time"] },
+        { "text": "Su hermano, en cambio, tiene sus dudas. —No creo que el sueldo lo sea todo —le dijo el domingo—. Dudo que seas más feliz solo por ganar más dinero. Aunque, claro, me alegro de que tengas opciones donde elegir.",
+          "translation": "Her brother, on the other hand, has his doubts. \"I don't think salary is everything,\" he told her on Sunday. \"I doubt you'll be happier just because you earn more money. Although, of course, I'm glad you have options to choose from.\"",
+          "conceptIds": ["es:b1:grammar:verbs:subjunctive:subjunctive-emotion-doubt", "es:b1:grammar:discourse:connectors:discourse-connectors"] },
+        { "text": "Elena escucha a todos y no dice casi nada. Sabe que, si se quedara, seguiría cómoda pero un poco aburrida; y sabe también que, si se fuera, echaría de menos los cafés de los sábados con su madre en el mercado del barrio.",
+          "translation": "Elena listens to everyone and says almost nothing. She knows that, if she stayed, she would remain comfortable but a little bored; and she also knows that, if she left, she would miss the Saturday coffees with her mother at the neighbourhood market.",
+          "conceptIds": ["es:b2:grammar:verbs:si-clauses:si-clauses-type2", "es:b1:grammar:verbs:conditional:conditional-simple"] },
+        { "text": "Anoche, por fin, escribió a la empresa: «Acepto la oferta. Espero que podamos empezar en septiembre». Cuando llegue a Valencia, buscará un piso pequeño cerca de la playa; y cada viernes, en cuanto salga del trabajo, llamará a su madre para contarle la semana.",
+          "translation": "Last night, at last, she wrote to the company: \"I accept the offer. I hope we can start in September.\" When she gets to Valencia, she will look for a small flat near the beach; and every Friday, as soon as she leaves work, she will call her mother to tell her about the week.",
+          "conceptIds": ["es:b1:grammar:verbs:subjunctive:subjunctive-forms", "es:b1:grammar:verbs:subjunctive:subjunctive-future-time"] }
+      ],
+      "questions": [
+        { "prompt": "¿Qué recibió Elena el mes pasado?",
+          "options": ["Una oferta de trabajo en Valencia", "Una carta de su madre", "Un ascenso en su oficina de Zaragoza"], "answer": 0 },
+        { "prompt": "¿Qué le aconseja su madre?",
+          "options": ["Que se quede en Zaragoza", "Que acepte la oferta y piense en su futuro", "Que hable primero con su jefe"], "answer": 1 },
+        { "prompt": "¿Qué hará Elena cuando llegue a Valencia?",
+          "options": ["Comprará una casa grande en el centro", "Buscará un piso pequeño cerca de la playa", "Volverá cada fin de semana a Zaragoza"], "answer": 1 }
+      ]
+    },
+    {
+      "id": "es-b2-dialogo-pantallas",
+      "title": "Diálogo: ¿demasiadas pantallas?",
+      "author": "Diálogo original",
+      "level": "b2",
+      "topics": ["technology", "debate", "daily-life"],
+      "vocabulary": [
+        { "word": "la pantalla", "meaning": "the screen" },
+        { "word": "las redes sociales", "meaning": "social media" },
+        { "word": "la postura", "meaning": "the stance, position" },
+        { "word": "el matiz", "meaning": "the nuance" },
+        { "word": "no obstante", "meaning": "nevertheless" },
+        { "word": "desconectar", "meaning": "to disconnect, switch off" }
+      ],
+      "phrases": [
+        { "text": "—Mi postura es clara: pasamos demasiadas horas delante de una pantalla, y las redes sociales tienen buena parte de la culpa. —Es un argumento habitual; no obstante, me parece incompleto. La pantalla también es trabajo, familia y cultura.",
+          "translation": "\"My position is clear: we spend too many hours in front of a screen, and social media bears a good part of the blame.\" \"It's a common argument; nevertheless, it strikes me as incomplete. The screen is also work, family and culture.\"",
+          "conceptIds": ["es:b2:vocabulary:debate:postura", "es:b2:vocabulary:technology:pantalla"] },
+        { "text": "—Ahí hay un matiz importante: no es lo mismo leer el periódico en el móvil que mirar vídeos sin pensar durante tres horas seguidas. —De acuerdo, aunque ¿quién decide qué uso es valioso y cuál no? Cada persona es un mundo.",
+          "translation": "\"There's an important nuance there: reading the newspaper on your phone is not the same as mindlessly watching videos for three hours straight.\" \"Agreed, although who decides which use is valuable and which isn't? Everyone is different.\"",
+          "conceptIds": ["es:b2:vocabulary:debate:matiz", "es:b1:grammar:discourse:connectors:discourse-connectors"] },
+        { "text": "—Si las aplicaciones no estuvieran diseñadas para atraparnos, usaríamos el móvil de otra manera. —Puede ser. Yo, desde mi punto de vista, prefiero educar antes que prohibir: enseñar a la gente a desconectar de verdad.",
+          "translation": "\"If the apps weren't designed to hook us, we would use our phones differently.\" \"Maybe. From my point of view, I prefer educating over banning: teaching people how to truly disconnect.\"",
+          "conceptIds": ["es:b2:grammar:verbs:si-clauses:si-clauses-type2", "es:b2:vocabulary:debate"] },
+        { "text": "—En eso estamos de acuerdo. Propongo un experimento: este domingo, los dos sin móvil hasta la hora de la cena. —Acepto, pero recuerda que el mes pasado dijiste que lo harías y al final no lo cumpliste.",
+          "translation": "\"On that we agree. I propose an experiment: this Sunday, both of us without our phones until dinner time.\" \"I accept, but remember that last month you said you would do it and in the end you didn't keep your word.\"",
+          "conceptIds": ["es:b2:grammar:verbs:reported-speech:reported-statements"] }
+      ],
+      "questions": [
+        { "prompt": "¿Cuál es la postura de la primera persona?",
+          "options": ["Pasamos demasiadas horas ante la pantalla", "Las redes sociales son inofensivas", "Hay que comprar móviles mejores"], "answer": 0 },
+        { "prompt": "¿Qué prefiere la segunda persona?",
+          "options": ["Prohibir las aplicaciones", "Educar y enseñar a desconectar", "Eliminar las redes sociales"], "answer": 1 },
+        { "prompt": "¿Qué proponen al final?",
+          "options": ["Un domingo sin móvil hasta la cena", "Borrar sus cuentas para siempre", "Escribir un artículo juntos"], "answer": 0 }
+      ]
     }
   ]
 }

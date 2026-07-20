@@ -82,17 +82,8 @@ void main() {
     // Tutor hero opens with the top misconception to repair.
     expect(find.textContaining('Wants to clear up:'), findsOneWidget);
 
-    // Teacher's Notes lead the dashboard (expanded by default): the live
-    // notebook engine estimates a working level and folds in the detected
-    // misconception (tener, seen 2×) via the card below it.
-    await tester.scrollUntilVisible(find.text("Teacher's Notes"), 150);
-    await tester.scrollUntilVisible(
-      find.textContaining('Working level: around'),
-      120,
-    );
-    await tester.scrollUntilVisible(find.text('2×').first, 150);
-    expect(find.text('2×'), findsWidgets);
-    expect(find.textContaining('tener', findRichText: true), findsWidgets);
+    // Teacher's Notes moved to Tutor settings (dashboard simplification);
+    // asserted there at the end of this test.
 
     // Progress summary: independent per-skill mastery, collapsed by default.
     await tester.scrollUntilVisible(find.text('Progress summary'), 150);
@@ -112,6 +103,19 @@ void main() {
     expect(find.textContaining('Repair:'), findsOneWidget);
     await tester.scrollUntilVisible(find.textContaining('minutes today'), 150);
     expect(find.textContaining('minutes today'), findsWidgets);
+
+    // The notebook now lives in Tutor settings: working level + the detected
+    // misconception evidence (tener, seen 2×) render there.
+    await tester.pumpWidget(_app(curriculum, const TutorSettingsScreen()));
+    await _settle(tester);
+    await tester.scrollUntilVisible(
+      find.textContaining('Working level: around'),
+      200,
+    );
+    // The evidence pills live in the same (now built) notebook card — no
+    // second scroll: multiple '2×' matches break dragUntilVisible's .single.
+    expect(find.textContaining('2×'), findsWidgets);
+    expect(find.textContaining('tener', findRichText: true), findsWidgets);
   });
 
   testWidgets('dashboard surfaces the unified recommendation list', (
@@ -419,15 +423,24 @@ void main() {
       findsOneWidget,
     );
 
-    // Round trip back to Spanish: counts must NOT inflate (2×, not 4×).
+    // Round trip back to Spanish: counts must NOT inflate (2, not 4). The
+    // notebook UI moved to Tutor settings, so assert the underlying learner
+    // state directly — the same regression, without the relocated widget.
     await tester.tap(find.byType(PopupMenuButton<String>));
     await _settle(tester);
     await tester.tap(find.text('Spanish').last);
     await _settle(tester);
-    await tester.scrollUntilVisible(find.text("Teacher's Notes"), 150);
-    await tester.scrollUntilVisible(find.text('2×').first, 150);
-    expect(find.text('2×'), findsWidgets);
-    expect(find.text('4×'), findsNothing);
+    final learnerState = ProviderScope.containerOf(
+      tester.element(find.byType(LanguageDashboardScreen)),
+    ).read(languageLearnerProvider);
+    final tenerMisconceptions = learnerState.misconceptions.all
+        .where((m) => m.conceptId == tenerId)
+        .toList();
+    expect(tenerMisconceptions, isNotEmpty);
+    // The seed registers 2 occurrences; a round trip must not double them.
+    for (final m in tenerMisconceptions) {
+      expect(m.occurrences, 2);
+    }
   });
 
   testWidgets('concept screen shows signals and live-updates on simulate', (

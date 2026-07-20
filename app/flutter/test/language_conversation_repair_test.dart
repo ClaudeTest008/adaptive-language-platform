@@ -652,6 +652,50 @@ void main() {
       expect(afterLearner.turnsSinceCorrection, 1);
     });
 
+    test('a 30-turn lesson never repeats itself back-to-back and completes '
+        'the full shape', () async {
+      final c = await _boot();
+      final tutor = c.read(tutorSessionProvider.notifier);
+      await tutor.start(TutorMode.teacher);
+      const learnerLines = [
+        'Hola.',
+        'Tengo hambre.',
+        'Sí, muy bien.',
+        'Vale, sigo.',
+        'Quiero practicar más.',
+        'Estoy en casa.',
+        'Bebo agua.',
+        'Como una manzana.',
+        'Sí.',
+        'Claro.',
+      ];
+      for (var i = 0; i < 30; i++) {
+        await tutor.send(learnerLines[i % learnerLines.length]);
+      }
+      final s = c.read(tutorSessionProvider)!;
+      final tutorLines = [
+        for (final (isTutor, text) in s.transcript)
+          if (isTutor && text.trim().isNotEmpty) text,
+      ];
+      // Never the same reply twice in a row (the "broken record" failure).
+      for (var i = 1; i < tutorLines.length; i++) {
+        expect(tutorLines[i], isNot(equals(tutorLines[i - 1])),
+            reason: 'consecutive identical replies at tutor turn $i');
+      }
+      // The full lesson shape happened: the teacher opened a scene itself…
+      expect(s.roleplay, isNotNull);
+      // …the scene ran to completion and handed the conversation back…
+      expect(s.roleplay!.done, isTrue);
+      expect(
+        s.transcript.any((t) => t.$2.contains('Escena completada')),
+        isTrue,
+      );
+      // …and the session stayed healthy for the whole 30 turns.
+      expect(s.busy, isFalse);
+      expect(tutorLines.length, greaterThan(25));
+      c.dispose();
+    });
+
     test('the whole conversation is deterministic', () async {
       Future<List<String>> script() async {
         final c = await _boot();

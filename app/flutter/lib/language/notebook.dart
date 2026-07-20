@@ -189,10 +189,16 @@ TeacherNotebook buildTeacherNotebook({
 
   final notes = <TeacherObservation>[];
 
-  // 1 · Recurring grammar mistakes — the teacher's top concern.
+  // 1 · Recurring grammar mistakes — the teacher's top concern. One note per
+  // CONCEPT: the same misconception can be tracked from several interference
+  // sources, and rendering the identical sentence twice read as a bug on the
+  // device (it was — two 'tener' entries, one note text).
   final ranked = [...misconceptions]
     ..sort((a, b) => b.occurrences.compareTo(a.occurrences));
-  for (final m in ranked.take(2)) {
+  final notedConcepts = <String>{};
+  for (final m in ranked) {
+    if (notedConcepts.length >= 2) break;
+    if (!notedConcepts.add(m.conceptId)) continue;
     final name = conceptNames[m.conceptId] ?? m.pattern;
     notes.add(
       TeacherObservation(

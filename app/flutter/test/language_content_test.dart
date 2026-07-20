@@ -98,6 +98,9 @@ void main() {
         'es-b2-camino',
         'es-a2-dialogo-llamada',
         'es-b1-dialogo-devolucion',
+        'es-a2-domingo-lluvia',
+        'es-b1-decision-elena',
+        'es-b2-dialogo-pantallas',
       ]) {
         final s = stories.firstWhere((s) => s.id == id);
         expect(s.author, isNotEmpty, reason: id);

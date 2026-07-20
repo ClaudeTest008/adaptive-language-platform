@@ -1,6 +1,7 @@
 import 'connections.dart';
 import 'learning_profile.dart';
 import 'local_llm/llm_memory.dart';
+import 'notebook.dart';
 import 'message_intent.dart';
 import 'teacher_brain.dart';
 import 'teaching_style.dart';
@@ -425,10 +426,25 @@ class TeacherIntelligenceEngine {
           rationale: decision.rationale,
         );
       case TeacherIntent.review:
+        // A real teacher reviews SOMETHING: name the recurring trouble spot
+        // (misconception family, Spanish leaf names) when one exists, or the
+        // last recovered/forgotten skill from long-term memory — a generic
+        // "let's review" teaches nothing.
+        final trouble = decision.conceptId != null && family.isNotEmpty
+            ? family.join(', ')
+            : brain.notebook.observations
+                .where((o) => o.category == ObservationCategory.focus)
+                .map((o) => o.text)
+                .firstOrNull;
         return TeachingMoment(
           intent: decision.intent,
-          message: 'Antes de seguir, repasemos un momento lo que ya vimos, '
-              'sin prisa.',
+          message: trouble == null
+              ? 'Antes de seguir, repasemos un momento lo que ya vimos, '
+                  'sin prisa.'
+              : 'Antes de seguir, volvamos un momento a esto: $trouble. '
+                  'Ya casi lo tienes.',
+          conceptIds:
+              decision.conceptId == null ? const [] : [decision.conceptId!],
           rationale: decision.rationale,
         );
       case TeacherIntent.correct:

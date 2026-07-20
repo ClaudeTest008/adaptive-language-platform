@@ -5,7 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../language/pipeline.dart';
 import '../language_providers.dart';
 import '../ui.dart';
-import 'language_dashboard_screen.dart' show TeacherRecommendationsCard;
+import 'language_dashboard_screen.dart'
+    show TeacherNotebookCard, TeacherNotesCard, TeacherRecommendationsCard;
 
 /// AI Tutor settings (Phase 2 simplification): everything that used to sit
 /// as chips on top of the conversation lives here instead. The conversation
@@ -151,6 +152,14 @@ class TutorSettingsScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
+                const SizedBox(height: AppSpace.xl),
+                // Relocated from the dashboard: the notebook answers "what
+                // has my teacher noticed" — a settings-depth question.
+                const SectionHeader(title: "Teacher's notes"),
+                const SizedBox(height: AppSpace.md),
+                const TeacherNotebookCard(),
+                const SizedBox(height: AppSpace.sm),
+                const TeacherNotesCard(),
                 const SizedBox(height: AppSpace.xl),
                 // Relocated from the dashboard (simplification): the ranked
                 // recommendation list, for learners who want the "why".

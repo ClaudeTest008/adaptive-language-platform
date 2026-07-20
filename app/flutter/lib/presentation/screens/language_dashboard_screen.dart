@@ -69,26 +69,9 @@ class LanguageDashboardScreen extends ConsumerWidget {
               // Quick practice — the four ways in, one tap each.
               const FadeInUp(delayMs: 80, child: _QuickActions()),
               const SizedBox(height: AppSpace.xl),
-              // 1 · Teacher's Notes — the notebook leads, so the home reads
-              // as "my teacher knows me" before "I have another lesson".
-              const FadeInUp(
-                delayMs: 140,
-                child: _ExpandableSection(
-                  icon: Icons.menu_book,
-                  title: "Teacher's Notes",
-                  subtitle: 'What your teacher has noticed',
-                  initiallyExpanded: true,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _TeacherNotebookCard(),
-                      SizedBox(height: AppSpace.sm),
-                      _TeacherNotesCard(),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpace.md),
+              // Teacher's Notes moved to Tutor settings (dashboard answers
+              // "what do I do today", the notebook answers "what has my
+              // teacher noticed" — one tap away, not above the fold).
               // Progress Summary — mastery by skill (no XP).
               const FadeInUp(
                 delayMs: 260,
@@ -643,8 +626,8 @@ class _ExpandableSection extends StatelessWidget {
 /// Observations are generated live from the learner's facts and persisted
 /// across sessions; each is explainable — tap a note to see the evidence
 /// behind it. The live misconception card sits below for tap-through detail.
-class _TeacherNotebookCard extends ConsumerWidget {
-  const _TeacherNotebookCard();
+class TeacherNotebookCard extends ConsumerWidget {
+  const TeacherNotebookCard({super.key});
 
   static const _icons = {
     ObservationCategory.grammar: Icons.account_tree,
@@ -1252,8 +1235,8 @@ class _SkillBar extends StatelessWidget {
 }
 
 /// Misconception insights: what interferes, why, and what to practice.
-class _TeacherNotesCard extends ConsumerWidget {
-  const _TeacherNotesCard();
+class TeacherNotesCard extends ConsumerWidget {
+  const TeacherNotesCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

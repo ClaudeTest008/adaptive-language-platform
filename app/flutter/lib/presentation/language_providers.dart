@@ -161,16 +161,18 @@ final storiesProvider = FutureProvider<List<Story>>((ref) async {
 /// Voice settings (session-persistent, like themeMode). Engine choice and a
 /// playback-speed multiplier the learner sets in Voice Settings.
 ///
-/// DEFAULT = the device's own TTS (Google neural on-device): two consecutive
-/// human ear-tests confirmed both bundled Piper Spanish voices mispronouncing
-/// 'vaya', the trace pinned it inside the VITS/espeak pipeline, and sherpa's
-/// OfflineTts offers no SSML/phoneme/lexicon override. The device engine's
-/// es-ES voice was runtime-traced in Phase 14b with no such defect. Piper
-/// stays selectable (fully offline, no Google dependency) with the
-/// pronunciation respelling still applied for those who choose it.
+/// DEFAULTS SET BY HUMAN EAR TEST (2026-07-20, same sentence covering vaya /
+/// ll / rr / ñ, all three options heard back-to-back on the device):
+///   - Device TTS (Google): pronunciation correct, delivery "robotic".
+///   - Piper es_MX-claude-high (female): "vaya" still wrong even with the
+///     respelling, and the ll/y comes out far too hard.
+///   - Piper es_ES-davefx-medium (male): every sound correct, clearly the
+///     most natural of the three → SHIPPING DEFAULT.
 final speechEngineProvider =
-    StateProvider<SpeechEngine>((ref) => SpeechEngine.androidNeural);
-final speechSpeedProvider = StateProvider<double>((ref) => 1.0);
+    StateProvider<SpeechEngine>((ref) => SpeechEngine.piper);
+
+/// 0.8x: the ear test found 1.0 and 0.9 both still too fast for a learner.
+final speechSpeedProvider = StateProvider<double>((ref) => 0.8);
 
 /// Singletons: Piper holds a downloaded model + engines, the platform
 /// service holds STT state — both must survive engine switches.

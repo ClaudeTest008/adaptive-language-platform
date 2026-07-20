@@ -14,9 +14,9 @@ import '../ui.dart';
 final piperEsVoiceProvider = FutureProvider<String>((ref) async {
   try {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(piperEsVoicePrefKey) ?? 'es_ES-davefx-medium';
+    return prefs.getString(piperEsVoicePrefKey) ?? 'es_ES-sharvard-female';
   } catch (_) {
-    return 'es_ES-davefx-medium';
+    return 'es_ES-sharvard-female';
   }
 });
 
@@ -50,24 +50,24 @@ class VoiceSettingsScreen extends ConsumerWidget {
                 const SectionHeader(title: 'Voice engine'),
                 const SizedBox(height: AppSpace.md),
                 _EngineOption(
+                  value: SpeechEngine.piper,
+                  selected: engine == SpeechEngine.piper,
+                  title: 'Piper · recommended',
+                  subtitle: 'Offline neural voice (~60 MB download, no Google '
+                      'dependency). The most natural Spanish in our ear tests.',
+                  onTap: () => ref.read(speechEngineProvider.notifier).state =
+                      SpeechEngine.piper,
+                ),
+                _EngineOption(
                   value: SpeechEngine.androidNeural,
                   selected: engine == SpeechEngine.androidNeural,
-                  title: 'Device voice · recommended',
-                  subtitle: "The phone's built-in neural voice (Google/"
-                      'Samsung). Best Spanish pronunciation in our ear tests.',
+                  title: 'Device voice',
+                  subtitle: "The phone's built-in voice (Google/Samsung). "
+                      'Correct, but flatter than the offline voice.',
                   onTap: () => ref.read(speechEngineProvider.notifier).state =
                       SpeechEngine.androidNeural,
                 ),
                 const SizedBox(height: AppSpace.sm),
-                _EngineOption(
-                  value: SpeechEngine.piper,
-                  selected: engine == SpeechEngine.piper,
-                  title: 'Piper · fully offline',
-                  subtitle: 'Bundled neural voice (~60 MB download, no Google '
-                      'dependency). Known pronunciation quirks on some words.',
-                  onTap: () => ref.read(speechEngineProvider.notifier).state =
-                      SpeechEngine.piper,
-                ),
                 if (engine == SpeechEngine.piper) ...[
                   const SizedBox(height: AppSpace.sm),
                   _PiperStatusCard(piper: ref.watch(piperSpeechProvider)),
@@ -88,7 +88,7 @@ class VoiceSettingsScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpace.md),
                   Builder(builder: (context) {
                     final selected = ref.watch(piperEsVoiceProvider).value ??
-                        'es_ES-davefx-medium';
+                        'es_ES-sharvard-female';
                     return Column(
                       children: [
                         for (final e in piperSpanishVoices.entries) ...[
@@ -137,12 +137,14 @@ class VoiceSettingsScreen extends ConsumerWidget {
                 PrimaryButton(
                   label: 'Test voice',
                   icon: Icons.volume_up_rounded,
-                  // The sample deliberately includes 'vaya' — the word the
-                  // ear-test reported mispronounced — so voice changes can be
-                  // A/B'd from this button directly.
+                  // The sample covers every sound the ear tests flagged or
+                  // watch-list: vaya, llegó, llevar, lluvia, yo, ll, rr, ñ —
+                  // one tap A/Bs a whole voice.
                   onPressed: () => ref.read(speechServiceProvider).speak(
-                        'Hola, soy tu profesor de español. ¡Vaya, qué bien '
-                        'verte! Vamos a aprender juntos.',
+                        '¡Vaya! Ayer llegó la lluvia y yo quiero llevar el '
+                        'paraguas por la calle. El perro corre rápido. '
+                        'Mañana el joven trabaja, juega y viaja con su hijo. '
+                        'La mujer dijo que el jamón del viaje es mejor.',
                         langCode: ref.read(languageBcp47Provider),
                         speed: speed,
                       ),

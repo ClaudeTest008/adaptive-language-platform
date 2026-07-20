@@ -40,54 +40,76 @@ import 'piper_audio_cache.dart';
 enum PiperStatus { idle, downloading, extracting, loading, ready, error }
 
 class _PiperVoice {
-  const _PiperVoice(this.dir, this.model);
+  const _PiperVoice(this.dir, this.model, {this.sid = 0});
   final String dir;
   final String model;
+
+  /// Speaker id inside a multi-speaker model (sharvard ships two voices in
+  /// one file; sid 1 is the female speaker).
+  final int sid;
   String get url =>
       'https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/'
       '$dir.tar.bz2';
 }
 
 const _voices = {
-  // DEFAULT FLIPPED to davefx (Castilian male): a human ear-test confirmed
-  // claude-high (the previous female default) pronouncing 'vaya' as 'vaca',
-  // and the device trace pinned the defect inside that acoustic model.
-  // davefx is the voice all Phase-15 human listening sessions used, with no
-  // such report. claude-high stays selectable in Voice settings for anyone
-  // preferring the female voice despite the defect.
-  'es': _PiperVoice('vits-piper-es_ES-davefx-medium', 'es_ES-davefx-medium.onnx'),
+  // sharvard speaker 1 (Castilian female) — the listener's pick after a
+  // back-to-back device ear test of four voices. Ranking heard:
+  //   sharvard-female  : best female; ll/rr/ñ correct, 'vaya' acceptable,
+  //                      slight over-emphasis on the jota (j/g) — SHIPPED
+  //                      because the listener wants a female teacher.
+  //   davefx (male)    : most accurate overall — kept as the alternative.
+  //   claude-high (MX) : rejected — 'vaya' still wrong, ll/y far too hard.
+  //   Device TTS       : pronunciation fine, delivery flat/robotic.
+  'es': _PiperVoice(
+    'vits-piper-es_ES-sharvard-medium',
+    'es_ES-sharvard-medium.onnx',
+    sid: 1,
+  ),
   'en': _PiperVoice('vits-piper-en_US-amy-medium', 'en_US-amy-medium.onnx'),
 };
 
-/// Selectable Spanish voices. An ear-test reported claude-high mispronouncing
-/// 'vaya'; the trace shows the text reaching synthesis intact, which places
-/// the defect inside the voice model itself. The pronunciation fix is
-/// therefore a different acoustic model — davefx-medium is the Castilian male
-/// that was device-verified back in Phase 15. Pronunciation quality can only
-/// be judged by ear, so the choice belongs to the listener.
+/// Selectable Spanish voices, ordered by the human ear test (2026-07-20):
+/// davefx correct + natural; claude-high still wrong on 'vaya' and harsh on
+/// ll/y even with the respelling. Kept selectable for anyone who prefers a
+/// female voice and can live with that.
 const piperSpanishVoices = {
+  'es_ES-sharvard-female': (
+    voice: _PiperVoice(
+      'vits-piper-es_ES-sharvard-medium',
+      'es_ES-sharvard-medium.onnx',
+      sid: 1,
+    ),
+    label: 'Female · Castilian (recommended)',
+  ),
   'es_ES-davefx-medium': (
     voice:
         _PiperVoice('vits-piper-es_ES-davefx-medium', 'es_ES-davefx-medium.onnx'),
-    label: 'Male · Castilian accent (default)',
+    label: 'Male · Castilian (clearest pronunciation)',
+  ),
+  'es_ES-sharvard-male': (
+    voice: _PiperVoice(
+      'vits-piper-es_ES-sharvard-medium',
+      'es_ES-sharvard-medium.onnx',
+    ),
+    label: 'Male · Castilian (sharvard)',
   ),
   'es_MX-claude-high': (
     voice: _PiperVoice('vits-piper-es_MX-claude-high', 'es_MX-claude-high.onnx'),
-    label: 'Female · Mexican accent (known: says "vaya" oddly)',
+    label: 'Female · Mexican (not recommended: harsh ll/y)',
   ),
 };
 
 /// Prefs key for the selected Spanish Piper voice id.
 const piperEsVoicePrefKey = 'piper_es_voice_v1';
 
-/// SPEECH-ONLY pronunciation respellings for words the Piper/espeak-ng
-/// pipeline renders badly (human ear-tests reported 'vaya' coming out as
-/// 'vaca'). sherpa-onnx's OfflineTts takes plain text — no SSML, no phoneme
-/// input, no lexicon hook — so a documented respelling that phonemizes
-/// closer to the correct sound is the only in-engine lever left.
-/// 'vaia' → espeak-ng es [bˈaja] (vocalic i), near-identical to the correct
-/// [bˈaʝa] and nothing like [k]. Applied ONLY to the synthesis string; the
-/// learner always SEES the correct spelling.
+/// SPEECH-ONLY pronunciation respellings. sherpa-onnx's OfflineTts takes
+/// plain text — no SSML, no phoneme input, no lexicon hook — so respelling
+/// is the only in-engine lever. 'vaia' phonemizes to espeak-ng es [bˈaja],
+/// near-identical to the correct [bˈaʝa]. VERIFIED BY EAR on davefx (the
+/// default): 'vaya' now correct. It does NOT rescue claude-high.
+/// Applied ONLY to the synthesis string; the learner always SEES the
+/// correct spelling.
 const piperPronunciationFixes = {
   'vaya': 'vaia',
   'vayas': 'vaias',
@@ -119,11 +141,15 @@ class _LoadCmd {
 }
 
 class _GenCmd {
-  const _GenCmd(this.reqId, this.text, this.speed, this.outPath);
+  const _GenCmd(this.reqId, this.text, this.speed, this.outPath,
+      {this.sid = 0});
   final int reqId;
   final String text;
   final double speed;
   final String outPath;
+
+  /// Speaker id for multi-speaker models.
+  final int sid;
 }
 
 void _piperIsolateEntry(SendPort toMain) {
@@ -164,7 +190,8 @@ void _piperIsolateEntry(SendPort toMain) {
         }
         // Synchronous ONNX inference — but on THIS isolate, so the UI stays
         // responsive. One request at a time (main serializes).
-        final audio = engine.generate(text: msg.text, sid: 0, speed: msg.speed);
+        final audio =
+            engine.generate(text: msg.text, sid: msg.sid, speed: msg.speed);
         if (audio.samples.isEmpty) {
           toMain.send({'event': 'empty', 'reqId': msg.reqId});
           return;
@@ -472,7 +499,8 @@ class PiperSpeechService implements SpeechService {
           e['event'] == 'error',
     );
     final sw = Stopwatch()..start();
-    _toIsolate!.send(_GenCmd(reqId, sentence, speed, out));
+    _toIsolate!.send(_GenCmd(reqId, sentence, speed, out,
+        sid: _resolvedEsVoice?.sid ?? 0));
     final e = await reply.timeout(const Duration(seconds: 30), onTimeout: () {
       return {'event': 'error', 'msg': 'synth timeout'};
     });

@@ -7,6 +7,25 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
+### Changed (release-blocker pass)
+
+- **The AI Tutor opens straight into the conversation.** No menu screen: the
+  tab auto-starts today's lesson as soon as the Teacher Brain has chosen.
+  Back (top-left) returns to the dashboard and keeps the session; "Finish
+  this lesson" (records progress, starts fresh) lives in Tutor settings.
+- **Default Spanish voice is es_ES-davefx-medium.** A human ear-test
+  confirmed es_MX-claude-high pronouncing "vaya" as "vaca", and the device
+  trace pinned the defect inside that acoustic model. davefx is the voice
+  every Phase-15 human listening session used with no such report;
+  claude-high remains selectable, labelled with the known defect. Human
+  listening confirmation of davefx's pronunciation is still pending.
+- **Dashboard decluttered.** Five stacked sections removed (placeholder
+  daily-goals bars, recommendation list, learning journeys, roleplay
+  preview, recommended-next-lesson). The home is now: greeting → teacher →
+  progress rings → quick practice → teacher's notes → progress summary →
+  current focus. The ranked recommendation list (with tap-routing) moved to
+  Tutor settings.
+
 ### Added (voice, bilingual, visual-progress pass)
 
 - **Spanish voice picker** (Voice settings): Female Mexican (claude-high,

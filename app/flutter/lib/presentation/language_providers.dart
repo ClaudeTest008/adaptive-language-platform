@@ -174,6 +174,19 @@ final speechEngineProvider =
 /// 0.8x: the ear test found 1.0 and 0.9 both still too fast for a learner.
 final speechSpeedProvider = StateProvider<double>((ref) => 0.8);
 
+/// Which language the MICROPHONE should expect for the next utterance.
+/// Null = the lesson's target language (Spanish). The Android recogniser
+/// needs a locale up front and cannot auto-detect: with es-ES hard-wired,
+/// "I went to the store yesterday and bought some bread" came back as
+/// "i want to the story yesterday en bots and red" on the device. The
+/// learner can now tell the tutor which language they are about to speak.
+final micLanguageProvider = StateProvider<String?>((ref) => null);
+
+/// The BCP-47 tag the microphone should use: the learner's explicit choice,
+/// otherwise the target language.
+final micBcp47Provider = Provider<String>((ref) =>
+    ref.watch(micLanguageProvider) ?? ref.watch(languageBcp47Provider));
+
 /// Singletons: Piper holds a downloaded model + engines, the platform
 /// service holds STT state — both must survive engine switches.
 final platformSpeechProvider = Provider<PlatformSpeechService>(

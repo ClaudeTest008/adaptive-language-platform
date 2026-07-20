@@ -56,6 +56,14 @@ class DeterministicTeacherVoice {
     // situation-aware message — speak IT, never a canned rotation. All such
     // moments are marked by their rationale ("The learner …").
     if (plan.moment.rationale.startsWith('The learner')) {
+      // Free-chat beats used to return their message verbatim, skipping the
+      // used-phrasings guard below — the device showed the same opener twice
+      // in one conversation. Rotate to the first unused opener instead.
+      if (plan.moment.converse) {
+        for (final opener in TeacherIntelligenceEngine.converseOpeners) {
+          if (!context.usedPhrasings.contains(opener)) return opener;
+        }
+      }
       final socratic = plan.moment.socraticPrompt;
       return socratic == null
           ? plan.moment.message

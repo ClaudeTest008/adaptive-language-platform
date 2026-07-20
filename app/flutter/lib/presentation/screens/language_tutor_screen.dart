@@ -446,8 +446,7 @@ class _SessionState extends ConsumerState<_Session> {
     await speech.stop(); // barge-in
     if (!mounted) return;
     setState(() => _conv = _ConvState.listening);
-    final heard =
-        await speech.listen(langCode: ref.read(languageBcp47Provider));
+    final heard = await speech.listen(langCode: ref.read(micBcp47Provider));
     if (!mounted) return;
     if (heard == null || heard.trim().isEmpty) {
       setState(() => _conv = _ConvState.error);
@@ -621,6 +620,13 @@ class _SessionState extends ConsumerState<_Session> {
         ),
         _Composer(
           state: _conv,
+          micLanguage: ref.watch(micBcp47Provider),
+          onCycleMicLanguage: () {
+            final target = ref.read(languageBcp47Provider);
+            final current = ref.read(micBcp47Provider);
+            ref.read(micLanguageProvider.notifier).state =
+                current == target ? 'en-US' : null;
+          },
           status: _statusFor(_conv),
           typing: _typing,
           busy: session.busy,
@@ -664,6 +670,8 @@ class _SessionState extends ConsumerState<_Session> {
 class _Composer extends StatelessWidget {
   const _Composer({
     required this.state,
+    required this.micLanguage,
+    required this.onCycleMicLanguage,
     required this.status,
     required this.typing,
     required this.busy,
@@ -680,6 +688,10 @@ class _Composer extends StatelessWidget {
   });
 
   final _ConvState state;
+
+  /// BCP-47 tag the mic will listen with; tapping the chip switches it.
+  final String micLanguage;
+  final VoidCallback onCycleMicLanguage;
   final ({String label, AppTint tint})? status;
   final bool typing;
   final bool busy;
@@ -787,6 +799,20 @@ class _Composer extends StatelessWidget {
                     )
                   : const SizedBox(width: double.infinity),
             ),
+            // Which language the mic expects. The Android recogniser cannot
+            // auto-detect, so the learner says which one they are about to
+            // speak — English input decoded as Spanish came back as garbage.
+            if (micAvailable)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpace.sm),
+                child: SoftChip(
+                  icon: Icons.mic_none_rounded,
+                  label: micLanguage.toLowerCase().startsWith('es')
+                      ? 'Mic: Español'
+                      : 'Mic: English',
+                  onTap: onCycleMicLanguage,
+                ),
+              ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [

@@ -370,27 +370,78 @@ class TeacherIntelligenceEngine {
 
   /// The single correction worth making now — praise first, one thing, with a
   /// connection-anchored reason. Null when nothing needs correcting.
-  CorrectionPlan? correction(TeacherBrain brain) {
+  ///
+  /// [learnerMessage], when given, must RELATE to the weak concept before a
+  /// correction fires. A device session corrected a flawless "Hola, me llamo
+  /// Pedro" purely because the learner has a weak concept on file: the
+  /// correction was true of the learner but not of the sentence, which is
+  /// exactly what makes a tutor feel robotic. A real teacher corrects what
+  /// you just said.
+  CorrectionPlan? correction(TeacherBrain brain, {String? learnerMessage}) {
     final weak = brain.facts.grammar
         .where((g) => g.status == GrammarStatus.weak)
         .toList()
       ..sort((a, b) => a.confidence.compareTo(b.confidence));
     if (weak.isEmpty) return null;
     final g = weak.first;
+    if (learnerMessage != null && !_touchesConcept(learnerMessage, brain, g.conceptId)) {
+      return null;
+    }
     // Spanish-first, teacher-natural. Never dump the internal concept label
     // (g.name is an English curriculum tag like "Physical and emotional
     // states" — the exact robotic leak seen on device). The "why" anchors to
     // a Spanish family leaf the learner already holds.
-    final family = _familyOf(brain, g.conceptId);
+    // Only Spanish leaf names may appear: an English curriculum label like
+    // "present tense" leaking mid-sentence was the other half of the robotic
+    // correction seen on device.
+    final family = _familyOf(brain, g.conceptId)
+        .where((n) => !RegExp(r'[A-Z]').hasMatch(n[0]))
+        .toList();
     final why = family.isEmpty
-        ? 'es parte de un patrón que estamos construyendo juntos.'
-        : 'funciona igual que ${family.first.toLowerCase()}.';
+        ? 'Es parte de un patrón que estamos construyendo juntos.'
+        : 'Funciona igual que ${family.first.toLowerCase()}.';
     return CorrectionPlan(
       conceptId: g.conceptId,
       praise: 'Bien dicho, se entiende la idea.',
       correction: 'Afinemos un pequeño detalle.',
       why: why,
     );
+  }
+
+  /// True when [message] plausibly exercises [conceptId] — the concept's own
+  /// leaf name, or any word of its Spanish family, appears in what the
+  /// learner just wrote (accent- and case-insensitive).
+  bool _touchesConcept(String message, TeacherBrain brain, String conceptId) {
+    String fold(String s) => s
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u')
+        .replaceAll('ü', 'u');
+    final haystack = fold(message);
+    // Candidate words: the concept's own label plus its whole domain family,
+    // split into words. English label words (physical, states) simply never
+    // occur in Spanish input, so they cost nothing; Spanish leaves (tener,
+    // estar, hambre) are what actually match.
+    final names = <String>[
+      ...?brain.connections.nodes[conceptId]?.name.split(' '),
+      ..._familyOf(brain, conceptId).expand((n) => n.split(' ')),
+      ...brain.connections.clusters
+          .where((c) => c.memberIds.contains(conceptId))
+          .expand((c) => c.memberIds)
+          .map((m) => brain.connections.nodes[m]?.name ?? '')
+          .expand((n) => n.split(' ')),
+    ];
+    for (final raw in names) {
+      if (raw.isEmpty) continue;
+      final w = fold(raw);
+      // Short function words ('ser', 'vs', 'de') match anything — skip them.
+      if (w.length < 4) continue;
+      if (RegExp(r'\b' + w).hasMatch(haystack)) return true;
+    }
+    return false;
   }
 
   /// Builds the connection-first, often-Socratic moment for [decision].
@@ -536,6 +587,7 @@ class TeacherIntelligenceEngine {
     bool producedTarget = false,
     int turnsSinceCorrection = ConversationContext.neverCorrected,
     String? lastCorrectedConceptId,
+    String? learnerMessage,
   }) {
     final state = conversationState(brain, turn: turn);
     final closing = state.stage == LessonStage.reflection;
@@ -543,7 +595,7 @@ class TeacherIntelligenceEngine {
     // Correction cadence: even a real Spanish attempt is only corrected when
     // enough has been said since the last correction, and the same concept is
     // not re-corrected back-to-back.
-    final pending = correction(brain);
+    final pending = correction(brain, learnerMessage: learnerMessage);
     final sameConceptTooSoon = pending != null &&
         pending.conceptId == lastCorrectedConceptId &&
         turnsSinceCorrection < sameConceptGapTurns;

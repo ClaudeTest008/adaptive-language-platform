@@ -77,6 +77,7 @@ class LlmPipeline {
       producedTarget: learnerProducedTarget,
       turnsSinceCorrection: context.turnsSinceCorrection,
       lastCorrectedConceptId: context.lastCorrectedConceptId,
+      learnerMessage: userMessage,
     );
     final base = buildTeacherPrompt(
       brain: brain,

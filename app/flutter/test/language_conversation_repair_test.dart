@@ -565,6 +565,37 @@ void main() {
       c.dispose();
     });
 
+    test('a flawless sentence is never "corrected" (device bug)', () async {
+      final c = await _boot();
+      final brain = c.read(teacherBrainProvider).value!;
+      const eng = TeacherIntelligenceEngine();
+
+      // Device session: "Hola, me llamo Pedro." — perfect Spanish, unrelated
+      // to any weak concept — drew "Afinemos un pequeño detalle."
+      final plan = eng.plan(
+        brain,
+        turn: 1,
+        learnerIntent: LearnerIntent.statement,
+        producedTarget: true,
+        turnsSinceCorrection: ConversationContext.neverCorrected,
+        learnerMessage: 'Hola, me llamo Pedro.',
+      );
+      expect(plan.correction, isNull);
+
+      // A sentence that DOES touch the weak concept (classic ser/estar slip)
+      // may still be corrected.
+      final relevant =
+          eng.correction(brain, learnerMessage: 'Yo estar cansado hoy');
+      expect(relevant, isNotNull);
+      // …and its explanation never leaks an English curriculum label.
+      expect(relevant!.why, isNot(contains('present tense')));
+      expect(relevant.why[0], relevant.why[0].toUpperCase());
+
+      // Without a message the old behaviour stands (used by other callers).
+      expect(eng.correction(brain), isNotNull);
+      c.dispose();
+    });
+
     test('corrections keep a cadence instead of firing every turn', () async {
       final c = await _boot();
       final brain = c.read(teacherBrainProvider).value!;

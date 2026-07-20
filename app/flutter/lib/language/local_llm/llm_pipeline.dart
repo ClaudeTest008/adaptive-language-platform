@@ -106,7 +106,15 @@ class LlmPipeline {
     if (factAnswer == null && generate != null) {
       try {
         final neural = await generate(prompt);
-        if (neural != null && neural.trim().isNotEmpty) worded = neural.trim();
+        final text = neural?.trim() ?? '';
+        // A small model copies whatever dominates its context: on device it
+        // returned an earlier fallback line verbatim. A reply that merely
+        // repeats something already said is worse than the fallback, so it
+        // is rejected and the deterministic wording stands.
+        final echoesHistory = context.turns.any(
+          (t) => !t.fromLearner && t.text.trim() == text,
+        );
+        if (text.isNotEmpty && !echoesHistory) worded = text;
       } catch (_) {
         // Neural generator failure is never fatal — the deterministic voice
         // has already worded the same plan.

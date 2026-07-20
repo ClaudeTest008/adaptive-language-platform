@@ -118,6 +118,15 @@ LlmPrompt buildTeacherPrompt({
         'it ("¿Lo intentas?"). Never scold them for using English.');
     b.writeln('(Keep this focus in mind for later, but do not force it now: '
         '${plan.state.objective}.)');
+    // A small model will happily copy whatever pattern dominates its
+    // context. The tutor's own earlier fallback lines are in that history,
+    // and on device the model echoed one verbatim. Force the reply to be
+    // ABOUT the learner's words.
+    b.writeln('CRITICAL: your reply MUST mention something specific the '
+        'learner just wrote — a noun, place, person or activity from their '
+        'message. A generic reply such as "¡Qué interesante! Cuéntame un '
+        'poco más." is FORBIDDEN. Never repeat a sentence that already '
+        'appears earlier in this conversation.');
   } else {
     // Teaching turn — the brain decided WHAT/WHY; the model supplies HOW.
     b.writeln('THIS TURN — intent: ${plan.moment.intent.name}. '

@@ -161,7 +161,16 @@ class DeterministicTeacherVoice {
               ];
       case TeacherIntent.reflect:
       case TeacherIntent.previewNext:
-        final next = plan.reflection?.next;
+        // Curriculum objective names are ENGLISH labels ("Food", "Physical
+        // and emotional states"). Dropping one into a Spanish sentence
+        // produced "La próxima vez: Food." on device. Only a Spanish leaf
+        // name (lower-case) may be spoken inline.
+        final rawNext = plan.reflection?.next;
+        final next = (rawNext != null &&
+                rawNext.isNotEmpty &&
+                rawNext[0] == rawNext[0].toLowerCase())
+            ? rawNext
+            : null;
         return es
             ? [
                 'Hoy avanzaste. La próxima vez: ${next ?? 'seguimos construyendo'}.',

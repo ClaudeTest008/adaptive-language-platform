@@ -512,7 +512,11 @@ void main() {
       expect(at(5), TeacherIntent.practice);
       expect(at(6), TeacherIntent.challenge);
       expect(at(7), TeacherIntent.reflect);
-      expect(at(12), TeacherIntent.reflect); // past lesson length → recap
+      // The recap happens ONCE. Past it the teacher keeps teaching instead of
+      // repeating "today you progressed" every turn (device bug).
+      expect(at(8), isNot(TeacherIntent.reflect));
+      expect(at(9), isNot(TeacherIntent.reflect));
+      expect({at(8), at(9), at(10), at(11)}.length, greaterThan(1));
 
       // The closing turn carries a real recap plan (what improved, what's
       // next) — the "schedule tomorrow" seed.

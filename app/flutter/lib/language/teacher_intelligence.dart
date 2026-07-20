@@ -223,7 +223,21 @@ class TeacherIntelligenceEngine {
       LessonStage.reflection,
     ];
     if (turn <= 0) return LessonStage.greeting;
-    if (turn >= lessonLength - 1) return LessonStage.reflection;
+    if (turn >= lessonLength - 1) {
+      // The lesson recaps ONCE. Staying in reflection forever produced two
+      // consecutive "today you progressed / next time…" replies on device.
+      // After the recap the teacher keeps teaching, cycling through the
+      // working stages so a long session never loops one beat.
+      final past = turn - (lessonLength - 1);
+      if (past == 0) return LessonStage.reflection;
+      const continued = [
+        LessonStage.practice,
+        LessonStage.connection,
+        LessonStage.discovery,
+        LessonStage.challenge,
+      ];
+      return continued[(past - 1) % continued.length];
+    }
     return arc[turn.clamp(0, arc.length - 1)];
   }
 

@@ -1247,9 +1247,15 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
         current!.roleplay!.scenario.kind != scenario.kind;
     final sceneLines = <(bool, String)>[
       if (switching) (true, 'Muy bien, dejamos esa escena. Cambiamos de sitio.'),
+      // Spanish-first, properly punctuated. The old form
+      // '<title> — <setting>. <rationale>' mixed English title/rationale into
+      // one Spanish sentence, and the speech splitter carved it into an
+      // orphan bubble ("un café tranquilo.") with a run-on English support
+      // line ("A friendly chat A general conversation to keep momentum.").
       (
         true,
-        '${scenario.title} — ${scenario.setting}. ${scenario.rationale}'
+        'Vamos a una escena: ${scenario.setting}. ¡Empecemos! '
+            '— In English: ${scenario.title}. ${scenario.rationale}'
       ),
       if (resumeIndex > 0) (true, 'Seguimos donde lo dejamos.'),
       if (stage != null) (true, stage.prompt.text),

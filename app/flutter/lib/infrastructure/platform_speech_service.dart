@@ -207,6 +207,11 @@ class PlatformSpeechService implements SpeechService {
         ),
         onResult: (r) {
           if (r.finalResult && !completer.isCompleted) {
+            // Trace point for recognition testing: the exact string the
+            // platform recognizer returned, with its locale and confidence.
+            debugPrint('[STT] locale=$langCode conf='
+                '${r.confidence.toStringAsFixed(2)} '
+                'words="${r.recognizedWords}"');
             completer.complete(r.recognizedWords);
           }
         },

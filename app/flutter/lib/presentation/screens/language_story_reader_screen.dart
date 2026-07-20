@@ -219,7 +219,6 @@ class _LanguageStoryReaderScreenState
     }
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         // Four round actions left the title as "La lieb…". The book title is

@@ -57,7 +57,6 @@ class _LanguageOnboardingScreenState
   Widget build(BuildContext context) {
     final last = _page == _pages - 1;
     return Scaffold(
-      backgroundColor: Colors.transparent,
       body: AtmosphericBackground(
         child: SafeArea(
           child: Center(

@@ -87,7 +87,6 @@ class _LanguagePracticeScreenState
     final tones = AppTones.of(context);
     final last = session.index + 1 >= session.items.length;
     return Scaffold(
-      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text('Practice ${session.index + 1}/${session.items.length}'),
@@ -462,7 +461,6 @@ class _Summary extends ConsumerWidget {
     final accent =
         score >= 0.7 ? tones.solid(AppTint.mint) : tones.solid(AppTint.sun);
     return Scaffold(
-      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: const Text('Session complete'),

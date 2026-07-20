@@ -42,7 +42,6 @@ class _LanguageContentScreenState
 
     final tones = AppTones.of(context);
     return Scaffold(
-      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: const Text('Content Studio'),

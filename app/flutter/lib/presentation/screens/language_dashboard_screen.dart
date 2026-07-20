@@ -64,6 +64,10 @@ class LanguageDashboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpace.lg),
               const FadeInUp(delayMs: 60, child: _TutorHeroCard()),
+              const SizedBox(height: AppSpace.lg),
+              // Progress at a glance (Phase 7): rings instead of prose. The
+              // detailed per-skill bars stay inside Progress summary below.
+              const FadeInUp(delayMs: 70, child: _ProgressGlanceCard()),
               const SizedBox(height: AppSpace.xl),
               // Quick practice — the four ways in, one tap each.
               const FadeInUp(delayMs: 80, child: _QuickActions()),
@@ -1349,6 +1353,151 @@ class _RecommendedNextLessonCard extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Visual progress at a glance: three mastery rings (vocabulary, grammar,
+/// overall) plus the streak — real engine numbers, drawn instead of written.
+class _ProgressGlanceCard extends ConsumerWidget {
+  const _ProgressGlanceCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tones = AppTones.of(context);
+    final mastery = ref.watch(languageSkillMasteryProvider);
+    final brain = ref.watch(teacherBrainProvider).value;
+    if (mastery.isEmpty) return const SizedBox.shrink();
+    double of(LanguageSkill s) => mastery[s] ?? 0;
+    final overall = mastery.values.isEmpty
+        ? 0.0
+        : mastery.values.reduce((a, b) => a + b) / mastery.length;
+    final streak = brain?.identity.streakDays ?? 0;
+    return SoftCard(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.lg,
+        vertical: AppSpace.lg + 2,
+      ),
+      // Every cell is Expanded and labels ellipsize: the layout matrix caught
+      // the fixed Row overflowing at larger text scales.
+      child: Row(
+        children: [
+          Expanded(
+            child: _GlanceRing(
+              label: 'Overall',
+              value: overall,
+              color: tones.solid(AppTint.mint),
+            ),
+          ),
+          Expanded(
+            child: _GlanceRing(
+              label: 'Vocabulary',
+              value: of(LanguageSkill.vocabulary),
+              color: tones.solid(AppTint.sun),
+            ),
+          ),
+          Expanded(
+            child: _GlanceRing(
+              label: 'Grammar',
+              value: of(LanguageSkill.grammar),
+              color: tones.solid(AppTint.lilac),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '🔥',
+                  style: TextStyle(
+                    fontSize: 26,
+                    color: streak > 0 ? null : tones.inkSoft,
+                  ),
+                ),
+                const SizedBox(height: AppSpace.xs),
+                Text(
+                  '$streak-day',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: tones.ink,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  'streak',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: tones.inkSoft, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GlanceRing extends StatelessWidget {
+  const _GlanceRing({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final double value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final tones = AppTones.of(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: value.clamp(0.0, 1.0)),
+          duration: AppMotion.enter,
+          curve: AppMotion.curve,
+          builder: (context, v, _) => SizedBox(
+            width: 56,
+            height: 56,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 56,
+                  height: 56,
+                  child: CircularProgressIndicator(
+                    value: v,
+                    strokeWidth: 6,
+                    strokeCap: StrokeCap.round,
+                    color: color,
+                    backgroundColor: tones.cardMuted,
+                  ),
+                ),
+                Text(
+                  '${(v * 100).round()}%',
+                  style: TextStyle(
+                    color: tones.ink,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpace.xs + 2),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: tones.inkSoft, fontSize: 12),
+        ),
+      ],
     );
   }
 }

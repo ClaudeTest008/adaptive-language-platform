@@ -69,7 +69,6 @@ class _WhisperSettingsScreenState extends ConsumerState<WhisperSettingsScreen> {
     final tones = AppTones.of(context);
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: const Text('Offline speech (Whisper)'),

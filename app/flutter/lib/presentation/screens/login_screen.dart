@@ -161,7 +161,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final tones = AppTones.of(context);
     return Scaffold(
-      backgroundColor: Colors.transparent,
       body: AtmosphericBackground(
         child: CenteredBody(
           child: Padding(

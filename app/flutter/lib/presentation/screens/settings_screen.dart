@@ -15,7 +15,6 @@ class SettingsScreen extends ConsumerWidget {
     final error = Theme.of(context).colorScheme.error;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
       body: AtmosphericBackground(
         child: SafeArea(
           child: CenteredBody(

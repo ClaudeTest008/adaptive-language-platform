@@ -61,7 +61,12 @@ void main() {
     test('graded library covers a1-b1 with usable vocab + valid quizzes', () {
       final stories = parseStories(_storiesJson());
       // Progressive difficulty: every CEFR band the reader offers is stocked.
-      for (final level in [CefrLevel.a1, CefrLevel.a2, CefrLevel.b1]) {
+      for (final level in [
+        CefrLevel.a1,
+        CefrLevel.a2,
+        CefrLevel.b1,
+        CefrLevel.b2,
+      ]) {
         expect(stories.where((s) => s.level == level), isNotEmpty);
       }
       for (final s in stories) {
@@ -89,6 +94,10 @@ void main() {
         'es-a2-horarios',
         'es-b1-siesta',
         'es-b1-lenguas',
+        'es-b1-carta',
+        'es-b2-camino',
+        'es-a2-dialogo-llamada',
+        'es-b1-dialogo-devolucion',
       ]) {
         final s = stories.firstWhere((s) => s.id == id);
         expect(s.author, isNotEmpty, reason: id);

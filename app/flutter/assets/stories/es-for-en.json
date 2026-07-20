@@ -594,6 +594,174 @@
         { "prompt": "¿Dónde es oficial el aranés?",
           "options": ["En el Valle de Arán", "En Galicia", "En Baleares"], "answer": 0 }
       ]
+    },
+    {
+      "id": "es-b1-carta",
+      "title": "La carta que nunca llegó",
+      "author": "Historia original",
+      "level": "b1",
+      "topics": ["family", "history", "mystery"],
+      "vocabulary": [
+        { "word": "el desván", "meaning": "the attic" },
+        { "word": "el sello", "meaning": "the stamp" },
+        { "word": "dirigida a", "meaning": "addressed to" },
+        { "word": "marcharse", "meaning": "to leave, to go away" },
+        { "word": "despedirse", "meaning": "to say goodbye" },
+        { "word": "jubilado", "meaning": "retired" }
+      ],
+      "phrases": [
+        { "text": "Elena encontró la caja mientras limpiaba el desván de la casa de su abuela. Dentro había fotografías antiguas, un reloj parado y una carta cerrada con un sello de mil novecientos sesenta y ocho.",
+          "translation": "Elena found the box while she was cleaning the attic of her grandmother's house. Inside there were old photographs, a stopped clock, and a sealed letter with a stamp from nineteen sixty-eight.",
+          "conceptIds": ["es:a2:grammar:verbs:past-tenses:preterite-vs-imperfect"] },
+        { "text": "La carta iba dirigida a un tal Andrés Soler, en una calle de Valencia que ya no existía. La letra era elegante y cuidada, la letra de alguien que escribía con calma y con miedo al mismo tiempo.",
+          "translation": "The letter was addressed to a certain Andrés Soler, on a street in Valencia that no longer existed. The handwriting was elegant and careful, the handwriting of someone who wrote calmly and fearfully at the same time.",
+          "conceptIds": ["es:a2:grammar:verbs:past-tenses:imperfect"] },
+        { "text": "Esa noche, Elena habló con su madre por teléfono. —La abuela nunca me contó nada de ningún Andrés —dijo la madre—. Pero cuando era joven, antes de conocer al abuelo, vivió dos años en Valencia.",
+          "translation": "That night, Elena spoke with her mother on the phone. \"Grandma never told me anything about any Andrés,\" said her mother. \"But when she was young, before meeting Grandpa, she lived in Valencia for two years.\"",
+          "conceptIds": ["es:a2:grammar:verbs:past-tenses:preterite-vs-imperfect", "es:a2:conversation:phone-call"] },
+        { "text": "Elena no pudo dormir. ¿Quién era Andrés? ¿Por qué la abuela escribió aquella carta y nunca la envió? Si la abuela viviera todavía, podría preguntárselo directamente, pero ya solo quedaba el papel.",
+          "translation": "Elena couldn't sleep. Who was Andrés? Why did her grandmother write that letter and never send it? If her grandmother were still alive, she could ask her directly, but now only the paper remained.",
+          "conceptIds": ["es:b2:grammar:verbs:si-clauses:si-clauses-type2"] },
+        { "text": "Al día siguiente decidió abrirla. Dentro había pocas líneas: la abuela le pedía perdón a Andrés por marcharse sin despedirse, y le deseaba una vida feliz, aunque fuera lejos de ella.",
+          "translation": "The next day she decided to open it. Inside there were just a few lines: her grandmother asked Andrés to forgive her for leaving without saying goodbye, and wished him a happy life, even if it was far from her.",
+          "conceptIds": ["es:b2:grammar:verbs:past-subjunctive:imperfect-subjunctive"] },
+        { "text": "Elena buscó el nombre en internet durante horas. Encontró a un Andrés Soler, profesor jubilado, que vivía en un pueblo cerca de Valencia. Le escribió un correo corto y sincero explicando toda la historia.",
+          "translation": "Elena searched for the name on the internet for hours. She found an Andrés Soler, a retired teacher, who lived in a village near Valencia. She wrote him a short, sincere email explaining the whole story.",
+          "conceptIds": ["es:a2:grammar:pronouns:object-pronouns:indirect-object"] },
+        { "text": "La respuesta llegó dos días después. «Esperé esa carta durante cincuenta años», escribía el anciano. «Dile a tu familia que nunca olvidé a su abuela, y que gracias a ella aprendí a querer de verdad.»",
+          "translation": "The reply arrived two days later. \"I waited fifty years for that letter,\" the old man wrote. \"Tell your family that I never forgot your grandmother, and that thanks to her I learned what real love is.\"",
+          "conceptIds": ["es:b2:grammar:verbs:reported-speech:reported-statements"] },
+        { "text": "Elena imprimió el correo y lo guardó en la caja, junto a la carta. Pensó que algunas historias no terminan nunca del todo: solamente esperan, en silencio, a que alguien las encuentre.",
+          "translation": "Elena printed the email and kept it in the box, next to the letter. She thought that some stories never quite end: they simply wait, in silence, for someone to find them.",
+          "conceptIds": ["es:a2:grammar:pronouns:object-pronouns:direct-object"] }
+      ],
+      "questions": [
+        { "prompt": "¿Dónde encontró Elena la carta?",
+          "options": ["En el desván de la casa de su abuela", "En un pueblo cerca de Valencia", "En la oficina de correos"], "answer": 0 },
+        { "prompt": "¿Qué pedía la abuela en la carta?",
+          "options": ["Dinero para el viaje", "Perdón por marcharse sin despedirse", "Noticias de la familia"], "answer": 1 },
+        { "prompt": "¿Qué hizo Andrés cuando recibió el correo de Elena?",
+          "options": ["No respondió nunca", "Viajó a Valencia", "Respondió que esperó esa carta cincuenta años"], "answer": 2 }
+      ]
+    },
+    {
+      "id": "es-b2-camino",
+      "title": "El Camino de Santiago",
+      "author": "Artículo cultural",
+      "level": "b2",
+      "topics": ["culture", "travel", "history"],
+      "vocabulary": [
+        { "word": "el peregrino", "meaning": "the pilgrim" },
+        { "word": "la ruta", "meaning": "the route" },
+        { "word": "el albergue", "meaning": "the hostel (pilgrim lodging)" },
+        { "word": "la credencial", "meaning": "the pilgrim passport" },
+        { "word": "el sello", "meaning": "the stamp" },
+        { "word": "a pie", "meaning": "on foot" }
+      ],
+      "phrases": [
+        { "text": "Cada año, cientos de miles de personas de todo el mundo caminan hacia una misma ciudad del noroeste de España: Santiago de Compostela, en Galicia. Lo hacen por una red de rutas que se conoce, desde la Edad Media, como el Camino de Santiago.",
+          "translation": "Every year, hundreds of thousands of people from all over the world walk toward the same city in the northwest of Spain: Santiago de Compostela, in Galicia. They do so along a network of routes known, since the Middle Ages, as the Way of St. James.",
+          "conceptIds": ["es:b2:grammar:verbs:voice:se-constructions"] },
+        { "text": "El origen de la tradición está en el siglo nueve, cuando, según la leyenda, fue descubierta en Galicia la tumba del apóstol Santiago. La noticia se extendió por toda Europa y la ciudad se convirtió en uno de los grandes destinos de peregrinación del continente, junto a Roma y Jerusalén.",
+          "translation": "The origin of the tradition lies in the ninth century when, according to legend, the tomb of the apostle St. James was discovered in Galicia. The news spread across Europe and the city became one of the continent's great pilgrimage destinations, alongside Rome and Jerusalem.",
+          "conceptIds": ["es:b2:grammar:verbs:voice:passive-ser"] },
+        { "text": "Existen muchos caminos, pero el más conocido es el Camino Francés, que cruza el norte de la península desde los Pirineos y recorre unos ochocientos kilómetros. En 1993, esta ruta fue declarada Patrimonio de la Humanidad por la Unesco, por su valor histórico, artístico y cultural.",
+          "translation": "There are many routes, but the best known is the French Way, which crosses the north of the peninsula from the Pyrenees and covers some eight hundred kilometres. In 1993, this route was declared a World Heritage Site by Unesco for its historical, artistic and cultural value.",
+          "conceptIds": ["es:b2:grammar:verbs:voice:passive-ser"] },
+        { "text": "La vida diaria del peregrino sigue un ritmo sencillo. Se camina por la mañana, se descansa a mediodía y se duerme en albergues, unos alojamientos baratos pensados para quienes hacen la ruta. Cada peregrino lleva una credencial, un documento que se sella en cada etapa del viaje.",
+          "translation": "The pilgrim's daily life follows a simple rhythm. You walk in the morning, rest at midday, and sleep in albergues, cheap lodgings designed for those doing the route. Each pilgrim carries a credential, a document that is stamped at every stage of the journey.",
+          "conceptIds": ["es:b2:grammar:verbs:voice:se-constructions"] },
+        { "text": "Para recibir la Compostela, el certificado tradicional, hay que demostrar al menos los últimos cien kilómetros a pie, o doscientos en bicicleta. Por eso muchos caminantes empiezan en Sarria, un pueblo gallego situado justo a la distancia necesaria para conseguir el documento.",
+          "translation": "To receive the Compostela, the traditional certificate, you must prove at least the final hundred kilometres on foot, or two hundred by bicycle. That is why many walkers start in Sarria, a Galician town located at exactly the distance needed to obtain the document.",
+          "conceptIds": ["es:b2:vocabulary:debate"] },
+        { "text": "Hoy el Camino ya no es solo una ruta religiosa. Muchos peregrinos dicen que empezaron a caminar por deporte o por curiosidad, y que terminaron encontrando algo más: tiempo para pensar, conversaciones con desconocidos y una forma distinta de viajar, lenta y sin pantallas.",
+          "translation": "Today the Camino is no longer just a religious route. Many pilgrims say that they started walking for sport or out of curiosity, and that they ended up finding something more: time to think, conversations with strangers, and a different way of travelling, slow and screen-free.",
+          "conceptIds": ["es:b2:grammar:verbs:reported-speech:reported-statements"] },
+        { "text": "Quien llega a la plaza del Obradoiro, frente a la catedral, suele repetir la misma idea: si tuviera que resumir el viaje en una palabra, no elegiría «distancia», sino «camino». Porque lo importante, dicen los que vuelven, nunca fue llegar.",
+          "translation": "Those who reach Obradoiro Square, in front of the cathedral, tend to repeat the same idea: if they had to sum up the journey in one word, they would not choose \"distance\" but \"way.\" Because the important thing, say those who return, was never the arrival.",
+          "conceptIds": ["es:b2:grammar:verbs:si-clauses:si-clauses-type2"] }
+      ],
+      "questions": [
+        { "prompt": "¿Qué ocurrió, según la leyenda, en el siglo nueve?",
+          "options": ["Se construyó la plaza del Obradoiro", "Fue descubierta la tumba del apóstol Santiago", "La Unesco declaró la ruta Patrimonio de la Humanidad"], "answer": 1 },
+        { "prompt": "¿Qué es la credencial?",
+          "options": ["Un documento que se sella en cada etapa", "Un billete de tren a Sarria", "Un mapa del Camino Francés"], "answer": 0 },
+        { "prompt": "¿Por qué muchos caminantes empiezan en Sarria?",
+          "options": ["Porque está en los Pirineos", "Porque allí está la catedral", "Porque queda a la distancia mínima para la Compostela"], "answer": 2 }
+      ]
+    },
+    {
+      "id": "es-a2-dialogo-llamada",
+      "title": "Diálogo: una llamada de teléfono",
+      "author": "Diálogo original",
+      "level": "a2",
+      "topics": ["daily-life", "friendship", "plans"],
+      "vocabulary": [
+        { "word": "llamar", "meaning": "to call" },
+        { "word": "quedar", "meaning": "to arrange to meet" },
+        { "word": "el mensaje", "meaning": "the message" },
+        { "word": "libre", "meaning": "free (available)" },
+        { "word": "recoger", "meaning": "to pick up, to collect" }
+      ],
+      "phrases": [
+        { "text": "—¿Sí? ¿Quién es? —Hola, Marta, soy Pablo. Te llamé antes dos veces, pero no contestaste. —Perdona, estaba en el gimnasio y dejé el móvil en la mochila. ¿Pasa algo?",
+          "translation": "\"Yes? Who is it?\" \"Hi Marta, it's Pablo. I called you twice earlier, but you didn't answer.\" \"Sorry, I was at the gym and I left my phone in my backpack. Is something wrong?\"",
+          "conceptIds": ["es:a2:conversation:phone-call", "es:a2:grammar:verbs:past-tenses:preterite-vs-imperfect"] },
+        { "text": "—No, nada grave. Mañana voy a ir al centro para recoger unas entradas del concierto. ¿Quieres venir conmigo? —¡Claro! Por la mañana estoy libre. ¿A qué hora vas a salir de casa?",
+          "translation": "\"No, nothing serious. Tomorrow I'm going to go into town to pick up some concert tickets. Do you want to come with me?\" \"Of course! I'm free in the morning. What time are you going to leave home?\"",
+          "conceptIds": ["es:a2:grammar:verbs:future:ir-a-infinitive"] },
+        { "text": "—A las diez, más o menos. Podemos quedar delante de la estación y después tomar un café. —Perfecto. Si llego tarde, te mando un mensaje, pero normalmente soy muy puntual.",
+          "translation": "\"At ten, more or less. We can meet in front of the station and have a coffee afterwards.\" \"Perfect. If I'm running late, I'll send you a message, but I'm usually very punctual.\"",
+          "conceptIds": ["es:a2:vocabulary:daily-life"] },
+        { "text": "—Genial. Entonces, hasta mañana a las diez. ¡Que descanses! —Igualmente, Pablo. Gracias por llamar, y perdona otra vez por lo del gimnasio. ¡Hasta mañana!",
+          "translation": "\"Great. See you tomorrow at ten, then. Sleep well!\" \"You too, Pablo. Thanks for calling, and sorry again about the gym thing. See you tomorrow!\"",
+          "conceptIds": ["es:a2:conversation:phone-call"] }
+      ],
+      "questions": [
+        { "prompt": "¿Por qué no contestó Marta antes?",
+          "options": ["Estaba en el gimnasio", "No quería hablar con Pablo", "Perdió el móvil"], "answer": 0 },
+        { "prompt": "¿Para qué va Pablo al centro mañana?",
+          "options": ["Para trabajar", "Para recoger unas entradas", "Para ir al gimnasio"], "answer": 1 },
+        { "prompt": "¿Dónde van a quedar?",
+          "options": ["En el gimnasio", "En casa de Marta", "Delante de la estación"], "answer": 2 }
+      ]
+    },
+    {
+      "id": "es-b1-dialogo-devolucion",
+      "title": "Diálogo: devolver una compra",
+      "author": "Diálogo original",
+      "level": "b1",
+      "topics": ["shopping", "daily-life"],
+      "vocabulary": [
+        { "word": "devolver", "meaning": "to return (an item)" },
+        { "word": "el recibo", "meaning": "the receipt" },
+        { "word": "el agujero", "meaning": "the hole" },
+        { "word": "la manga", "meaning": "the sleeve" },
+        { "word": "el reembolso", "meaning": "the refund" },
+        { "word": "cambiar", "meaning": "to exchange" }
+      ],
+      "phrases": [
+        { "text": "—Buenos días. Quería devolver este jersey que compré la semana pasada. Cuando llegué a casa, vi que tenía un pequeño agujero en la manga. —Vaya, lo siento mucho. ¿Tiene usted el recibo de la compra?",
+          "translation": "\"Good morning. I'd like to return this jumper I bought last week. When I got home, I saw it had a small hole in the sleeve.\" \"Oh no, I'm very sorry. Do you have the receipt for the purchase?\"",
+          "conceptIds": ["es:a2:conversation:returning-item", "es:a2:grammar:verbs:past-tenses:preterite-regular"] },
+        { "text": "—Sí, aquí lo tiene. Pagué con tarjeta el martes por la tarde. —Perfecto, todo en orden. Podemos ofrecerle dos opciones: le devolvemos el dinero o se lo cambiamos por otro de la misma talla.",
+          "translation": "\"Yes, here it is. I paid by card on Tuesday afternoon.\" \"Perfect, everything is in order. We can offer you two options: we refund your money, or we exchange it for another one in the same size.\"",
+          "conceptIds": ["es:a2:grammar:pronouns:object-pronouns:double-object"] },
+        { "text": "—¿Sería posible probarme otro antes de decidir? Si el nuevo estuviera en perfecto estado, preferiría el cambio, porque el color me encanta. —Por supuesto. Los probadores están al fondo, a la derecha.",
+          "translation": "\"Would it be possible to try another one on before deciding? If the new one were in perfect condition, I'd prefer the exchange, because I love the colour.\" \"Of course. The fitting rooms are at the back, on the right.\"",
+          "conceptIds": ["es:b1:grammar:verbs:conditional:conditional-simple", "es:b2:grammar:verbs:si-clauses:si-clauses-type2"] },
+        { "text": "—Este está impecable. Me lo quedo, entonces. Muchas gracias por su amabilidad. —A usted. Le imprimo un nuevo recibo con el cambio. Que tenga un buen día, y disculpe otra vez las molestias.",
+          "translation": "\"This one is spotless. I'll keep it, then. Thank you very much for your kindness.\" \"Thank you. I'll print you a new receipt with the exchange. Have a good day, and apologies once again for the inconvenience.\"",
+          "conceptIds": ["es:a2:vocabulary:shopping"] }
+      ],
+      "questions": [
+        { "prompt": "¿Por qué quiere devolver el jersey el cliente?",
+          "options": ["Le queda pequeño", "Tiene un agujero en la manga", "No le gusta el color"], "answer": 1 },
+        { "prompt": "¿Qué dos opciones le ofrece la dependienta?",
+          "options": ["Reembolso o cambio", "Un descuento o un vale", "Esperar o reclamar"], "answer": 0 },
+        { "prompt": "¿Qué decide el cliente al final?",
+          "options": ["Pide el reembolso", "Se queda con otro jersey igual", "Se marcha sin nada"], "answer": 1 }
+      ]
     }
   ]
 }

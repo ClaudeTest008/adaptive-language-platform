@@ -61,7 +61,6 @@ class _LlmSettingsScreenState extends ConsumerState<LlmSettingsScreen> {
     final spec = ref.watch(selectedLlmSpecProvider);
     final ready = _state.status == LlmModelStatus.ready;
     return Scaffold(
-      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: const Text('On-device teacher voice (LLM)'),

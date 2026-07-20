@@ -25,7 +25,6 @@ class LanguageGoalsScreen extends ConsumerWidget {
     final tones = AppTones.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
       body: AtmosphericBackground(
         child: SafeArea(
           child: Center(

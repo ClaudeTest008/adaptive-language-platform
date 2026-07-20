@@ -26,7 +26,6 @@ class LanguageConceptScreen extends ConsumerWidget {
 
     if (curriculum == null || node == null) {
       return Scaffold(
-        backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           title: const Text('Concept'),
@@ -60,7 +59,6 @@ class LanguageConceptScreen extends ConsumerWidget {
     ];
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: Text(node.name),

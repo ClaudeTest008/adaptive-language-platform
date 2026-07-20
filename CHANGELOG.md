@@ -7,6 +7,52 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
+### Added (voice, bilingual, visual-progress pass)
+
+- **Spanish voice picker** (Voice settings): Female Mexican (claude-high,
+  default) vs Male Castilian (davefx-medium). Applies on the next app start —
+  the Piper isolate loads exactly one model per process (the ANR-fix
+  invariant). The Test-voice sample now contains "vaya", the word the
+  ear-test reported mispronounced, so voices can be A/B'd by ear directly.
+- **Dashboard progress at a glance**: three animated mastery rings
+  (overall / vocabulary / grammar — real engine numbers) plus the streak.
+- **Content**: +64 curriculum nodes introducing **B2** (imperfect
+  subjunctive, si-clauses type 2, conditional perfect, se-constructions,
+  passive with ser, reported speech; debate/environment/technology
+  vocabulary) and A2 pronunciation minimal pairs (pero/perro, pena/peña)
+  that reach the speaking drills; 4 new readers (a B1 story, a B2 cultural
+  article on the Camino de Santiago, two dialogues), all with vocabulary and
+  comprehension questions. Relations 57 → 79.
+
+### Changed
+
+- **Bilingual bridging (tutor)**: the conversation prompt now meets English
+  input — react, give the Spanish version after "En español:", invite the
+  learner to try it, never scold. The offline conversation openers carry
+  screen-only English support halves (the speech gate keeps them out of the
+  audio).
+- **Speech capture**: the silence gate calibrates the room's noise floor from
+  its first five frames (threshold = max(0.015, 2.5× noise)) — the fixed
+  threshold sat below the device room's ambient level, so every capture ran
+  the full 12 s. Whisper's hard `language: 'es'` pin is now per-utterance
+  auto-detection, so English speech is no longer force-decoded as Spanish.
+  Recognition **accuracy remains unmeasured** — that needs human speech into
+  the device microphone.
+
+### Fixed
+
+- **The "vaya"→"vaca" mispronunciation is the voice model's, not the app's.**
+  Device trace: `[PIPER] synth text="¡Vaya, qué bien verte!"` — the string
+  entering synthesis is intact, and the text layer has no letter-altering
+  transform (regression-tested). The defect lives inside the
+  es_MX-claude-high VITS model; the picker above is the remediation.
+  Synthesis input is now logged per sentence for future voice triage.
+- **Every pushed route had a latent black band behind its app bar** — a
+  transparent Scaffold with no shell canvas behind it (tab screens sit inside
+  HomeShell's themed Scaffold; pushed routes don't). Removed the transparent
+  background from all 11 pushed screens; caught on the voice-settings
+  screenshot.
+
 ### Changed (tutor simplification pass)
 
 - **The AI Tutor conversation screen is a conversation again.** The five

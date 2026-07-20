@@ -95,6 +95,83 @@ void main() {
     });
   });
 
+  group('translate reveal (Phase 4 fix)', () {
+    test('vocabularyGloss glosses known words, never invents unknown ones',
+        () async {
+      final c = await _boot();
+      final curriculum = c.read(curriculumProvider).value!;
+      // 'manzana' is seeded vocabulary; 'zanahoria' is not in the curriculum.
+      final gloss = vocabularyGloss('La manzana es roja', curriculum);
+      expect(gloss.toLowerCase(), contains('manzana'));
+      expect(gloss, contains('='));
+      expect(vocabularyGloss('zzz qqq', curriculum), isEmpty);
+      c.dispose();
+    });
+
+    test('translateLatest produces an offline gloss for a Spanish-only reply',
+        () async {
+      final c = await _boot();
+      final tutor = c.read(tutorSessionProvider.notifier);
+      await tutor.start(TutorMode.teacher);
+      // Force a latest tutor reply with NO native support half but with
+      // curriculum vocabulary in it, then ask for the on-demand translation.
+      final s = c.read(tutorSessionProvider)!;
+      c.read(tutorSessionProvider.notifier).state = s.copyWith(
+        transcript: [...s.transcript, (true, 'Tengo hambre y como una manzana')],
+      );
+      await tutor.translateLatest();
+      final after = c.read(tutorSessionProvider)!;
+      expect(after.translating, isFalse);
+      // No neural model under test → the deterministic gloss tier answers.
+      expect(after.latestTranslation, isNotNull);
+      expect(after.latestTranslation!, contains('='));
+      expect(after.latestTranslation!.toLowerCase(), contains('manzana'));
+      c.dispose();
+    });
+
+    test('teacher-authored lines translate from the authored map', () async {
+      expect(authoredTranslation('¡Hola de nuevo! ¿Seguimos donde lo dejamos?'),
+          contains('pick up where we left off'));
+      // Sentence-wise assembly across two authored lines.
+      expect(
+        authoredTranslation(
+            '¡Vas muy bien! Sigamos. Tu turno: dilo con tus propias palabras.'),
+        isNotNull,
+      );
+      // A line we did not author is never guessed.
+      expect(authoredTranslation('El gato duerme en la mesa.'), isNull);
+
+      final c = await _boot();
+      final tutor = c.read(tutorSessionProvider.notifier);
+      await tutor.start(TutorMode.teacher);
+      final s = c.read(tutorSessionProvider)!;
+      c.read(tutorSessionProvider.notifier).state = s.copyWith(
+        transcript: [
+          ...s.transcript,
+          (true, '¡Hola de nuevo! ¿Seguimos donde lo dejamos?'),
+        ],
+      );
+      await tutor.translateLatest();
+      expect(c.read(tutorSessionProvider)!.latestTranslation,
+          contains('pick up where we left off'));
+      c.dispose();
+    });
+
+    test('a new exchange clears the on-demand translation', () async {
+      final c = await _boot();
+      final tutor = c.read(tutorSessionProvider.notifier);
+      await tutor.start(TutorMode.teacher);
+      final s = c.read(tutorSessionProvider)!;
+      c.read(tutorSessionProvider.notifier).state = s.copyWith(
+        transcript: [...s.transcript, (true, 'Tengo hambre.')],
+      );
+      await tutor.translateLatest();
+      await tutor.send('Hello.');
+      expect(c.read(tutorSessionProvider)!.latestTranslation, isNull);
+      c.dispose();
+    });
+  });
+
   group('live tutor conversation', () {
     test('greeting stays a greeting — never opens with a correction',
         () async {

@@ -18,6 +18,7 @@ import 'package:adaptive_language_platform/presentation/screens/language_practic
 import 'package:adaptive_language_platform/presentation/screens/language_tutor_screen.dart';
 import 'package:adaptive_language_platform/presentation/screens/login_screen.dart';
 import 'package:adaptive_language_platform/presentation/screens/settings_screen.dart';
+import 'package:adaptive_language_platform/presentation/screens/tutor_settings_screen.dart';
 import 'package:adaptive_language_platform/presentation/ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -102,6 +103,7 @@ void main() {
     'login': () => const LoginScreen(),
     'settings': () => const SettingsScreen(),
     'content-studio': () => const LanguageContentScreen(),
+    'tutor-settings': () => const TutorSettingsScreen(),
     'whisper-settings': () => const WhisperSettingsScreen(),
     'llm-settings': () => const LlmSettingsScreen(),
   };

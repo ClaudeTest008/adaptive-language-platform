@@ -33,20 +33,31 @@ class _LanguageTutorScreenState extends ConsumerState<LanguageTutorScreen> {
     final session = ref.watch(tutorSessionProvider);
     return Scaffold(
       backgroundColor: Colors.transparent,
+      // Phase 2 simplification: the conversation screen carries only the
+      // conversation. Back (in session) ends the lesson and records it;
+      // everything configurable lives behind the one settings button.
       appBar: AppBar(
+        leading: session == null
+            ? null
+            : Padding(
+                padding: const EdgeInsets.only(left: AppSpace.md),
+                child: CircleIconButton(
+                  icon: Icons.arrow_back_rounded,
+                  size: 42,
+                  tooltip: 'End session',
+                  onTap: () =>
+                      ref.read(tutorSessionProvider.notifier).reset(),
+                ),
+              ),
         title: const Text('AI Tutor'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: AppSpace.md),
             child: CircleIconButton(
-              icon: session == null
-                  ? Icons.grid_view_rounded
-                  : Icons.restart_alt_rounded,
+              icon: Icons.grid_view_rounded,
               size: 42,
-              tooltip: session == null ? 'Voice settings' : 'New session',
-              onTap: session == null
-                  ? () => context.push('/voice-settings')
-                  : () => ref.read(tutorSessionProvider.notifier).reset(),
+              tooltip: 'Tutor settings',
+              onTap: () => context.push('/tutor-settings'),
             ),
           ),
         ],
@@ -538,7 +549,6 @@ class _Session extends ConsumerStatefulWidget {
 }
 
 class _SessionState extends ConsumerState<_Session> {
-  bool _voiceOn = false;
   _ConvState _conv = _ConvState.idle;
   int _spokenCount = 0;
 
@@ -612,10 +622,10 @@ class _SessionState extends ConsumerState<_Session> {
       }
       return;
     }
-    setState(() {
-      _conv = _ConvState.processing;
-      _voiceOn = true; // speak the reply back during a voice conversation
-    });
+    setState(() => _conv = _ConvState.processing);
+    // A voice conversation speaks the reply back (app-level setting, so the
+    // choice survives the session and lives in Tutor settings).
+    ref.read(tutorVoiceRepliesProvider.notifier).state = true;
     widget.onSend(heard);
   }
 
@@ -655,20 +665,22 @@ class _SessionState extends ConsumerState<_Session> {
     final session = widget.session;
     final tones = AppTones.of(context);
     final speech = ref.watch(speechServiceProvider);
-    final mode = _modes.firstWhere((m) => m.mode == session.mode);
     final target = ref.watch(selectedLanguageProvider);
     final native = target == 'es' ? 'en' : 'es';
     final mentor =
         ref.watch(teacherSupportModeProvider) == TeacherSupportMode.mentor;
     final translate = ref.watch(tutorTranslateProvider);
+    final voiceOn = ref.watch(tutorVoiceRepliesProvider);
     final lastTutorIdx = session.transcript.lastIndexWhere((t) => t.$1);
 
     // Auto-speak each new tutor turn while voice replies are on.
     final tutorTurns = session.transcript.where((t) => t.$1).length;
-    if (_voiceOn && tutorTurns > _spokenCount && !session.busy) {
+    if (voiceOn && tutorTurns > _spokenCount && !session.busy) {
       _spokenCount = tutorTurns;
       final last = session.transcript.lastWhere((t) => t.$1);
       WidgetsBinding.instance.addPostFrameCallback((_) => _speak(last.$2));
+    } else if (!voiceOn) {
+      _spokenCount = tutorTurns; // toggling on later must not replay history
     }
 
     // Follow the conversation: a new turn, or more streamed text on the last
@@ -682,62 +694,8 @@ class _SessionState extends ConsumerState<_Session> {
 
     return Column(
       children: [
-        // Session context chips — what the teacher is working on right now.
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpace.lg,
-            0,
-            AppSpace.lg,
-            AppSpace.sm,
-          ),
-          child: Wrap(
-            spacing: AppSpace.sm - 2,
-            runSpacing: AppSpace.sm - 2,
-            alignment: WrapAlignment.center,
-            children: [
-              SoftChip(
-                icon: mode.icon,
-                tint: AppTint.mint,
-                label: '${mode.title} mode',
-              ),
-              if (session.context.focusConcept != null)
-                SoftChip(
-                  icon: Icons.center_focus_strong,
-                  tint: AppTint.mint,
-                  label: 'Focus: ${session.context.focusConcept!.name}',
-                ),
-              SoftChip(
-                icon: Icons.lightbulb_outline,
-                tint: AppTint.sun,
-                label:
-                    '${session.context.misconceptions.length} misconceptions in context',
-              ),
-              if (speech.available)
-                SoftChip(
-                  icon: _voiceOn
-                      ? Icons.volume_up_rounded
-                      : Icons.volume_off_rounded,
-                  muted: !_voiceOn,
-                  label: 'Voice replies',
-                  onTap: () => setState(() {
-                    _voiceOn = !_voiceOn;
-                    _spokenCount = tutorTurns; // don't replay history
-                  }),
-                ),
-              // Immersion vs Mentor (Phase 21): mentor shows English support
-              // under Spanish replies; immersion hides it. Audio is Spanish
-              // either way.
-              SoftChip(
-                icon: mentor ? Icons.school_outlined : Icons.public,
-                label: mentor ? 'Mentor' : 'Immersion',
-                onTap: () =>
-                    ref.read(teacherSupportModeProvider.notifier).state = mentor
-                        ? TeacherSupportMode.immersion
-                        : TeacherSupportMode.mentor,
-              ),
-            ],
-          ),
-        ),
+        // Phase 2: no chip wall. The conversation IS the screen; teaching
+        // state and toggles live in Tutor settings (top-right).
         Expanded(
           child: ListView(
             controller: _scroll,
@@ -803,7 +761,14 @@ class _SessionState extends ConsumerState<_Session> {
                           ),
                         if (revealTranslation)
                           _TranslationReveal(
-                            native: parts?.support ?? '',
+                            // Tier 1: the native half the teacher already
+                            // wrote. Tier 2/3 (neural translation, vocabulary
+                            // gloss) are produced on demand by
+                            // translateLatest and arrive via session state.
+                            native: (parts?.support.trim().isNotEmpty ?? false)
+                                ? parts!.support
+                                : (session.latestTranslation ?? ''),
+                            translating: session.translating,
                             nativeName: native == 'en' ? 'English' : 'Spanish',
                           ),
                       ],
@@ -842,8 +807,15 @@ class _SessionState extends ConsumerState<_Session> {
               FocusManager.instance.primaryFocus?.unfocus();
             }
           },
-          onToggleTranslate: () =>
-              ref.read(tutorTranslateProvider.notifier).update((v) => !v),
+          onToggleTranslate: () {
+            final on = ref.read(tutorTranslateProvider.notifier).state =
+                !ref.read(tutorTranslateProvider);
+            // Turning the reveal on produces a translation when the reply has
+            // no native half (neural model, else vocabulary gloss).
+            if (on) {
+              ref.read(tutorSessionProvider.notifier).translateLatest();
+            }
+          },
         ),
       ],
     );
@@ -1033,10 +1005,17 @@ class _Composer extends StatelessWidget {
 /// target-language-only (no native half exists to show offline), it says so
 /// honestly rather than inventing a translation.
 class _TranslationReveal extends StatelessWidget {
-  const _TranslationReveal({required this.native, required this.nativeName});
+  const _TranslationReveal({
+    required this.native,
+    required this.nativeName,
+    this.translating = false,
+  });
 
   final String native;
   final String nativeName;
+
+  /// An on-demand translation is being produced (neural model path).
+  final bool translating;
 
   @override
   Widget build(BuildContext context) {
@@ -1064,8 +1043,10 @@ class _TranslationReveal extends StatelessWidget {
               child: Text(
                 has
                     ? native
-                    : 'No $nativeName translation for this reply — it was '
-                        'spoken in the target language only.',
+                    : translating
+                        ? 'Translating…'
+                        : 'No $nativeName translation is available for this '
+                            'reply offline.',
                 style: TextStyle(
                   color: tones.ink,
                   fontSize: 13.5,

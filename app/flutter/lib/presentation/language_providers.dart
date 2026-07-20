@@ -918,6 +918,8 @@ class TutorSessionState {
     this.busy = false,
     this.conversation = const ConversationContext(),
     this.roleplay,
+    this.latestTranslation,
+    this.translating = false,
   });
 
   final TutorMode mode;
@@ -937,11 +939,22 @@ class TutorSessionState {
   /// scene resumes next time.
   final RoleplayProgress? roleplay;
 
+  /// English translation of the LATEST tutor reply, produced on demand when
+  /// the reply had no native support half (see [TutorSessionController
+  /// .translateLatest]). Cleared whenever a new reply arrives.
+  final String? latestTranslation;
+
+  /// True while a translation of the latest reply is being produced.
+  final bool translating;
+
   TutorSessionState copyWith({
     List<(bool, String)>? transcript,
     bool? busy,
     ConversationContext? conversation,
     RoleplayProgress? roleplay,
+    String? latestTranslation,
+    bool? translating,
+    bool clearTranslation = false,
   }) => TutorSessionState(
     mode: mode,
     context: context,
@@ -949,8 +962,16 @@ class TutorSessionState {
     busy: busy ?? this.busy,
     conversation: conversation ?? this.conversation,
     roleplay: roleplay ?? this.roleplay,
+    latestTranslation:
+        clearTranslation ? null : (latestTranslation ?? this.latestTranslation),
+    translating: clearTranslation ? false : (translating ?? this.translating),
   );
 }
+
+/// Whether tutor replies are spoken aloud automatically. App-level (settings)
+/// rather than session-local, so the AI Tutor settings screen owns it; the
+/// mic conversation flow still switches it on when the learner talks.
+final tutorVoiceRepliesProvider = StateProvider<bool>((ref) => false);
 
 class TutorSessionController extends Notifier<TutorSessionState?> {
   @override
@@ -1058,6 +1079,74 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
   /// Phase 36: returns the real GGUF wording generator when — and only when —
   /// a verified model is installed AND the engine loads. Anything else → null
   /// → the deterministic voice words the plan. Never fabricates readiness.
+  /// Produces an English rendering of the LATEST tutor reply for the
+  /// Translate reveal. Three honest tiers:
+  ///
+  /// 1. The reply's own native support half — shown directly by the UI, this
+  ///    method is not called for it.
+  /// 2. The on-device GGUF model translating the Spanish (when installed) —
+  ///    a real translation, produced by the same generator seam as replies.
+  /// 3. A deterministic word-by-word vocabulary gloss from the curriculum.
+  ///
+  /// Never placeholder text: when none of these exist, the reveal keeps its
+  /// honest "spoken in the target language only" note.
+  Future<void> translateLatest() async {
+    final s = state;
+    if (s == null || s.translating || s.latestTranslation != null) return;
+    final text =
+        s.transcript.lastWhere((t) => t.$1, orElse: () => (false, '')).$2;
+    if (text.trim().isEmpty) return;
+    final target = ref.read(selectedLanguageProvider);
+    final native = target == 'es' ? 'en' : 'es';
+    // Tier 1 exists → the UI already shows it; nothing to produce.
+    if (splitTeacherReply(text, target, native).support.trim().isNotEmpty) {
+      return;
+    }
+    // Tier 1.5: lines the deterministic voice authored carry an authored
+    // English half — exact, free, and never a guess.
+    final authored = authoredTranslation(text);
+    if (authored != null) {
+      state = s.copyWith(latestTranslation: authored, translating: false);
+      return;
+    }
+    state = s.copyWith(translating: true);
+    String? translation;
+    try {
+      final generate = await _neuralGenerator();
+      if (generate != null) {
+        final neural = await generate(LlmPrompt(
+          system:
+              'You are a translator. Translate the following Spanish message '
+              'into natural English. Reply with ONLY the English translation, '
+              'nothing else.',
+          user: text,
+          constraints: LlmConstraints(
+            targetLanguage: native,
+            nativeLanguage: target,
+            mentorMode: true,
+            maxCorrections: 0,
+          ),
+        ));
+        if (neural != null && neural.trim().isNotEmpty) {
+          translation = neural.trim();
+        }
+      }
+    } catch (_) {
+      // Model failure → fall through to the gloss; never a crash.
+    }
+    if (translation == null) {
+      final curriculum = ref.read(curriculumProvider).value;
+      if (curriculum != null) {
+        final gloss = vocabularyGloss(text, curriculum);
+        if (gloss.isNotEmpty) translation = 'Word by word: $gloss';
+      }
+    }
+    state = state?.copyWith(
+      translating: false,
+      latestTranslation: translation,
+    );
+  }
+
   Future<Future<String?> Function(LlmPrompt prompt)?> _neuralGenerator({
     void Function(String partial)? onPartial,
   }) async {
@@ -1160,7 +1249,12 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
     final message = sanitizeUserInput(rawMessage);
     final s = state;
     if (s == null || s.busy || message.isEmpty) return;
-    state = s.copyWith(transcript: [...s.transcript, (false, message)], busy: true);
+    // A new exchange invalidates the on-demand translation of the old reply.
+    state = s.copyWith(
+      transcript: [...s.transcript, (false, message)],
+      busy: true,
+      clearTranslation: true,
+    );
 
     // Conversation/Immersion: the learner's turn is production — score it
     // and move the conversationAbility signal on the scenario concept.

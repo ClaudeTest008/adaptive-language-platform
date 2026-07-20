@@ -206,6 +206,129 @@ String _fold(String s) => s
     .replaceAll('ú', 'u')
     .replaceAll('ü', 'u');
 
+/// Human-authored translations of the deterministic voice's own Spanish
+/// lines. These sentences are OURS — written in this codebase — so their
+/// English halves can be authored too, not guessed. Tier between "the reply
+/// already carried support" and the neural model: exact-match lookup, zero
+/// cost, zero invention.
+const authoredLineTranslations = <String, String>{
+  // Greetings / warm-up.
+  '¡Hola de nuevo! ¿Seguimos donde lo dejamos?':
+      'Hello again! Shall we pick up where we left off?',
+  '¡Qué bueno verte! ¿Empezamos?': 'Great to see you! Shall we begin?',
+  '¡Hola! ¿Cómo va el día?': 'Hello! How is your day going?',
+  'Me alegro de verte otra vez. ¿Listo?': 'Glad to see you again. Ready?',
+  '¡Buenas! ¿Con qué te apetece empezar?':
+      'Hi! What would you like to start with?',
+  // Free-conversation openers.
+  '¡Qué interesante! Cuéntame un poco más.':
+      'How interesting! Tell me a bit more.',
+  'Ah, ¿sí? ¿Y cómo fue eso?': 'Oh really? And how was that?',
+  'Vaya, qué bien. ¿Qué más me cuentas?':
+      'Well, how nice. What else can you tell me?',
+  'Me alegra saberlo. ¿Desde cuándo?': 'Glad to hear it. Since when?',
+  'Entiendo. ¿Y qué piensas tú de eso?':
+      'I see. And what do you think about that?',
+  'Suena interesante. Cuéntame los detalles.':
+      'Sounds interesting. Tell me the details.',
+  // Review.
+  'Antes de seguir, repasemos un momento lo que ya sabes.':
+      'Before we go on, let’s take a moment to review what you know.',
+  'Demos un paso atrás y afiancemos lo aprendido.':
+      'Let’s step back and consolidate what you’ve learned.',
+  'Sin prisa: revisemos juntos antes de avanzar.':
+      'No rush — let’s review together before moving on.',
+  'Volvamos un momento a lo anterior; así se queda mejor.':
+      'Let’s go back to the earlier point for a moment; it sticks better.',
+  'Repasar no es perder tiempo. Vamos a ello.':
+      'Reviewing is not wasted time. Let’s get to it.',
+  // Encouragement.
+  '¡Vas muy bien! Sigamos.': 'You’re doing really well! Let’s continue.',
+  'Me gusta tu progreso. Continuemos.': 'I like your progress. Let’s go on.',
+  '¡Un paso más y lo tienes!': 'One more step and you’ve got it!',
+  'Se nota que estás practicando. Sigamos así.':
+      'I can tell you’ve been practising. Let’s keep it up.',
+  'Muy bien, de verdad. ¿Continuamos?': 'Really good. Shall we continue?',
+  'Cada vez te sale más natural.': 'It comes out more naturally every time.',
+  // Practice / challenge.
+  'Tu turno: dilo con tus propias palabras.':
+      'Your turn: say it in your own words.',
+  'Inténtalo ahora, sin miedo.': 'Try it now — don’t be afraid.',
+  'Pruébalo tú. Si sale torcido, lo arreglamos juntos.':
+      'You try it. If it comes out crooked, we’ll fix it together.',
+  'Ahora tú. No importa si dudas.': 'Now you. It’s fine to hesitate.',
+  'Venga, dime cómo lo dirías.': 'Go on, tell me how you would say it.',
+  // Roleplay flow.
+  'Seguimos donde lo dejamos.': 'We pick up where we left off.',
+  'Muy bien, dejamos esa escena. Cambiamos de sitio.':
+      'Alright, we’ll leave that scene. Let’s change places.',
+  '¡Escena completada! Lo hiciste muy bien. Seguimos hablando cuando quieras.':
+      'Scene complete! You did really well. We can keep talking whenever '
+          'you like.',
+  '¿Recuerdas?': 'Do you remember?',
+};
+
+/// The authored English for [text] when the whole reply is made of lines the
+/// deterministic voice authored — exact match first, then sentence-by-
+/// sentence (a reply is often greeting + follow-up). Null when any part is
+/// not ours to translate.
+String? authoredTranslation(String text) {
+  final whole = authoredLineTranslations[text.trim()];
+  if (whole != null) return whole;
+  // Sentence-wise: every sentence must be an authored line.
+  final sentences = text
+      .split(RegExp(r'(?<=[.!?…])\s+'))
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
+  if (sentences.length < 2) return null;
+  // Greedy: an authored key may itself span several sentences ("¡Vas muy
+  // bien! Sigamos."), so at each position try the longest run that matches.
+  final parts = <String>[];
+  var i = 0;
+  while (i < sentences.length) {
+    String? hit;
+    var consumed = 0;
+    for (var j = sentences.length; j > i; j--) {
+      hit = authoredLineTranslations[sentences.sublist(i, j).join(' ')];
+      if (hit != null) {
+        consumed = j - i;
+        break;
+      }
+    }
+    if (hit == null) return null;
+    parts.add(hit);
+    i += consumed;
+  }
+  return parts.join(' ');
+}
+
+/// Deterministic word-by-word gloss of [text] from the curriculum's own
+/// vocabulary translations — the honest offline fallback for the tutor's
+/// Translate reveal when a reply has no native half and no neural model is
+/// installed. Returns '' when no word in [text] is in the curriculum; it
+/// NEVER invents a translation for an unknown word.
+String vocabularyGloss(String text, Curriculum curriculum) {
+  // Lemma → native translation, folded for accent-insensitive matching.
+  final lexicon = <String, (String, String)>{};
+  for (final node in curriculum.graph.nodes.values) {
+    if (node is! VocabularyConceptNode || node.translations.isEmpty) continue;
+    final translation = node.translations[curriculum.nativeLanguage] ??
+        node.translations.values.first;
+    lexicon.putIfAbsent(_fold(node.lemma), () => (node.lemma, translation));
+  }
+  final seen = <String>{};
+  final pairs = <String>[];
+  for (final raw in text.split(RegExp(r'[^\wáéíóúüñÁÉÍÓÚÜÑ]+'))) {
+    if (raw.length < 2) continue;
+    final folded = _fold(raw);
+    if (!seen.add(folded)) continue;
+    final hit = lexicon[folded];
+    if (hit != null) pairs.add('${hit.$1} = ${hit.$2}');
+  }
+  return pairs.join(' · ');
+}
+
 /// Explains [word] through the learner's own knowledge: connection first,
 /// mental model when one covers the concept, dictionary translation last.
 /// Derived entirely from the brain + curriculum — no invented content.

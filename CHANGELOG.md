@@ -7,6 +7,33 @@ Changes before 2026-07-12 belong to the exam-platform lineage; see git history a
 
 ## [Unreleased]
 
+### Changed (tutor simplification pass)
+
+- **The AI Tutor conversation screen is a conversation again.** The five
+  chips of teaching state (mode, focus, misconception count, voice replies,
+  mentor/immersion) no longer sit above every session. The screen is: back
+  (ends and records the lesson), the transcript, the voice-first bar. All
+  configuration — voice replies (now app-level), mentor/immersion, voice,
+  AI-model and speech-recognition links — plus a read-only "what your
+  teacher is working on" card moved to the new **Tutor settings** screen
+  (`/tutor-settings`, top-right of the tutor).
+
+### Fixed
+
+- **The Translate button now actually translates.** Previously it only
+  revealed the native half the reply already carried — which most authored
+  Spanish replies don't have — so it usually showed "no translation". It now
+  resolves through honest offline tiers, in order: (1) the reply's own
+  support half; (1.5) authored English for the deterministic voice's own
+  Spanish lines (our sentences, our authored translations); (2) the
+  on-device GGUF model asked to translate, when installed; (3) a word-by-word
+  gloss from the curriculum's vocabulary; else an honest "not available
+  offline" note. Device-verified: the session greeting reveals "Hello again!
+  Shall we pick up where we left off?".
+- Tutor settings is a pushed route and keeps the themed canvas — a
+  transparent scaffold exposed a black band behind the app bar (caught by
+  the first device screenshot of the screen).
+
 ### Added (validation pass)
 
 - **Layout-safety matrix** (`test/language_layout_test.dart`). A RenderFlex

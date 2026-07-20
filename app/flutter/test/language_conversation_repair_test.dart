@@ -548,6 +548,23 @@ void main() {
       c.dispose();
     });
 
+    test('the teacher opens a roleplay at the challenge stage', () async {
+      final c = await _boot();
+      final tutor = c.read(tutorSessionProvider.notifier);
+      await tutor.start(TutorMode.teacher);
+      // Walk the lesson to the challenge stage; the teacher starts the scene
+      // itself — the learner never has to ask for it.
+      for (final msg in ['Hola.', 'Tengo hambre.', 'Sí.', 'Vale.', 'Bien.']) {
+        await tutor.send(msg);
+        if (c.read(tutorSessionProvider)!.roleplay != null) break;
+      }
+      final s = c.read(tutorSessionProvider)!;
+      expect(s.roleplay, isNotNull,
+          reason: 'the arc must open a scene without a learner request');
+      expect(s.roleplay!.done, isFalse);
+      c.dispose();
+    });
+
     test('corrections keep a cadence instead of firing every turn', () async {
       final c = await _boot();
       final brain = c.read(teacherBrainProvider).value!;

@@ -158,11 +158,18 @@ final storiesProvider = FutureProvider<List<Story>>((ref) async {
   return storiesForLevel(all, target);
 });
 
-/// Voice settings (session-persistent, like themeMode). Engine choice —
-/// Piper (offline neural, default) with the platform engine as fallback —
-/// and a playback-speed multiplier the learner sets in Voice Settings.
+/// Voice settings (session-persistent, like themeMode). Engine choice and a
+/// playback-speed multiplier the learner sets in Voice Settings.
+///
+/// DEFAULT = the device's own TTS (Google neural on-device): two consecutive
+/// human ear-tests confirmed both bundled Piper Spanish voices mispronouncing
+/// 'vaya', the trace pinned it inside the VITS/espeak pipeline, and sherpa's
+/// OfflineTts offers no SSML/phoneme/lexicon override. The device engine's
+/// es-ES voice was runtime-traced in Phase 14b with no such defect. Piper
+/// stays selectable (fully offline, no Google dependency) with the
+/// pronunciation respelling still applied for those who choose it.
 final speechEngineProvider =
-    StateProvider<SpeechEngine>((ref) => SpeechEngine.piper);
+    StateProvider<SpeechEngine>((ref) => SpeechEngine.androidNeural);
 final speechSpeedProvider = StateProvider<double>((ref) => 1.0);
 
 /// Singletons: Piper holds a downloaded model + engines, the platform
@@ -1301,6 +1308,32 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
       return;
     }
 
+    // The TEACHER decides when to roleplay (Priority 1: the teacher leads):
+    // when the lesson arc reaches its challenge stage and no scene is
+    // running, the teacher opens one — applied practice with today's
+    // material, not a feature the learner must discover.
+    // Only a plain conversational beat may be redirected into the scene: a
+    // question, a request, or anything answerable from facts keeps its
+    // normal handling (the first version of this hijacked "What is my
+    // name?" into the roleplay).
+    final upcomingTurn = s.conversation.turns.length + 1;
+    if (s.roleplay == null &&
+        intent == LearnerIntent.statement &&
+        answerFromFacts(message, ref.read(learnerFactsProvider)) == null &&
+        ref
+                .read(teacherIntelligenceProvider)
+                .stageForTurn(upcomingTurn) ==
+            LessonStage.challenge) {
+      // Record the learner's turn first so the conversation stays honest.
+      state = s.copyWith(
+        conversation: s.conversation
+            .withTurn(ConversationTurn(fromLearner: true, text: message)),
+      );
+      await startRoleplay(preserveSession: true);
+      state = state?.copyWith(busy: false);
+      return;
+    }
+
     // Live streaming bubble (Step 3): the model fills this in token-by-token,
     // so the learner sees words appear instead of waiting for the whole reply.
     final liveIndex = state?.transcript.length ?? 0;
@@ -1368,7 +1401,20 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
     RoleplayProgress? nextRoleplay;
     String? stageLine;
     final rp = s.roleplay;
-    if (rp != null && !rp.done) {
+    // Meta-turns PAUSE the scene rather than advancing it — asking the
+    // teacher something is not playing your line. Everything else
+    // (statements, greetings inside the scene, free Spanish) advances.
+    const metaIntents = {
+      LearnerIntent.question,
+      LearnerIntent.confusion,
+      LearnerIntent.grammarRequest,
+      LearnerIntent.exampleRequest,
+      LearnerIntent.translationRequest,
+      LearnerIntent.vocabularyRequest,
+      LearnerIntent.practiceRequest,
+    };
+    final scenePlay = !metaIntents.contains(intent);
+    if (rp != null && !rp.done && scenePlay) {
       nextRoleplay = advanceRoleplay(rp);
       stageLine = nextRoleplay.done
           // Closing a scene hands the conversation back instead of just

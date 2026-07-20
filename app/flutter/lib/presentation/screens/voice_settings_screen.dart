@@ -50,11 +50,21 @@ class VoiceSettingsScreen extends ConsumerWidget {
                 const SectionHeader(title: 'Voice engine'),
                 const SizedBox(height: AppSpace.md),
                 _EngineOption(
+                  value: SpeechEngine.androidNeural,
+                  selected: engine == SpeechEngine.androidNeural,
+                  title: 'Device voice · recommended',
+                  subtitle: "The phone's built-in neural voice (Google/"
+                      'Samsung). Best Spanish pronunciation in our ear tests.',
+                  onTap: () => ref.read(speechEngineProvider.notifier).state =
+                      SpeechEngine.androidNeural,
+                ),
+                const SizedBox(height: AppSpace.sm),
+                _EngineOption(
                   value: SpeechEngine.piper,
                   selected: engine == SpeechEngine.piper,
-                  title: 'Piper · offline neural',
-                  subtitle: 'Free on-device neural voice (sherpa-onnx). '
-                      'Downloads a ~60 MB voice model on first use.',
+                  title: 'Piper · fully offline',
+                  subtitle: 'Bundled neural voice (~60 MB download, no Google '
+                      'dependency). Known pronunciation quirks on some words.',
                   onTap: () => ref.read(speechEngineProvider.notifier).state =
                       SpeechEngine.piper,
                 ),
@@ -103,15 +113,6 @@ class VoiceSettingsScreen extends ConsumerWidget {
                     );
                   }),
                 ],
-                const SizedBox(height: AppSpace.sm),
-                _EngineOption(
-                  value: SpeechEngine.androidNeural,
-                  selected: engine == SpeechEngine.androidNeural,
-                  title: 'Device TTS · fallback',
-                  subtitle: 'The built-in Google/Samsung voice on this phone.',
-                  onTap: () => ref.read(speechEngineProvider.notifier).state =
-                      SpeechEngine.androidNeural,
-                ),
                 const SizedBox(height: AppSpace.xl),
                 const SectionHeader(title: 'Speech speed'),
                 const SizedBox(height: AppSpace.md),

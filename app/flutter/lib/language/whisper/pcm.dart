@@ -44,9 +44,14 @@ class SilenceDetector {
     this.speechThreshold = 0.015,
     this.trailingSilenceFrames = 12,
     this.maxFrames = 120,
+    this.calibrationFrames = 5,
   });
 
-  /// RMS above this counts as speech.
+  /// Floor for what counts as speech. The EFFECTIVE threshold adapts upward
+  /// from the measured noise floor: in the device room the ambient RMS sat
+  /// above this fixed value, so silence was never detected and every capture
+  /// ran to the 12 s cap. The first [calibrationFrames] frames (the gap
+  /// between tapping the mic and starting to talk) measure the room instead.
   final double speechThreshold;
 
   /// Quiet frames after speech that end the utterance (12 × 100 ms = 1.2 s).
@@ -55,16 +60,38 @@ class SilenceDetector {
   /// Hard cap regardless of speech (120 × 100 ms = 12 s).
   final int maxFrames;
 
+  /// Leading frames used to estimate the room's noise floor.
+  final int calibrationFrames;
+
   bool _heardSpeech = false;
   int _silentRun = 0;
   int _frames = 0;
+  double _noiseSum = 0;
 
   bool get heardSpeech => _heardSpeech;
+
+  /// The RMS a frame must exceed to count as speech: the configured floor,
+  /// or 2.5× the calibrated room noise, whichever is higher.
+  double get effectiveThreshold {
+    if (calibrationFrames == 0 || _frames < calibrationFrames) {
+      return speechThreshold;
+    }
+    final noise = _noiseSum / calibrationFrames;
+    final adaptive = noise * 2.5;
+    return adaptive > speechThreshold ? adaptive : speechThreshold;
+  }
 
   /// Returns true when capture should stop.
   bool addFrame(double rms) {
     _frames++;
-    if (rms >= speechThreshold) {
+    if (_frames <= calibrationFrames) {
+      // Calibration window: measure the room. Loud speech that starts
+      // immediately still registers (it will also exceed the threshold on
+      // the frames that follow), so nothing is lost.
+      _noiseSum += rms;
+      return _frames >= maxFrames;
+    }
+    if (rms >= effectiveThreshold) {
       _heardSpeech = true;
       _silentRun = 0;
     } else if (_heardSpeech) {

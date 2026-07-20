@@ -612,13 +612,22 @@ class TeacherIntelligenceEngine {
   /// real reaction from the learner's message; these are what the offline
   /// deterministic path says, so they must not be a single line repeated every
   /// chat turn. Rotated by conversation position in [_converseMoment].
+  /// Spanish-first with an English support half (Phase 5 bilingual grace):
+  /// the speech gate keeps the English out of the audio, mentor mode shows it
+  /// under the bubble, and an A1 learner chatting in English is met, not
+  /// stonewalled with Spanish they cannot parse yet.
   static const converseOpeners = [
-    '¡Qué interesante! Cuéntame un poco más.',
-    'Ah, ¿sí? ¿Y cómo fue eso?',
-    'Vaya, qué bien. ¿Qué más me cuentas?',
-    'Me alegra saberlo. ¿Desde cuándo?',
-    'Entiendo. ¿Y qué piensas tú de eso?',
-    'Suena interesante. Cuéntame los detalles.',
+    '¡Qué interesante! Cuéntame un poco más. '
+        '— In English: how interesting — tell me a little more.',
+    'Ah, ¿sí? ¿Y cómo fue eso? — In English: oh really? How was that?',
+    'Vaya, qué bien. ¿Qué más me cuentas? '
+        '— In English: how nice! What else can you tell me?',
+    'Me alegra saberlo. ¿Desde cuándo? '
+        '— In English: glad to hear it. Since when?',
+    'Entiendo. ¿Y qué piensas tú de eso? '
+        '— In English: I see. What do you think about it?',
+    'Suena interesante. Cuéntame los detalles. '
+        '— In English: sounds interesting — tell me the details.',
   ];
 
   /// A free-conversation beat: react to the learner and keep the exchange

@@ -63,7 +63,9 @@ void main() {
     });
 
     test('stops after speech followed by trailing silence', () {
-      final d = SilenceDetector(trailingSilenceFrames: 3, maxFrames: 100);
+      // calibrationFrames: 0 → the pre-adaptive contract, unchanged.
+      final d = SilenceDetector(
+          trailingSilenceFrames: 3, maxFrames: 100, calibrationFrames: 0);
       expect(d.addFrame(0.5), isFalse); // speech
       expect(d.addFrame(0.4), isFalse);
       expect(d.addFrame(0.001), isFalse); // silence 1
@@ -73,12 +75,41 @@ void main() {
     });
 
     test('speech resets the silence run', () {
-      final d = SilenceDetector(trailingSilenceFrames: 2, maxFrames: 100);
+      final d = SilenceDetector(
+          trailingSilenceFrames: 2, maxFrames: 100, calibrationFrames: 0);
       d.addFrame(0.5);
       d.addFrame(0.001);
       d.addFrame(0.5); // speech again — run resets
       expect(d.addFrame(0.001), isFalse);
       expect(d.addFrame(0.001), isTrue);
+    });
+
+    test('adapts to a noisy room instead of hearing it as speech', () {
+      // Device finding: ambient RMS ~0.02 sat above the fixed 0.015
+      // threshold, so "silence" was never detected and every capture ran the
+      // full 12 s. With calibration, room noise sets the effective threshold
+      // and real speech still triggers, so trailing silence now ends capture.
+      final d = SilenceDetector(
+          trailingSilenceFrames: 3, maxFrames: 120, calibrationFrames: 5);
+      for (var i = 0; i < 5; i++) {
+        expect(d.addFrame(0.02), isFalse); // calibration: noisy room
+      }
+      expect(d.effectiveThreshold, closeTo(0.05, 1e-9)); // 0.02 × 2.5
+      expect(d.addFrame(0.02), isFalse); // ambient — NOT speech any more
+      expect(d.heardSpeech, isFalse);
+      d.addFrame(0.3); // real speech
+      expect(d.heardSpeech, isTrue);
+      d.addFrame(0.02); // back to ambient = silence 1
+      d.addFrame(0.02); // 2
+      expect(d.addFrame(0.02), isTrue); // 3 → stop (no more 12 s captures)
+    });
+
+    test('a quiet room keeps the configured floor', () {
+      final d = SilenceDetector(calibrationFrames: 3);
+      d.addFrame(0.001);
+      d.addFrame(0.001);
+      d.addFrame(0.001);
+      expect(d.effectiveThreshold, 0.015); // floor wins over 0.0025
     });
   });
 

@@ -261,7 +261,12 @@ void _whisperIsolateEntry(SendPort out) {
             whisper: sherpa.OfflineWhisperModelConfig(
               encoder: encoder,
               decoder: decoder,
-              language: 'es',
+              // Bilingual tutor (Phase 5/6): the learner may speak English,
+              // Spanish or a mix. An empty language string lets Whisper's
+              // own language detection choose per utterance instead of
+              // force-decoding English speech as Spanish (which produced
+              // garbage transcripts for English input).
+              language: '',
               task: 'transcribe',
             ),
             tokens: tokens,
@@ -292,7 +297,8 @@ void _whisperIsolateEntry(SendPort out) {
         out.send(WhisperTranscriptMsg(
           gen: msg.gen,
           transcript: text,
-          language: 'es',
+          // Auto-detected per utterance (see OfflineWhisperModelConfig).
+          language: '',
         ));
       }
     } catch (e) {

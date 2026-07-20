@@ -108,8 +108,14 @@ LlmPrompt buildTeacherPrompt({
     // the default for chat/statements and keeps the tutor human.
     b.writeln('THIS TURN IS A CONVERSATION, not an exercise. React to exactly '
         'what the learner just said, with real interest, and ask ONE natural '
-        'follow-up question — all in Spanish. Do NOT correct grammar and do '
+        'follow-up question — in Spanish. Do NOT correct grammar and do '
         'NOT start a lesson right now. Keep it to 1–2 short sentences.');
+    // Bilingual bridge (Phase 5): a learner writing in English is not doing
+    // something wrong — meet them there and hand back the Spanish version.
+    b.writeln('If the learner wrote in English (or mixed English), FIRST '
+        'react to what they said, THEN give the natural Spanish way to say '
+        'their sentence after "En español: ", and warmly invite them to try '
+        'it ("¿Lo intentas?"). Never scold them for using English.');
     b.writeln('(Keep this focus in mind for later, but do not force it now: '
         '${plan.state.objective}.)');
   } else {

@@ -95,6 +95,52 @@ void main() {
     });
   });
 
+  group('speech text integrity (voice trace)', () {
+    test("the text layer never alters word letters — 'vaya' stays 'vaya'",
+        () {
+      // The ear-test heard vaya→'vaca'. If these hold, the defect cannot be
+      // in the text pipeline — it is inside the acoustic voice model.
+      const line = 'Vaya, qué bien. ¿Qué más me cuentas?';
+      expect(spokenText(line), contains('Vaya'));
+      expect(spokenText(line), isNot(contains('vaca')));
+      expect(speechSafeText(line, 'es', 'en'), contains('Vaya'));
+      // The support half never reaches the Spanish voice.
+      const bilingual = 'Vaya, qué bien. — In English: how nice.';
+      final safe = speechSafeText(bilingual, 'es', 'en');
+      expect(safe, contains('Vaya'));
+      expect(safe.toLowerCase(), isNot(contains('english')));
+    });
+
+    test('bilingual converse openers carry screen-only English support', () {
+      for (final opener in TeacherIntelligenceEngine.converseOpeners) {
+        expect(opener, contains('— In English:'));
+        final safe = speechSafeText(opener, 'es', 'en');
+        expect(safe.toLowerCase(), isNot(contains('english')));
+        expect(safe.trim(), isNotEmpty);
+      }
+    });
+
+    test('converse prompt bridges English input toward Spanish', () async {
+      final c = await _boot();
+      final brain = c.read(teacherBrainProvider).value!;
+      const eng = TeacherIntelligenceEngine();
+      final plan = eng.plan(brain,
+          turn: 3,
+          learnerIntent: LearnerIntent.statement,
+          producedTarget: false);
+      final prompt = buildTeacherPrompt(
+        brain: brain,
+        plan: plan,
+        context: const ConversationContext(),
+        userMessage: 'I went to the store yesterday.',
+        supportMode: TeacherSupportMode.mentor,
+      );
+      expect(prompt.system, contains('En español:'));
+      expect(prompt.system, contains('Never scold'));
+      c.dispose();
+    });
+  });
+
   group('translate reveal (Phase 4 fix)', () {
     test('vocabularyGloss glosses known words, never invents unknown ones',
         () async {

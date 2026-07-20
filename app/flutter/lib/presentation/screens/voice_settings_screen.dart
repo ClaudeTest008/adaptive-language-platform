@@ -1,11 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../infrastructure/piper_speech_service.dart';
 import '../../language/speech.dart';
 import '../language_providers.dart';
 import '../ui.dart';
+
+/// The persisted Spanish Piper voice id (default claude-high). Applies on the
+/// next app start: the Piper isolate loads exactly one model per process
+/// (the ANR-fix invariant), so a live swap is deliberately not offered.
+final piperEsVoiceProvider = FutureProvider<String>((ref) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(piperEsVoicePrefKey) ?? 'es_MX-claude-high';
+  } catch (_) {
+    return 'es_MX-claude-high';
+  }
+});
 
 /// Voice settings (Phase 15): pick the speech engine and playback speed.
 /// The choices live in session-persistent providers and flow through the
@@ -23,7 +36,6 @@ class VoiceSettingsScreen extends ConsumerWidget {
     final speed = ref.watch(speechSpeedProvider);
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         title: const Text('Voice settings'),
@@ -49,6 +61,47 @@ class VoiceSettingsScreen extends ConsumerWidget {
                 if (engine == SpeechEngine.piper) ...[
                   const SizedBox(height: AppSpace.sm),
                   _PiperStatusCard(piper: ref.watch(piperSpeechProvider)),
+                  const SizedBox(height: AppSpace.xl),
+                  const SectionHeader(title: 'Spanish voice'),
+                  const SizedBox(height: AppSpace.xs),
+                  Text(
+                    'Pronunciation quality differs per voice model — judge by '
+                    'ear with "Test voice". A change applies the next time '
+                    'the app starts (each voice is a separate ~60 MB '
+                    'download).',
+                    style: TextStyle(
+                      color: tones.inkSoft,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.md),
+                  Builder(builder: (context) {
+                    final selected = ref.watch(piperEsVoiceProvider).value ??
+                        'es_MX-claude-high';
+                    return Column(
+                      children: [
+                        for (final e in piperSpanishVoices.entries) ...[
+                          _EngineOption(
+                            value: SpeechEngine.piper,
+                            selected: selected == e.key,
+                            title: e.value.label,
+                            subtitle: e.key,
+                            onTap: () async {
+                              try {
+                                final prefs =
+                                    await SharedPreferences.getInstance();
+                                await prefs.setString(
+                                    piperEsVoicePrefKey, e.key);
+                              } catch (_) {}
+                              ref.invalidate(piperEsVoiceProvider);
+                            },
+                          ),
+                          const SizedBox(height: AppSpace.sm),
+                        ],
+                      ],
+                    );
+                  }),
                 ],
                 const SizedBox(height: AppSpace.sm),
                 _EngineOption(
@@ -83,9 +136,12 @@ class VoiceSettingsScreen extends ConsumerWidget {
                 PrimaryButton(
                   label: 'Test voice',
                   icon: Icons.volume_up_rounded,
+                  // The sample deliberately includes 'vaya' — the word the
+                  // ear-test reported mispronounced — so voice changes can be
+                  // A/B'd from this button directly.
                   onPressed: () => ref.read(speechServiceProvider).speak(
-                        'Hola, soy tu profesor de español. ¡Vamos a aprender '
-                        'juntos!',
+                        'Hola, soy tu profesor de español. ¡Vaya, qué bien '
+                        'verte! Vamos a aprender juntos.',
                         langCode: ref.read(languageBcp47Provider),
                         speed: speed,
                       ),

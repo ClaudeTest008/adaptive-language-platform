@@ -30,6 +30,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sherpa_onnx/sherpa_onnx.dart' as sherpa;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../language/audio_cache.dart';
 import '../language/speech.dart';
@@ -56,6 +57,27 @@ const _voices = {
   'es': _PiperVoice('vits-piper-es_MX-claude-high', 'es_MX-claude-high.onnx'),
   'en': _PiperVoice('vits-piper-en_US-amy-medium', 'en_US-amy-medium.onnx'),
 };
+
+/// Selectable Spanish voices. An ear-test reported claude-high mispronouncing
+/// 'vaya'; the trace shows the text reaching synthesis intact, which places
+/// the defect inside the voice model itself. The pronunciation fix is
+/// therefore a different acoustic model — davefx-medium is the Castilian male
+/// that was device-verified back in Phase 15. Pronunciation quality can only
+/// be judged by ear, so the choice belongs to the listener.
+const piperSpanishVoices = {
+  'es_MX-claude-high': (
+    voice: _PiperVoice('vits-piper-es_MX-claude-high', 'es_MX-claude-high.onnx'),
+    label: 'Female · Mexican accent',
+  ),
+  'es_ES-davefx-medium': (
+    voice:
+        _PiperVoice('vits-piper-es_ES-davefx-medium', 'es_ES-davefx-medium.onnx'),
+    label: 'Male · Castilian accent',
+  ),
+};
+
+/// Prefs key for the selected Spanish Piper voice id.
+const piperEsVoicePrefKey = 'piper_es_voice_v1';
 
 // ===========================================================================
 // Background isolate: owns the Piper engine. Pure FFI + dart:io (NO plugins),
@@ -225,8 +247,26 @@ class PiperSpeechService implements SpeechService {
     });
   }
 
+  /// The voice actually in use for [base]: the persisted Spanish selection
+  /// once resolved, the compile-time default otherwise. Resolved during
+  /// [_loadVoice] — i.e. before the first synthesis — and never changed on a
+  /// live engine (the isolate loads ONE model; switching applies on the next
+  /// app start, which the settings UI says out loud).
+  _PiperVoice? _resolvedEsVoice;
+  _PiperVoice? _activeVoice(String base) =>
+      base == 'es' ? (_resolvedEsVoice ?? _voices['es']) : _voices[base];
+
   Future<void> _loadVoice(String base) async {
-    final voice = _voices[base];
+    if (base == 'es' && _resolvedEsVoice == null) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final id = prefs.getString(piperEsVoicePrefKey);
+        _resolvedEsVoice = piperSpanishVoices[id]?.voice;
+      } catch (_) {
+        // No prefs (tests) → compile-time default; never a crash.
+      }
+    }
+    final voice = _activeVoice(base);
     if (voice == null) {
       status.value = PiperStatus.error;
       statusDetail.value = 'No Piper voice for "$base"';
@@ -342,9 +382,13 @@ class PiperSpeechService implements SpeechService {
       final normalized = spokenText(text);
       if (normalized.isEmpty) return;
       _cache ??= PiperAudioCache('$_docsDir/piper_cache');
-      final voiceDir = _voices[_base(langCode)]?.dir ?? 'default';
+      final voiceDir = _activeVoice(_base(langCode))?.dir ?? 'default';
       for (final s in _sentences(normalized)) {
         if (myGen != _gen || _disposed) return; // barge-in
+        // The exact string entering synthesis — the trace point that settles
+        // "did the text pipeline alter this word, or did the voice model
+        // mispronounce it" (e.g. the reported vaya→'vaca').
+        _log('synth text="$s"');
         final key = audioCacheKey(
           text: s,
           langCode: langCode,
@@ -447,7 +491,7 @@ class PiperSpeechService implements SpeechService {
     if (!_engineReady || _disposed) return;
     final startGen = _gen;
     _cache ??= PiperAudioCache('$_docsDir/piper_cache');
-    final voiceDir = _voices[_base(langCode)]?.dir ?? 'default';
+    final voiceDir = _activeVoice(_base(langCode))?.dir ?? 'default';
     for (final text in texts) {
       final normalized = spokenText(text);
       if (normalized.isEmpty) continue;
@@ -467,7 +511,7 @@ class PiperSpeechService implements SpeechService {
   /// Drops only this voice's cached audio (e.g. on a voice change), keeping
   /// every other voice intact.
   Future<void> invalidateVoice(String langCode) async {
-    final voiceDir = _voices[_base(langCode)]?.dir ?? 'default';
+    final voiceDir = _activeVoice(_base(langCode))?.dir ?? 'default';
     await _cache?.invalidateVoice(langCode: langCode, voice: voiceDir);
   }
 

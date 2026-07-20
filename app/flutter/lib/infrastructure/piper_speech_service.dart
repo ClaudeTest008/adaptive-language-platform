@@ -80,6 +80,34 @@ const piperSpanishVoices = {
 /// Prefs key for the selected Spanish Piper voice id.
 const piperEsVoicePrefKey = 'piper_es_voice_v1';
 
+/// SPEECH-ONLY pronunciation respellings for words the Piper/espeak-ng
+/// pipeline renders badly (human ear-tests reported 'vaya' coming out as
+/// 'vaca'). sherpa-onnx's OfflineTts takes plain text — no SSML, no phoneme
+/// input, no lexicon hook — so a documented respelling that phonemizes
+/// closer to the correct sound is the only in-engine lever left.
+/// 'vaia' → espeak-ng es [bˈaja] (vocalic i), near-identical to the correct
+/// [bˈaʝa] and nothing like [k]. Applied ONLY to the synthesis string; the
+/// learner always SEES the correct spelling.
+const piperPronunciationFixes = {
+  'vaya': 'vaia',
+  'vayas': 'vaias',
+  'vayamos': 'vaiamos',
+};
+
+final _pronunciationFixPattern = RegExp(
+  '\\b(${piperPronunciationFixes.keys.join('|')})\\b',
+  caseSensitive: false,
+);
+
+/// Applies [piperPronunciationFixes] preserving leading capitalisation.
+String applyPronunciationFixes(String text) =>
+    text.replaceAllMapped(_pronunciationFixPattern, (m) {
+      final word = m[0]!;
+      final fix = piperPronunciationFixes[word.toLowerCase()]!;
+      final capital = word[0] == word[0].toUpperCase();
+      return capital ? fix[0].toUpperCase() + fix.substring(1) : fix;
+    });
+
 // ===========================================================================
 // Background isolate: owns the Piper engine. Pure FFI + dart:io (NO plugins),
 // so it needs no RootIsolateToken. One OfflineTts, loaded once, reused.
@@ -380,8 +408,13 @@ class PiperSpeechService implements SpeechService {
         await _platform.speak(text, langCode: langCode, speed: speed);
         return;
       }
-      final normalized = spokenText(text);
+      var normalized = spokenText(text);
       if (normalized.isEmpty) return;
+      final fixed = applyPronunciationFixes(normalized);
+      if (fixed != normalized) {
+        _log('pronunciation fix applied: "$normalized" -> "$fixed"');
+        normalized = fixed;
+      }
       _cache ??= PiperAudioCache('$_docsDir/piper_cache');
       final voiceDir = _activeVoice(_base(langCode))?.dir ?? 'default';
       for (final s in _sentences(normalized)) {
@@ -494,7 +527,7 @@ class PiperSpeechService implements SpeechService {
     _cache ??= PiperAudioCache('$_docsDir/piper_cache');
     final voiceDir = _activeVoice(_base(langCode))?.dir ?? 'default';
     for (final text in texts) {
-      final normalized = spokenText(text);
+      final normalized = applyPronunciationFixes(spokenText(text));
       if (normalized.isEmpty) continue;
       for (final s in _sentences(normalized)) {
         if (_disposed || _gen != startGen) return; // playback started → stop

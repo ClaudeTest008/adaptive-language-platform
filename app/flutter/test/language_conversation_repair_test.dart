@@ -488,6 +488,66 @@ void main() {
       expect(stripThink('Sin bloques.'), 'Sin bloques.');
     });
 
+    test('the lesson arc leads: stages drive intents, recap closes', () async {
+      final c = await _boot();
+      final brain = c.read(teacherBrainProvider).value!;
+      const eng = TeacherIntelligenceEngine();
+
+      // Spanish production with corrections blocked by cadence → the teacher
+      // moves the LESSON forward stage by stage, not the same re-ranked
+      // opportunity every turn.
+      TeacherIntent at(int turn) => eng
+          .plan(brain,
+              turn: turn,
+              learnerIntent: LearnerIntent.statement,
+              producedTarget: true,
+              turnsSinceCorrection: 0,
+              lastCorrectedConceptId: 'x')
+          .moment
+          .intent;
+      expect(at(1), TeacherIntent.warmUp);
+      expect(at(2), TeacherIntent.review);
+      expect(at(3), TeacherIntent.connect);
+      expect(at(4), TeacherIntent.discover);
+      expect(at(5), TeacherIntent.practice);
+      expect(at(6), TeacherIntent.challenge);
+      expect(at(7), TeacherIntent.reflect);
+      expect(at(12), TeacherIntent.reflect); // past lesson length → recap
+
+      // The closing turn carries a real recap plan (what improved, what's
+      // next) — the "schedule tomorrow" seed.
+      final closing = eng.plan(brain,
+          turn: 7,
+          learnerIntent: LearnerIntent.statement,
+          producedTarget: true,
+          turnsSinceCorrection: 0,
+          lastCorrectedConceptId: 'x');
+      expect(closing.reflection, isNotNull);
+
+      // A correctable slip still interrupts the arc when the cadence allows.
+      final corrected = eng.plan(brain,
+          turn: 4,
+          learnerIntent: LearnerIntent.statement,
+          producedTarget: true,
+          turnsSinceCorrection: ConversationContext.neverCorrected);
+      expect(corrected.moment.intent, TeacherIntent.correct);
+      c.dispose();
+    });
+
+    test('the session opener states today\'s goal', () async {
+      final c = await _boot();
+      final tutor = c.read(tutorSessionProvider.notifier);
+      await tutor.start(TutorMode.teacher);
+      final transcript = c.read(tutorSessionProvider)!.transcript;
+      // Single-language: objective names are English curriculum labels, and
+      // a mixed line gets carved up by the speech splitter (device finding).
+      expect(
+        transcript.any((t) => t.$1 && t.$2.startsWith("Today's plan:")),
+        isTrue,
+      );
+      c.dispose();
+    });
+
     test('corrections keep a cadence instead of firing every turn', () async {
       final c = await _boot();
       final brain = c.read(teacherBrainProvider).value!;

@@ -573,25 +573,45 @@ class TeacherIntelligenceEngine {
       );
       chosen = moment(brain, decision);
     } else {
-      // Teaching turn (Spanish production or the lesson's own beat). Correct
-      // only when the learner produced correctable Spanish AND the cadence
-      // allows it — otherwise teach forward and let the slip pass.
-      decision = decide(brain);
-      if (decision.intent == TeacherIntent.correct && !correctionAllowed) {
-        final ops = opportunities(brain)
-            .where((o) => o.intent != TeacherIntent.correct)
-            .toList();
-        decision = ops.isEmpty
-            ? const TeacherDecision(
-                intent: TeacherIntent.discover,
-                rationale: 'Teach forward — nothing to correct yet.',
-              )
-            : TeacherDecision(
-                intent: ops.first.intent,
-                rationale: ops.first.reason,
-                conceptId:
-                    ops.first.conceptIds.isEmpty ? null : ops.first.conceptIds.first,
-              );
+      // Teaching turn: THE LESSON ARC LEADS. A real teacher runs the lesson
+      // through its stages (warm-up → review → connect → discover → practice
+      // → challenge → reflect) instead of re-ranking the same opportunity
+      // list every turn — that re-ranking is what made the tutor feel like a
+      // reactive chatbot. Two things may override the arc, exactly as they
+      // would for a human teacher:
+      //   1. recovery — sustained struggle beats everything;
+      //   2. a correctable Spanish slip, when the cadence allows it.
+      final struggle = pacing(brain) == PacingAction.recoverConfidence;
+      if (struggle) {
+        decision = const TeacherDecision(
+          intent: TeacherIntent.review,
+          rationale: 'Recovery first — rebuild confidence before new ground.',
+        );
+      } else if (producedTarget && correctionAllowed && pending != null) {
+        decision = TeacherDecision(
+          intent: TeacherIntent.correct,
+          rationale: 'A real Spanish attempt with one thing worth fixing.',
+          conceptId: pending.conceptId,
+        );
+      } else {
+        final intent = switch (state.stage) {
+          LessonStage.greeting || LessonStage.warmUp => TeacherIntent.warmUp,
+          LessonStage.review => TeacherIntent.review,
+          LessonStage.connection => TeacherIntent.connect,
+          LessonStage.discovery => TeacherIntent.discover,
+          LessonStage.practice => TeacherIntent.practice,
+          LessonStage.challenge => TeacherIntent.challenge,
+          LessonStage.reflection ||
+          LessonStage.homework =>
+            TeacherIntent.reflect,
+          LessonStage.preview => TeacherIntent.previewNext,
+        };
+        decision = TeacherDecision(
+          intent: intent,
+          rationale: 'Lesson stage: ${state.stage.name} — the teacher moves '
+              'the lesson forward.',
+          conceptId: brain.objectives.currentConceptId,
+        );
       }
       chosen = moment(brain, decision);
     }

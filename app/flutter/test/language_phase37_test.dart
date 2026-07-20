@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:adaptive_language_platform/infrastructure/piper_speech_service.dart';
 import 'package:adaptive_language_platform/infrastructure/sherpa_whisper_service.dart';
 import 'package:adaptive_language_platform/language/whisper/pcm.dart';
 import 'package:adaptive_language_platform/language/whisper/whisper_model_manager.dart';
@@ -151,4 +152,16 @@ void main() {
       await s.unload(); // must not throw
     });
   });
+
+  group('pronunciation fixes (speech-only)', () {
+    test('respells vaya family, preserves case, leaves display alone', () {
+      expect(applyPronunciationFixes('Vaya, qué bien.'), 'Vaia, qué bien.');
+      expect(applyPronunciationFixes('quiero que vayas'), 'quiero que vaias');
+      expect(applyPronunciationFixes('vayamos juntos'), 'vaiamos juntos');
+      // Not a substring match: 'vayan' untouched (not in the map).
+      expect(applyPronunciationFixes('vayan'), 'vayan');
+      expect(applyPronunciationFixes('la vaca come'), 'la vaca come');
+    });
+  });
 }
+

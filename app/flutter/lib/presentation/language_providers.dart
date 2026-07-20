@@ -1044,10 +1044,25 @@ class TutorSessionController extends Notifier<TutorSessionState?> {
     final memory = brain == null
         ? null
         : ref.read(teacherIntelligenceProvider).memory(brain)?.reference;
+    // The teacher states today's goal up front (Priority 1: the teacher
+    // leads; the learner never wonders what to talk about). Objective +
+    // secondary come from the brain — real plan, not a script.
+    // One language only: objective names are English curriculum labels, and
+    // a mixed-language sentence gets carved up by the speech splitter (the
+    // first device run showed 'Plan de hoy: Después: Food.'). A fully-native
+    // line renders as-is and is never spoken — exactly right for a plan card.
+    String? goal;
+    if (brain != null) {
+      final obj = brain.objectives;
+      final hasSecond = obj.secondary.trim().isNotEmpty;
+      goal = "Today's plan: ${obj.current}."
+          '${hasSecond ? ' Then: ${obj.secondary}.' : ''}';
+    }
     state = state?.copyWith(
       transcript: [
         if (greeting != null) (true, greeting),
         if (memory != null) (true, memory),
+        if (goal != null) (true, goal),
         (true, openerText),
       ],
       busy: false,

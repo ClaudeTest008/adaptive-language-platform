@@ -22,7 +22,6 @@ class LanguageDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final curriculumAsync = ref.watch(curriculumProvider);
     final learner = ref.watch(languageLearnerProvider);
-    final tones = AppTones.of(context);
 
     if (curriculumAsync.hasError) {
       return Scaffold(
@@ -128,13 +127,6 @@ class LanguageDashboardScreen extends ConsumerWidget {
               // in Tutor settings ("What to focus on next"). The home is:
               // greeting → teacher → progress rings → quick practice →
               // teacher's notes → progress → current focus.
-              const SizedBox(height: AppSpace.xl),
-              Text(
-                'Demo learner · every number comes from the live adaptive '
-                'engine · tap anything to dig in',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: tones.inkSoft, fontSize: 12.5),
-              ),
             ],
           ),
         ),
@@ -994,9 +986,13 @@ class _ProgressGlanceCard extends ConsumerWidget {
         horizontal: AppSpace.lg,
         vertical: AppSpace.lg + 2,
       ),
+      child: Column(
+        children: [
+          _WeekStrip(streakDays: streak),
+          const SizedBox(height: AppSpace.lg),
       // Every cell is Expanded and labels ellipsize: the layout matrix caught
       // the fixed Row overflowing at larger text scales.
-      child: Row(
+      Row(
         children: [
           Expanded(
             child: _GlanceRing(
@@ -1052,6 +1048,51 @@ class _ProgressGlanceCard extends ConsumerWidget {
           ),
         ],
       ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Seven-day activity strip: one bar per day (oldest left), filled for each
+/// day of the current streak — real engine data, no invented history.
+class _WeekStrip extends StatelessWidget {
+  const _WeekStrip({required this.streakDays});
+
+  final int streakDays;
+
+  @override
+  Widget build(BuildContext context) {
+    final tones = AppTones.of(context);
+    const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    final today = DateTime.now();
+    final active = streakDays.clamp(0, 7);
+    return Row(
+      children: [
+        for (var i = 6; i >= 0; i--)
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  height: 6,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: BoxDecoration(
+                    color: i < active
+                        ? tones.solid(AppTint.mint)
+                        : tones.cardMuted,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.xs),
+                Text(
+                  labels[today.subtract(Duration(days: i)).weekday - 1],
+                  style: TextStyle(color: tones.inkSoft, fontSize: 10.5),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

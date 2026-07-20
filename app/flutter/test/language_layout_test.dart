@@ -163,6 +163,27 @@ void main() {
         expect(tones.onTint(tint), isNot(tones.tint(tint)));
       }
       expect(tones.dark, brightness == Brightness.dark);
+
+      // WCAG contrast: body text on its backgrounds must reach AA (4.5:1);
+      // onTint content at least large-text AA (3:1) — tinted cards carry
+      // 16px+ semi-bold text.
+      double ratio(Color a, Color b) {
+        final la = a.computeLuminance(), lb = b.computeLuminance();
+        final hi = la > lb ? la : lb, lo = la > lb ? lb : la;
+        return (hi + 0.05) / (lo + 0.05);
+      }
+
+      expect(ratio(tones.ink, tones.canvas), greaterThan(4.5));
+      expect(ratio(tones.ink, tones.card), greaterThan(4.5));
+      expect(ratio(tones.inkSoft, tones.card), greaterThan(4.5));
+      expect(ratio(tones.onAccent, tones.accent), greaterThan(4.5));
+      for (final tint in AppTint.values) {
+        expect(
+          ratio(tones.onTint(tint), tones.tint(tint)),
+          greaterThan(3.0),
+          reason: 'onTint($tint) vs tint($tint) in ${brightness.name}',
+        );
+      }
     });
   }
 }

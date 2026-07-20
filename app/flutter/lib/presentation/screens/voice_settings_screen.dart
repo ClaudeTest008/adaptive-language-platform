@@ -14,9 +14,9 @@ import '../ui.dart';
 final piperEsVoiceProvider = FutureProvider<String>((ref) async {
   try {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(piperEsVoicePrefKey) ?? 'es_MX-claude-high';
+    return prefs.getString(piperEsVoicePrefKey) ?? 'es_ES-davefx-medium';
   } catch (_) {
-    return 'es_MX-claude-high';
+    return 'es_ES-davefx-medium';
   }
 });
 
@@ -78,7 +78,7 @@ class VoiceSettingsScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpace.md),
                   Builder(builder: (context) {
                     final selected = ref.watch(piperEsVoiceProvider).value ??
-                        'es_MX-claude-high';
+                        'es_ES-davefx-medium';
                     return Column(
                       children: [
                         for (final e in piperSpanishVoices.entries) ...[

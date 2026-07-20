@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../language/pipeline.dart';
-import '../../language/tutor.dart';
 import '../language_providers.dart';
 import '../ui.dart';
+import 'home_shell.dart';
 
 /// AI Tutor (ADR-0018): the Teacher Brain picks today's lesson, then a live
 /// voice-first session. The session opens with real learner context
@@ -21,6 +21,7 @@ class LanguageTutorScreen extends ConsumerStatefulWidget {
 
 class _LanguageTutorScreenState extends ConsumerState<LanguageTutorScreen> {
   final _input = TextEditingController();
+  bool _starting = false;
 
   @override
   void dispose() {
@@ -28,27 +29,45 @@ class _LanguageTutorScreenState extends ConsumerState<LanguageTutorScreen> {
     super.dispose();
   }
 
+  /// ChatGPT-style: opening the tutor IS opening the conversation. As soon
+  /// as the Teacher Brain has chosen today's lesson, the session starts —
+  /// there is no menu screen in between.
+  void _autoStart() {
+    if (_starting || ref.read(tutorSessionProvider) != null) return;
+    final choice = ref.read(teachingChoiceProvider);
+    if (choice == null) return;
+    _starting = true;
+    ref
+        .read(tutorSessionProvider.notifier)
+        .start(choice.mode, focusConceptId: choice.focusConceptId)
+        .whenComplete(() => _starting = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(tutorSessionProvider);
+    if (session == null) {
+      // Watch the choice so we re-build (and start) the moment it is ready.
+      final choice = ref.watch(teachingChoiceProvider);
+      if (choice != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _autoStart());
+      }
+    }
     return Scaffold(
       backgroundColor: Colors.transparent,
-      // Phase 2 simplification: the conversation screen carries only the
-      // conversation. Back (in session) ends the lesson and records it;
-      // everything configurable lives behind the one settings button.
+      // The conversation carries only the conversation. Back returns to the
+      // dashboard (the session keeps running — like leaving a chat); ending
+      // a lesson lives in Tutor settings.
       appBar: AppBar(
-        leading: session == null
-            ? null
-            : Padding(
-                padding: const EdgeInsets.only(left: AppSpace.md),
-                child: CircleIconButton(
-                  icon: Icons.arrow_back_rounded,
-                  size: 42,
-                  tooltip: 'End session',
-                  onTap: () =>
-                      ref.read(tutorSessionProvider.notifier).reset(),
-                ),
-              ),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: AppSpace.md),
+          child: CircleIconButton(
+            icon: Icons.arrow_back_rounded,
+            size: 42,
+            tooltip: 'Back',
+            onTap: () => ref.read(homeTabProvider.notifier).state = 0,
+          ),
+        ),
         title: const Text('AI Tutor'),
         actions: [
           Padding(
@@ -67,7 +86,7 @@ class _LanguageTutorScreenState extends ConsumerState<LanguageTutorScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 720),
             child: session == null
-                ? const _ModeSelector()
+                ? const _PreparingLesson()
                 : _Session(
                     session: session,
                     input: _input,
@@ -82,6 +101,27 @@ class _LanguageTutorScreenState extends ConsumerState<LanguageTutorScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The brief moment before the Teacher Brain has picked today's lesson.
+class _PreparingLesson extends StatelessWidget {
+  const _PreparingLesson();
+
+  @override
+  Widget build(BuildContext context) {
+    final tones = AppTones.of(context);
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const CircularProgressIndicator(),
+        const SizedBox(height: AppSpace.lg),
+        Text(
+          'Your teacher is getting ready…',
+          style: TextStyle(color: tones.inkSoft, fontSize: 15),
+        ),
+      ],
     );
   }
 }
@@ -315,211 +355,6 @@ class _TypingIndicatorState extends State<_TypingIndicator>
               ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ModeInfo {
-  const _ModeInfo(this.mode, this.title, this.subtitle, this.icon);
-
-  final TutorMode mode;
-  final String title;
-  final String subtitle;
-  final IconData icon;
-}
-
-const _modes = [
-  _ModeInfo(
-    TutorMode.teacher,
-    'Teacher',
-    'Explains concepts, repairs misconceptions',
-    Icons.school,
-  ),
-  _ModeInfo(
-    TutorMode.conversation,
-    'Conversation',
-    'Natural dialogue at your level',
-    Icons.forum,
-  ),
-  _ModeInfo(
-    TutorMode.coach,
-    'Coach',
-    'Daily goals, motivation, planning',
-    Icons.sports,
-  ),
-  _ModeInfo(
-    TutorMode.socratic,
-    'Socratic',
-    'Discover answers through questions',
-    Icons.psychology_alt,
-  ),
-  _ModeInfo(
-    TutorMode.grammar,
-    'Grammar',
-    'Patterns, contrasted with English',
-    Icons.account_tree,
-  ),
-  _ModeInfo(
-    TutorMode.immersion,
-    'Immersion',
-    'Target language only',
-    Icons.language,
-  ),
-];
-
-class _ModeSelector extends ConsumerWidget {
-  const _ModeSelector();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final tones = AppTones.of(context);
-    final learner = ref.watch(languageLearnerProvider);
-    final curriculum = ref.watch(curriculumProvider).value;
-    final topMisconception = learner.misconceptions.all.firstOrNull;
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpace.lg,
-        AppSpace.sm,
-        AppSpace.lg,
-        AppSpace.xl,
-      ),
-      children: [
-        FadeInUp(
-          child: GradientHero(
-            padding: const EdgeInsets.all(AppSpace.xl),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: tones.solid(AppTint.mint),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.school,
-                    color: tones.onTint(AppTint.mint),
-                  ),
-                ),
-                const SizedBox(height: AppSpace.lg),
-                Text(
-                  'Your personal teacher',
-                  style: TextStyle(
-                    color: tones.ink,
-                    fontSize: 27,
-                    height: 1.15,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.8,
-                  ),
-                ),
-                const SizedBox(height: AppSpace.sm),
-                Text(
-                  'Every session starts from your real progress: '
-                  '${learner.misconceptions.all.length} tracked misconceptions, '
-                  'your weak concepts and skill mastery.',
-                  style: TextStyle(
-                    color: tones.inkSoft,
-                    fontSize: 14.5,
-                    height: 1.45,
-                  ),
-                ),
-                if (topMisconception != null && curriculum != null) ...[
-                  const SizedBox(height: AppSpace.lg),
-                  SoftChip(
-                    icon: Icons.build_circle,
-                    tint: AppTint.lilac,
-                    label: 'First up: '
-                        '${curriculum.graph[topMisconception.conceptId]?.name ?? topMisconception.conceptId}',
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpace.lg),
-        const FadeInUp(delayMs: 60, child: _TodaysLessonCard()),
-      ],
-    );
-  }
-}
-
-/// The unified teacher (Phase 18): no mode selector. The Teacher Brain chooses
-/// today's strategy and focus; the learner just starts. The six internal
-/// strategies still exist — the teacher picks among them automatically.
-class _TodaysLessonCard extends ConsumerWidget {
-  const _TodaysLessonCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final tones = AppTones.of(context);
-    final choice = ref.watch(teachingChoiceProvider);
-    final info = choice == null
-        ? null
-        : _modes.firstWhere((m) => m.mode == choice.mode);
-    return SoftCard(
-      padding: const EdgeInsets.all(AppSpace.xl - 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: tones.tint(AppTint.mint),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  info?.icon ?? Icons.school,
-                  size: 21,
-                  color: tones.solid(AppTint.mint),
-                ),
-              ),
-              const SizedBox(width: AppSpace.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Today's lesson",
-                      style: TextStyle(
-                        color: tones.ink,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                    Text(
-                      'Chosen from your progress',
-                      style: TextStyle(color: tones.inkSoft, fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpace.lg),
-          Text(
-            choice?.rationale ??
-                'Getting your lesson ready from what you already know…',
-            style: TextStyle(color: tones.ink, fontSize: 15, height: 1.45),
-          ),
-          const SizedBox(height: AppSpace.xl),
-          PrimaryButton(
-            label: "Start today's lesson",
-            icon: Icons.arrow_forward,
-            onPressed: choice == null
-                ? null
-                : () => ref.read(tutorSessionProvider.notifier).start(
-                      choice.mode,
-                      focusConceptId: choice.focusConceptId,
-                    ),
-          ),
-        ],
       ),
     );
   }

@@ -49,12 +49,13 @@ class _PiperVoice {
 }
 
 const _voices = {
-  // Female Spanish voice (Part 3): es_MX-claude-high — the only documented
-  // single-speaker FEMALE Spanish Piper voice on the sherpa-onnx release
-  // (es_ES-sharvard is two-speaker with undocumented speaker genders, so the
-  // female sid cannot be chosen deterministically). Tradeoff: Mexican accent
-  // replaces the previous Castilian male (davefx). 67.2 MB, high quality.
-  'es': _PiperVoice('vits-piper-es_MX-claude-high', 'es_MX-claude-high.onnx'),
+  // DEFAULT FLIPPED to davefx (Castilian male): a human ear-test confirmed
+  // claude-high (the previous female default) pronouncing 'vaya' as 'vaca',
+  // and the device trace pinned the defect inside that acoustic model.
+  // davefx is the voice all Phase-15 human listening sessions used, with no
+  // such report. claude-high stays selectable in Voice settings for anyone
+  // preferring the female voice despite the defect.
+  'es': _PiperVoice('vits-piper-es_ES-davefx-medium', 'es_ES-davefx-medium.onnx'),
   'en': _PiperVoice('vits-piper-en_US-amy-medium', 'en_US-amy-medium.onnx'),
 };
 
@@ -65,14 +66,14 @@ const _voices = {
 /// that was device-verified back in Phase 15. Pronunciation quality can only
 /// be judged by ear, so the choice belongs to the listener.
 const piperSpanishVoices = {
-  'es_MX-claude-high': (
-    voice: _PiperVoice('vits-piper-es_MX-claude-high', 'es_MX-claude-high.onnx'),
-    label: 'Female · Mexican accent',
-  ),
   'es_ES-davefx-medium': (
     voice:
         _PiperVoice('vits-piper-es_ES-davefx-medium', 'es_ES-davefx-medium.onnx'),
-    label: 'Male · Castilian accent',
+    label: 'Male · Castilian accent (default)',
+  ),
+  'es_MX-claude-high': (
+    voice: _PiperVoice('vits-piper-es_MX-claude-high', 'es_MX-claude-high.onnx'),
+    label: 'Female · Mexican accent (known: says "vaya" oddly)',
   ),
 };
 

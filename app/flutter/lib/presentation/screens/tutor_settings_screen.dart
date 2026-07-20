@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../language/pipeline.dart';
 import '../language_providers.dart';
 import '../ui.dart';
+import 'language_dashboard_screen.dart' show TeacherRecommendationsCard;
 
 /// AI Tutor settings (Phase 2 simplification): everything that used to sit
 /// as chips on top of the conversation lives here instead. The conversation
@@ -130,6 +131,32 @@ class TutorSettingsScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
+                if (session != null) ...[
+                  const SizedBox(height: AppSpace.xl),
+                  const SectionHeader(title: 'Session'),
+                  const SizedBox(height: AppSpace.md),
+                  SoftCard(
+                    padding: EdgeInsets.zero,
+                    child: ListTile(
+                      leading: _iconChip(tones, Icons.restart_alt_rounded),
+                      title: Text('Finish this lesson', style: _title(tones)),
+                      subtitle: Text(
+                        'Records your progress and starts fresh next time',
+                        style: _sub(tones),
+                      ),
+                      onTap: () {
+                        ref.read(tutorSessionProvider.notifier).reset();
+                        context.pop();
+                      },
+                    ),
+                  ),
+                ],
+                const SizedBox(height: AppSpace.xl),
+                // Relocated from the dashboard (simplification): the ranked
+                // recommendation list, for learners who want the "why".
+                const SectionHeader(title: 'What to focus on next'),
+                const SizedBox(height: AppSpace.md),
+                const SoftCard(child: TeacherRecommendationsCard()),
                 const SizedBox(height: AppSpace.xl),
                 // Teaching state — visible on request, not on every open.
                 const SectionHeader(title: 'What your teacher is working on'),

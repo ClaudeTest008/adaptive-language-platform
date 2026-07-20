@@ -3,14 +3,11 @@ import 'dart:io';
 
 import 'package:adaptive_language_platform/infrastructure/prefs_experience_repository.dart';
 import 'package:adaptive_language_platform/language/curriculum.dart';
-import 'package:adaptive_language_platform/language/curriculum_intelligence.dart';
 import 'package:adaptive_language_platform/language/entities.dart';
 import 'package:adaptive_language_platform/language/exercises.dart';
-import 'package:adaptive_language_platform/language/learning_journey_engine.dart';
 import 'package:adaptive_language_platform/language/notebook_repository.dart';
 import 'package:adaptive_language_platform/language/recommendation_engine.dart';
 import 'package:adaptive_language_platform/language/reader_intelligence.dart';
-import 'package:adaptive_language_platform/language/roleplay_engine.dart';
 import 'package:adaptive_language_platform/language/story.dart';
 import 'package:adaptive_language_platform/presentation/screens/language_stories_screen.dart';
 import 'package:adaptive_language_platform/language/teacher_memory.dart';
@@ -25,6 +22,7 @@ import 'package:adaptive_language_platform/presentation/screens/language_goals_s
 import 'package:adaptive_language_platform/presentation/screens/language_onboarding_screen.dart';
 import 'package:adaptive_language_platform/presentation/screens/language_practice_screen.dart';
 import 'package:adaptive_language_platform/presentation/screens/language_tutor_screen.dart';
+import 'package:adaptive_language_platform/presentation/screens/tutor_settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -153,21 +151,16 @@ void main() {
             ],
           ),
         ],
-        child: const MaterialApp(home: LanguageDashboardScreen()),
+        child: const MaterialApp(home: TutorSettingsScreen()),
       ),
     );
     await _settle(tester);
 
-    await tester.scrollUntilVisible(find.text('What to focus on next'), 150);
-    // scrollUntilVisible stops as soon as the target is attached, which
-    // can leave it just below the 600px test viewport as content grows.
-    await tester.ensureVisible(find.text('What to focus on next'));
-    await tester.pump();
-    await tester.tap(find.text('What to focus on next'));
-    await _settle(tester);
+    // Relocated in the dashboard simplification: the ranked list lives in
+    // Tutor settings now.
     await tester.scrollUntilVisible(
       find.textContaining('Revisit ser vs estar'),
-      120,
+      150,
     );
     expect(find.textContaining('Revisit ser vs estar'), findsOneWidget);
     expect(find.textContaining('Reinforce tener'), findsOneWidget);
@@ -208,125 +201,21 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: LanguageDashboardScreen()),
+        child: const MaterialApp(home: TutorSettingsScreen()),
       ),
     );
     await _settle(tester);
 
     expect(container.read(homeTabProvider), 0);
-    await tester.scrollUntilVisible(find.text('What to focus on next'), 150);
-    // scrollUntilVisible stops as soon as the target is attached, which
-    // can leave it just below the 600px test viewport as content grows.
-    await tester.ensureVisible(find.text('What to focus on next'));
-    await tester.pump();
-    await tester.tap(find.text('What to focus on next'));
-    await _settle(tester);
     await tester.scrollUntilVisible(
       find.textContaining('Read a short story'),
-      120,
+      150,
     );
+    await tester.ensureVisible(find.textContaining('Read a short story'));
+    await tester.pump();
     await tester.tap(find.textContaining('Read a short story'));
     await tester.pump();
     expect(container.read(homeTabProvider), 1);
-  });
-
-  testWidgets('dashboard surfaces learning journeys with health', (
-    tester,
-  ) async {
-    // Fixed journey report so the card is asserted deterministically (the
-    // engine's own logic is covered by language_phase32_test.dart).
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          curriculumProvider.overrideWith((ref) => Future.value(curriculum)),
-          speechServiceProvider.overrideWithValue(NoopSpeechService()),
-          teacherNotebookRepositoryProvider.overrideWithValue(
-            InMemoryTeacherNotebookRepository(),
-          ),
-          experienceRepositoryProvider.overrideWithValue(
-            InMemoryExperienceRepository(),
-          ),
-          teacherMemoryRepositoryProvider.overrideWithValue(
-            InMemoryTeacherMemoryRepository(),
-          ),
-          journeyReportsProvider.overrideWith(
-            (ref) async => const [
-              JourneyReport(
-                journey: LearningJourney(
-                  id: 'j1',
-                  name: 'Present tense verbs',
-                  stages: [],
-                  progress: 0.5,
-                ),
-                health: JourneyHealth.accelerating,
-                prediction: JourneyPrediction(nextMilestone: 'Irregular yo-forms'),
-              ),
-            ],
-          ),
-        ],
-        child: const MaterialApp(home: LanguageDashboardScreen()),
-      ),
-    );
-    await _settle(tester);
-
-    await tester.scrollUntilVisible(find.text('Your learning journeys'), 150);
-    await tester.ensureVisible(find.text('Your learning journeys'));
-    await tester.pump();
-    await tester.tap(find.text('Your learning journeys'));
-    await _settle(tester);
-    await tester.scrollUntilVisible(find.text('Present tense verbs'), 120);
-    expect(find.text('Present tense verbs'), findsOneWidget);
-    expect(find.text('Accelerating'), findsOneWidget);
-    expect(find.textContaining('Irregular yo-forms'), findsOneWidget);
-  });
-
-  testWidgets('dashboard surfaces the suggested practice scene', (
-    tester,
-  ) async {
-    // Fixed roleplay scenario so the card is asserted deterministically (the
-    // engine's own selection logic is covered by language_phase30_test.dart).
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          curriculumProvider.overrideWith((ref) => Future.value(curriculum)),
-          speechServiceProvider.overrideWithValue(NoopSpeechService()),
-          teacherNotebookRepositoryProvider.overrideWithValue(
-            InMemoryTeacherNotebookRepository(),
-          ),
-          experienceRepositoryProvider.overrideWithValue(
-            InMemoryExperienceRepository(),
-          ),
-          teacherMemoryRepositoryProvider.overrideWithValue(
-            InMemoryTeacherMemoryRepository(),
-          ),
-          roleplaySelectionProvider.overrideWithValue(
-            const RoleplayScenario(
-              kind: RoleplayKind.restaurant,
-              title: 'At the café',
-              setting: 'Ordering a coffee in Madrid.',
-              difficulty: RoleplayDifficulty.standard,
-              stages: [],
-              focusConceptIds: [],
-              rationale: 'You are ready to use greetings in a real scene.',
-            ),
-          ),
-        ],
-        child: const MaterialApp(home: LanguageDashboardScreen()),
-      ),
-    );
-    await _settle(tester);
-
-    await tester.scrollUntilVisible(find.text('Suggested practice scene'), 150);
-    // The section sits low on the long dashboard; ensure the header is fully in
-    // the 600px test viewport before tapping so the expand hit-test lands.
-    await tester.ensureVisible(find.text('Suggested practice scene'));
-    await _settle(tester);
-    await tester.tap(find.text('Suggested practice scene'));
-    await _settle(tester);
-    await tester.scrollUntilVisible(find.text('At the café'), 120);
-    expect(find.text('At the café'), findsOneWidget);
-    expect(find.text('Standard'), findsOneWidget);
-    expect(find.textContaining('Ordering a coffee'), findsOneWidget);
   });
 
   testWidgets('library surfaces the reader profile once books are read', (
@@ -618,22 +507,21 @@ void main() {
     await tester.pumpWidget(_app(curriculum, const LanguageTutorScreen()));
     await _settle(tester);
 
-    // Phase 18: no mode grid — the Teacher Brain chooses. The header still
-    // knows the top misconception, and today's lesson is offered directly.
+    // ChatGPT-style: opening the tutor IS the conversation — no menu screen,
+    // no 'Start today's lesson' button. The session auto-starts as soon as
+    // the Teacher Brain has chosen (state exists even while the opener is
+    // still generating).
     expect(find.text('Choose a mode'), findsNothing);
-    expect(find.textContaining('First up:'), findsOneWidget);
-    expect(find.text("Today's lesson"), findsOneWidget);
-
-    await tester.tap(find.text("Start today's lesson"));
-    await _settle(tester);
-
-    // Phase 2 simplification: the conversation screen carries NO teaching-state
-    // chips — that context lives in Tutor settings now. The session still runs
-    // on the assembled context: the demo tutor teaches the tener concept.
+    expect(find.text("Today's lesson"), findsNothing);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(LanguageTutorScreen)),
+    );
+    expect(container.read(tutorSessionProvider), isNotNull);
+    // No teaching-state chips on the conversation; back + settings only.
     expect(find.text('Teacher mode'), findsNothing);
     expect(find.textContaining('misconceptions in context'), findsNothing);
     expect(find.byTooltip('Tutor settings'), findsOneWidget);
-    expect(find.byTooltip('End session'), findsOneWidget);
+    expect(find.byTooltip('Back'), findsOneWidget);
     // The conversation itself is live: the teacher has spoken (Spanish
     // greeting) and the voice-first composer is present.
     // Conversation liveness (the teacher actually speaks) is asserted by the
@@ -646,9 +534,6 @@ void main() {
     // native-language reveal of the most-recent reply (no new AI response).
     final translate = find.byTooltip('Translate');
     expect(translate, findsOneWidget);
-    final container = ProviderScope.containerOf(
-      tester.element(find.byType(LanguageTutorScreen)),
-    );
     expect(container.read(tutorTranslateProvider), isFalse);
     await tester.tap(translate);
     await _settle(tester);

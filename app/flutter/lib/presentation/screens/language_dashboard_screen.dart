@@ -3,11 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../language/entities.dart';
-import '../../language/learning_journey_engine.dart';
 import '../../language/lesson.dart';
 import '../../language/notebook.dart';
 import '../../language/recommendation_engine.dart';
-import '../../language/roleplay_engine.dart';
 import '../../language/tutor.dart';
 import '../language_providers.dart';
 import '../providers.dart';
@@ -92,18 +90,7 @@ class LanguageDashboardScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AppSpace.md),
-              // 2 · Today's Goals — daily targets per skill.
-              const FadeInUp(
-                delayMs: 200,
-                child: _ExpandableSection(
-                  icon: Icons.flag_outlined,
-                  title: "Today's goals",
-                  subtitle: 'Daily targets',
-                  child: _TodaysGoalsCard(),
-                ),
-              ),
-              const SizedBox(height: AppSpace.md),
-              // 3 · Progress Summary — mastery by skill (no XP).
+              // Progress Summary — mastery by skill (no XP).
               const FadeInUp(
                 delayMs: 260,
                 child: _ExpandableSection(
@@ -134,58 +121,13 @@ class LanguageDashboardScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: AppSpace.md),
-              // 4b · What to focus on next — the ONE unified recommendation list
-              // (Phase 32 engine, merged with Phase 33 reader recs + Phase 34
-              // connection bridges) made visible for the first time. Read-only:
-              // TeacherBrain stays the single source of truth; this only shows
-              // what the engines already derived.
-              const FadeInUp(
-                delayMs: 350,
-                child: _ExpandableSection(
-                  icon: Icons.recommend_outlined,
-                  title: 'What to focus on next',
-                  subtitle: 'From your whole learning history',
-                  child: _TeacherRecommendationsCard(),
-                ),
-              ),
-              const SizedBox(height: AppSpace.md),
-              // 4c · Learning journeys — the Phase 32 Journey Engine
-              // (journeyReportsProvider) made visible: each engaged domain's
-              // path with assessed health + progress. Read-only, derived.
-              const FadeInUp(
-                delayMs: 365,
-                child: _ExpandableSection(
-                  icon: Icons.route_outlined,
-                  title: 'Your learning journeys',
-                  subtitle: 'Where each path stands',
-                  child: _JourneysCard(),
-                ),
-              ),
-              const SizedBox(height: AppSpace.md),
-              // 4d · Suggested practice scene — the Phase 30 Roleplay Engine
-              // (roleplaySelectionProvider) made visible: the scene the teacher
-              // would run now, with its rationale. Read-only preview.
-              const FadeInUp(
-                delayMs: 380,
-                child: _ExpandableSection(
-                  icon: Icons.theater_comedy_outlined,
-                  title: 'Suggested practice scene',
-                  subtitle: 'A roleplay picked for you',
-                  child: _RoleplaySuggestionCard(),
-                ),
-              ),
-              const SizedBox(height: AppSpace.md),
-              // 5 · Recommended Next Lesson — one pick from progress.
-              const FadeInUp(
-                delayMs: 380,
-                child: _ExpandableSection(
-                  icon: Icons.lightbulb_outline,
-                  title: 'Recommended next lesson',
-                  subtitle: 'Chosen from your progress',
-                  child: _RecommendedNextLessonCard(),
-                ),
-              ),
+              // Dashboard simplification: the recommendation list, journeys,
+              // roleplay preview, recommended-next-lesson and the placeholder
+              // daily-goals bars no longer stack here — the engines still
+              // drive the tutor's choices, and the recommendation list lives
+              // in Tutor settings ("What to focus on next"). The home is:
+              // greeting → teacher → progress rings → quick practice →
+              // teacher's notes → progress → current focus.
               const SizedBox(height: AppSpace.xl),
               Text(
                 'Demo learner · every number comes from the live adaptive '
@@ -198,6 +140,67 @@ class LanguageDashboardScreen extends ConsumerWidget {
         ),
       ),
       ),
+      ),
+    );
+  }
+}
+
+/// 4 · Current Focus — the active lesson, named for the learner, with an
+/// estimate and how many activities remain. Numbers come from the live
+/// daily-lesson engine.
+class _CurrentFocusCard extends ConsumerWidget {
+  const _CurrentFocusCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final blocks = ref.watch(dailyLessonProvider);
+    final learner = ref.watch(languageLearnerProvider);
+    final curriculum = ref.watch(curriculumProvider).value;
+    final top = learner.misconceptions.all.firstOrNull;
+    final focusName = top != null && curriculum != null
+        ? (curriculum.graph[top.conceptId]?.name ?? top.conceptId)
+        : (blocks.firstOrNull?.title ?? 'Warm-up review');
+    final minutes = blocks.fold(0, (s, b) => s + b.minutes);
+    final remaining = blocks.length;
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: scheme.primaryContainer,
+                child: Icon(
+                  Icons.center_focus_strong,
+                  size: 18,
+                  color: scheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Text(focusName, style: text.titleSmall)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _Pill(
+                label: '~$minutes min to complete',
+                color: scheme.secondaryContainer,
+                textColor: scheme.onSecondaryContainer,
+              ),
+              _Pill(
+                label: '$remaining activities left',
+                color: scheme.secondaryContainer,
+                textColor: scheme.onSecondaryContainer,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -828,146 +831,6 @@ void _showObservationEvidence(BuildContext context, TeacherObservation o) {
   );
 }
 
-/// 2 · Today's Goals — daily target per skill with a progress bar.
-class _TodaysGoalsCard extends StatelessWidget {
-  const _TodaysGoalsCard();
-
-  // ponytail: placeholder daily progress; wire to per-skill daily activity
-  // once the engine tracks minutes-per-skill-per-day.
-  static const _goals = <({String label, IconData icon, double value})>[
-    (label: 'Reading', icon: Icons.menu_book, value: 0.6),
-    (label: 'Listening', icon: Icons.headphones, value: 0.35),
-    (label: 'Speaking', icon: Icons.record_voice_over, value: 0.5),
-    (label: 'Conversation', icon: Icons.forum, value: 0.2),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return GlassCard(
-      child: Column(
-        children: [
-          for (final g in _goals)
-            _GoalBar(label: g.label, icon: g.icon, value: g.value),
-        ],
-      ),
-    );
-  }
-}
-
-class _GoalBar extends StatelessWidget {
-  const _GoalBar({
-    required this.label,
-    required this.icon,
-    required this.value,
-  });
-
-  final String label;
-  final IconData icon;
-  final double value;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: scheme.onSurfaceVariant),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 104,
-            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
-          ),
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: LinearProgressIndicator(
-                value: value,
-                minHeight: 10,
-                color: scheme.primary,
-                backgroundColor: scheme.surfaceContainerHighest,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 40,
-            child: Text(
-              '${(value * 100).round()}%',
-              textAlign: TextAlign.end,
-              style: Theme.of(context)
-                  .textTheme
-                  .labelLarge
-                  ?.copyWith(color: scheme.primary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 4 · Current Focus — the active lesson, named for the learner, with an
-/// estimate and how many activities remain. Numbers come from the live
-/// daily-lesson engine.
-class _CurrentFocusCard extends ConsumerWidget {
-  const _CurrentFocusCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
-    final blocks = ref.watch(dailyLessonProvider);
-    final learner = ref.watch(languageLearnerProvider);
-    final curriculum = ref.watch(curriculumProvider).value;
-    final top = learner.misconceptions.all.firstOrNull;
-    final focusName = top != null && curriculum != null
-        ? (curriculum.graph[top.conceptId]?.name ?? top.conceptId)
-        : (blocks.firstOrNull?.title ?? 'Warm-up review');
-    final minutes = blocks.fold(0, (s, b) => s + b.minutes);
-    final remaining = blocks.length;
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: scheme.primaryContainer,
-                child: Icon(
-                  Icons.center_focus_strong,
-                  size: 18,
-                  color: scheme.onPrimaryContainer,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(child: Text(focusName, style: text.titleSmall)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              _Pill(
-                label: '~$minutes min to complete',
-                color: scheme.secondaryContainer,
-                textColor: scheme.onSecondaryContainer,
-              ),
-              _Pill(
-                label: '$remaining activities left',
-                color: scheme.secondaryContainer,
-                textColor: scheme.onSecondaryContainer,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// 5 · Recommended Next Lesson — one pick derived from today's plan (the
 /// first non-repair block), with a one-tap start. Falls back to a sensible
 /// placeholder when the plan is all repair.
@@ -976,8 +839,8 @@ class _CurrentFocusCard extends ConsumerWidget {
 /// bridges in `recommendationsProvider`). Purely derived and read-only — it
 /// shows what the engines computed, holds no state, and never invents an item:
 /// an empty list means the engines found nothing pressing.
-class _TeacherRecommendationsCard extends ConsumerWidget {
-  const _TeacherRecommendationsCard();
+class TeacherRecommendationsCard extends ConsumerWidget {
+  const TeacherRecommendationsCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1109,253 +972,6 @@ IconData _recIcon(RecommendationKind kind) => switch (kind) {
       RecommendationKind.confidence => Icons.favorite_outline,
       RecommendationKind.celebrate => Icons.celebration_outlined,
     };
-
-/// Surfaces the Phase 32 Journey Engine (`journeyReportsProvider`) — each
-/// engaged domain's derived path with assessed health and progress. Read-only
-/// and derived; no state, no fabrication (an empty list means no journey has
-/// formed yet). Reuses the same async pattern as the recommendations card.
-class _JourneysCard extends ConsumerWidget {
-  const _JourneysCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
-    final async = ref.watch(journeyReportsProvider);
-
-    if (async.isLoading && !async.hasValue) {
-      return const Padding(
-        padding: EdgeInsets.all(AppSpace.md),
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-    final reports = async.value ?? const <JourneyReport>[];
-    if (reports.isEmpty) {
-      return GlassCard(
-        child: Row(
-          children: [
-            Icon(Icons.route_outlined, size: 18, color: scheme.primary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'No journeys yet — keep learning and paths will form.',
-                style:
-                    text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    final top = reports.take(3).toList();
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (var i = 0; i < top.length; i++) ...[
-            if (i > 0) const Divider(height: AppSpace.md),
-            _journeyRow(context, top[i]),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-Widget _journeyRow(BuildContext context, JourneyReport r) {
-  final scheme = Theme.of(context).colorScheme;
-  final text = Theme.of(context).textTheme;
-  final pct = (r.journey.progress * 100).round();
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
-        children: [
-          Expanded(child: Text(r.journey.name, style: text.titleSmall)),
-          Text(
-            _journeyHealthLabel(r.health),
-            style: text.labelSmall?.copyWith(color: scheme.primary),
-          ),
-        ],
-      ),
-      const SizedBox(height: 6),
-      ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-        child: LinearProgressIndicator(
-          value: r.journey.progress.clamp(0.0, 1.0),
-          minHeight: 6,
-        ),
-      ),
-      const SizedBox(height: 4),
-      Text(
-        '$pct% · ${r.prediction.nextMilestone ?? 'in progress'}',
-        style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-      ),
-    ],
-  );
-}
-
-/// Presentation label for journey health. Exhaustive: a new health value is a
-/// compile error, never a silent blank.
-String _journeyHealthLabel(JourneyHealth h) => switch (h) {
-      JourneyHealth.healthy => 'On track',
-      JourneyHealth.recovering => 'Recovering',
-      JourneyHealth.plateau => 'Plateau',
-      JourneyHealth.stalled => 'Stalled',
-      JourneyHealth.accelerating => 'Accelerating',
-      JourneyHealth.completed => 'Complete',
-    };
-
-/// Surfaces the Phase 30 Roleplay Engine (`roleplaySelectionProvider`) — the
-/// scene the teacher would run now, with its rationale. Read-only preview and
-/// derived; no state, no fabrication (null → an honest "not yet" line). Starting
-/// the scene is a separate, later increment (needs a roleplay session loop).
-class _RoleplaySuggestionCard extends ConsumerWidget {
-  const _RoleplaySuggestionCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
-    final scene = ref.watch(roleplaySelectionProvider);
-
-    if (scene == null) {
-      return GlassCard(
-        child: Row(
-          children: [
-            Icon(Icons.theater_comedy_outlined,
-                size: 18, color: scheme.primary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'A practice scene will appear once your teacher knows you a '
-                'little.',
-                style:
-                    text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: scheme.tertiaryContainer,
-                child: Icon(Icons.theater_comedy,
-                    size: 18, color: scheme.onTertiaryContainer),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  scene.resumed ? '${scene.title} (resume)' : scene.title,
-                  style: text.titleSmall,
-                ),
-              ),
-              _Pill(
-                label: _roleplayDifficultyLabel(scene.difficulty),
-                color: scheme.tertiaryContainer,
-                textColor: scheme.onTertiaryContainer,
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(scene.setting, style: text.bodyMedium),
-          const SizedBox(height: 4),
-          Text(
-            scene.rationale,
-            style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.tonalIcon(
-              onPressed: () {
-                // Phase 35: start (or resume) the scene in the tutor.
-                ref.read(tutorSessionProvider.notifier).startRoleplay();
-                ref.read(homeTabProvider.notifier).state = 3;
-              },
-              icon: const Icon(Icons.play_arrow),
-              label: Text(scene.resumed ? 'Resume scene' : 'Start scene'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Presentation label for roleplay difficulty. Exhaustive over the enum.
-String _roleplayDifficultyLabel(RoleplayDifficulty d) => switch (d) {
-      RoleplayDifficulty.gentle => 'Gentle',
-      RoleplayDifficulty.standard => 'Standard',
-      RoleplayDifficulty.stretch => 'Stretch',
-    };
-
-class _RecommendedNextLessonCard extends ConsumerWidget {
-  const _RecommendedNextLessonCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
-    final blocks = ref.watch(dailyLessonProvider);
-    final rec = blocks
-        .where((b) => b.kind != LessonBlockKind.repair)
-        .firstOrNull;
-    final title = rec?.title ?? 'Imperfect tense';
-    final reason = rec?.reason ?? 'Builds on what you practiced today.';
-    final minutes = rec?.minutes ?? 10;
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: scheme.tertiaryContainer,
-                child: Icon(
-                  Icons.lightbulb,
-                  size: 18,
-                  color: scheme.onTertiaryContainer,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(child: Text(title, style: text.titleSmall)),
-              _Pill(
-                label: '$minutes min',
-                color: scheme.tertiaryContainer,
-                textColor: scheme.onTertiaryContainer,
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            reason,
-            style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.tonalIcon(
-              onPressed: rec == null
-                  ? null
-                  : () => _launchBlock(context, ref, rec),
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('Start lesson'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 /// Visual progress at a glance: three mastery rings (vocabulary, grammar,
 /// overall) plus the streak — real engine numbers, drawn instead of written.
